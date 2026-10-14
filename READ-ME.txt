@@ -1,9 +1,10 @@
 BACY - INTERACTIVE LOCAL ASSISTANT
 
 REQUIREMENTS
-Windows, Node.js, and Codex CLI signed in with your ChatGPT account.
+Windows and Node.js. Gemini is the default online AI provider.
 Edge or Chrome is recommended for browser speech features. Availability varies.
-This version needs no new API key or npm installation. Codex usage uses your plan.
+Gemini needs your own Google AI Studio API key; no npm installation is needed.
+Codex remains optional and uses your signed-in ChatGPT allowance.
 Three.js 0.180.0 is bundled locally, with its MIT license.
 
 START
@@ -16,12 +17,30 @@ Keep your required Windows proxy connected. Bacy respects HTTPS_PROXY or reads
 the manual Windows proxy settings. PAC and authenticated proxies need setup.
 Certificate verification is never disabled.
 
+GEMINI SETUP
+After starting Bacy, click AI in the top-right corner. Choose Google Gemini.
+Paste your key in the password field, then click Save settings and Test Gemini
+connection. Never paste keys into chat or commit them to GitHub.
+The default model is gemini-flash-latest; choose another available text model
+if your project cannot use it. The connection test checks key access; the first
+chat reply checks model generation and quota. Free quotas vary by model and region.
+Use a project without paid billing if you want only free-tier access. Bacy cannot
+inspect billing status, and a billed project can incur API charges.
+Keys stay in server memory unless you check Remember with Windows encryption.
+That option stores settings encrypted for your Windows user in LocalAppData\Bacy,
+not in this folder. Forget saved Gemini key removes that saved credential.
+Without Remember, restarting Bacy requires entering the key again. Browser fields
+are cleared after saving; keys are never returned to the page or logged by Bacy.
+Windows curl.exe handles Gemini requests with TLS verification and your proxy.
+The cloud development tests use fake API responses; verify your live connection
+on your laptop. Existing Codex installation and sign-in do not need deleting.
+
 MODES AND PERSONALITY
 Face: a relaxed, conversational style with a sculpted, expressive face.
 Brain: thoughtful conversation and practical recommendations.
 Neural: analytical explanations and a neural wireframe.
 Crystal (Pro): a crystalline brain and structured comparisons or data explanations.
-Modes change the style instructions sent to the same Codex model; they do not
+Modes change the style instructions sent to the selected AI model; they do not
 magically increase intelligence. Recommendations are opinions, not human feelings.
 
 COMMANDS - TYPE THEM, OR SAY THEM WHILE THE MICROPHONE IS ON
@@ -74,7 +93,7 @@ Email sending, social-account integrations, camera, arbitrary desktop clicking,
 file editing/deletion, and automatic analysis of large files are not implemented.
 Crystal can discuss and structure data you supply; it does not inspect all files.
 Long chats may need New chat. Your browser tab stores history only for the session.
-Messages and recognized words submitted as chat are sent online through Codex.
+Messages and recognized words submitted as chat are sent online to the selected provider (Google Gemini or Codex).
 The local server listens only on this laptop and checks request origins and tokens.
 Codex chat uses read-only mode and disabled shell tools. Windows actions are
 handled separately by explicit local commands, not arbitrary model commands.

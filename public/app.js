@@ -27,6 +27,7 @@
   let lastFailedMessage = null;
   let localBusy = false;
   let lastLocalAction = null;
+  let aiProvider = 'codex';
 
   function updateSend() {
     sendButton.disabled = busy || localBusy || !input.value.trim();
@@ -68,25 +69,71 @@
     return article;
   }
 
+  function showAI(open) {
+    byId('ai-panel').hidden = !open;
+    byId('ai-button').setAttribute('aria-expanded', String(open));
+  }
+  function updateProviderFields() {
+    const google = byId('ai-provider').value === 'gemini';
+    byId('gemini-fields').hidden = !google;
+    byId('test-ai').hidden = !google;
+    byId('forget-key').hidden = !google;
+  }
+  byId('ai-button').addEventListener('click', () => showAI(byId('ai-panel').hidden));
+  byId('close-ai').addEventListener('click', () => showAI(false));
+  byId('ai-provider').addEventListener('change', updateProviderFields);
+  async function settingsAction(action) {
+    const buttons = ['save-ai', 'test-ai', 'forget-key'].map(byId);
+    buttons.forEach(button => { button.disabled = true; });
+    byId('ai-feedback').textContent = 'Connecting…';
+    try {
+      let result;
+      if (action === 'test') {
+        result = await api('/api/ai/test');
+        byId('gemini-model-list').replaceChildren(...(result.models || []).map(model => {
+          const option = document.createElement('option'); option.value = model.id; option.label = model.name; return option;
+        }));
+      } else {
+        const key = byId('gemini-key').value;
+        byId('gemini-key').value = '';
+        result = await api('/api/ai/configure', { provider: byId('ai-provider').value,
+          key, model: byId('gemini-model').value.trim(), remember: byId('remember-key').checked,
+          forget: action === 'forget' });
+      }
+      byId('ai-feedback').textContent = result.message || 'Settings updated. Test the connection next.';
+      await checkConnection();
+    } catch (error) { byId('ai-feedback').textContent = error.message || 'Connection failed.'; }
+    finally { buttons.forEach(button => { button.disabled = false; }); }
+  }
+  byId('save-ai').addEventListener('click', () => settingsAction('save'));
+  byId('test-ai').addEventListener('click', () => settingsAction('test'));
+  byId('forget-key').addEventListener('click', () => settingsAction('forget'));
+
   async function checkConnection() {
     const button = byId('check-connection');
     button.disabled = true;
     button.textContent = 'Checking…';
-    byId('connection-detail').textContent = 'Checking your local Codex installation…';
+    byId('connection-detail').textContent = 'Checking your AI connection…';
     const statusController = new AbortController();
-    const timeout = setTimeout(() => statusController.abort(), 15000);
+    const timeout = setTimeout(() => statusController.abort(), 30000);
     try {
       const response = await fetch('/api/status', { signal: statusController.signal, cache: 'no-store' });
-      if (!response.ok) throw new Error('The local server could not check Codex.');
+      if (!response.ok) throw new Error('The local server could not check AI settings.');
       const status = await response.json();
+      aiProvider = status.provider || 'codex';
+      byId('ai-provider').value = aiProvider;
+      updateProviderFields();
+      if (status.model) byId('gemini-model').value = status.model;
+      byId('remember-key').disabled = status.platform !== 'win32';
       available = Boolean(status.available);
-      byId('header-status').textContent = available ? 'Ready' : 'Needs setup';
+      byId('header-status').textContent = available ? aiProvider === 'gemini' && !status.verified ? 'Key configured' : 'Ready' : 'Needs setup';
       byId('connection-detail').textContent = status.detail || (available ? 'Codex is available. Your first message will verify the AI connection.' : 'Install Codex and sign in on this laptop, then check again.');
       byId('header-dot').className = `status-dot ${available ? 'ready' : 'error'}`;
       byId('connection-dot').className = `status-dot ${available ? 'ready' : 'error'}`;
       byId('connection-banner').classList.toggle('warning', !available);
       if (!available) byId('connection-banner').hidden = false;
-      byId('runtime-label').textContent = status.version ? `LOCAL / CODEX ${String(status.version).replace(/^codex(?:-cli)?\s*/i, '').slice(0, 40)}` : 'LOCAL INTERFACE / CODEX BRIDGE';
+      if (!available && aiProvider === 'gemini') showAI(true);
+      byId('runtime-label').textContent = aiProvider === 'gemini' ? 'LOCAL / GOOGLE GEMINI' : status.version ? `LOCAL / CODEX ${String(status.version).replace(/^codex(?:-cli)?\s*/i, '').slice(0, 40)}` : 'LOCAL INTERFACE / CODEX BRIDGE';
     } catch (error) {
       available = false;
       byId('header-status').textContent = 'Connection unavailable';
@@ -122,7 +169,7 @@
     requestStatusText.textContent = 'Bacy is working on your response…';
     document.body.classList.add('is-thinking');
     const slowNotice = setTimeout(() => {
-      requestStatusText.textContent = 'Still waiting for Codex. Your proxy or the AI service may take a little time.';
+      requestStatusText.textContent = 'Still waiting for ' + (aiProvider === 'gemini' ? 'Gemini' : 'Codex') + '. Check your proxy if this takes too long.';
     }, 30000);
     try {
       const messages = [...history.slice(-18), { role: 'user', content: message }];
@@ -142,7 +189,7 @@
       showPreview(data.preview);
       speak(reply);
       byId('header-status').textContent = 'Connected';
-      byId('connection-detail').textContent = 'Real AI through your Codex account. Tools and service connections are not enabled yet.';
+      byId('connection-detail').textContent = 'AI replies through ' + (data.provider === 'gemini' ? 'Google Gemini' : 'Codex') + '. Windows controls remain local.';
     } catch (error) {
       lastFailedMessage = message;
       input.value = message;
@@ -274,7 +321,7 @@
       }
       return (await api('/api/apps/open', { id })).message;
     });
-    if (!available) { errorText.textContent = 'Check your Codex connection to chat. Local mode commands still work.'; errorNotice.hidden = false; return; }
+    if (!available) { errorText.textContent = 'Open AI settings to connect your provider. Local mode commands still work.'; errorNotice.hidden = false; return; }
     submitMessage(message, retry);
   }
   function showPreview(preview) {

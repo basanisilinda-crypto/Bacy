@@ -5,6 +5,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn, spawnSync } = require('node:child_process');
 const { createWindowsTools } = require('./windows-tools.cjs');
+const { createGemini } = require('./gemini.cjs');
 const ROOT = __dirname;
 const MAX_BODY = 65536;
 const CLI_ARGS = ['exec', '--json', '--color', 'never', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--skip-git-repo-check', '--sandbox', 'read-only', '--output-schema', 'response-schema.json', '-c', 'features.shell_tool=false', '-c', 'features.apps=false', '-c', 'features.plugins=false', '-c', 'features.hooks=false', '-c', 'features.multi_agent=false', '-c', 'features.view_image=false', '-c', 'project_doc_max_bytes=0', '-c', 'web_search=disabled', '-'];
@@ -13,7 +14,7 @@ function configuredEnvironment() {
   const env = { ...process.env };
   if (process.platform === 'win32' && !env.HTTPS_PROXY && !env.https_proxy) {
     const script = "$p=Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings'; if($p.ProxyEnable -eq 1){$p.ProxyServer}";
-    const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', timeout: 5000, windowsHide: true });
+    const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', timeout: 15000, windowsHide: true });
     if (!result.error && result.status === 0) {
       const entries = result.stdout.trim().split(';');
       const specific = entries.find(value => value.startsWith('https='));
@@ -147,11 +148,13 @@ function parseAnswer(answer) {
   return { reply: data.reply, mood, preview: clean };
 }
 
-function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cwd = path.join(ROOT, '.bacy-session'), statusProvider, windowsTools = createWindowsTools() } = {}) {
+function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cwd = path.join(ROOT, '.bacy-session'), statusProvider, windowsTools = createWindowsTools(), gemini, defaultProvider = 'codex' } = {}) {
   fs.mkdirSync(cwd, { recursive: true });
   fs.copyFileSync(path.join(ROOT, 'response-schema.json'), path.join(cwd, 'response-schema.json'));
   const token = crypto.randomBytes(32).toString('hex');
   let busy = false, activeAbort;
+  const google = gemini || createGemini({ env });
+  let provider = defaultProvider === 'gemini' ? 'gemini' : 'codex';
   const headers = {
     'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
     'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
@@ -178,8 +181,12 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     if (!hosts.includes(req.headers.host)) return send(403, { error: 'Invalid local host.' });
     if (req.headers.origin && !hosts.map(host => 'http://' + host).includes(req.headers.origin)) return send(403, { error: 'Open Bacy on this laptop to send messages.' });
     if (req.method === 'GET' && req.url === '/api/status') {
+      if (provider === 'gemini') {
+        const state = await google.status();
+        return send(200, { available: state.configured, provider, verified: state.verified, model: state.model, version: null, platform: process.platform, windowsTools: windowsTools.available, proxyConfigured: Boolean(env.HTTPS_PROXY || env.https_proxy), detail: state.configured ? state.verified ? 'Google accepted the key. Your first reply checks model generation and quota.' : 'Gemini key configured. Test the connection in AI settings.' : 'Open AI settings and enter your Gemini key privately on this laptop.' });
+      }
       const version = await (statusProvider ? statusProvider() : checkCodex());
-      return send(200, { available: Boolean(version), version, platform: process.platform, windowsTools: windowsTools.available, proxyConfigured: Boolean(env.HTTPS_PROXY || env.https_proxy), detail: version ? 'Codex detected. Your first message checks sign-in and the online connection.' : 'Codex is unavailable. Check codex.cmd --version in PowerShell, then check again.' });
+      return send(200, { available: Boolean(version), provider, version, platform: process.platform, windowsTools: windowsTools.available, proxyConfigured: Boolean(env.HTTPS_PROXY || env.https_proxy), detail: version ? 'Codex detected. Your first message checks sign-in and the online connection.' : 'Codex is unavailable. Check codex.cmd --version in PowerShell, then check again.' });
     }
     if (req.method === 'GET') {
       const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/scene.js': ['scene.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/vendor/three.module.min.js': ['vendor/three.module.min.js', 'text/javascript'], '/vendor/three.core.min.js': ['vendor/three.core.min.js', 'text/javascript'] };
@@ -192,7 +199,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
         return res.end(content);
       } catch { return send(500, { error: 'Interface files are missing. Extract all Bacy files together.' }); }
     }
-    const routes = ['/api/chat', '/api/apps', '/api/apps/open', '/api/search', '/api/files/choose', '/api/files/list', '/api/files/open'];
+    const routes = ['/api/chat', '/api/ai/configure', '/api/ai/test', '/api/apps', '/api/apps/open', '/api/search', '/api/files/choose', '/api/files/list', '/api/files/open'];
     if (req.method !== 'POST' || !routes.includes(req.url)) return send(404, { error: 'Not found.' });
     if (req.headers['x-bacy-token'] !== token) return send(403, { error: 'Refresh the Bacy page, then try again.' });
     if (!/^application\/json(?:;|$)/i.test(req.headers['content-type'] || '')) return send(415, { error: 'A JSON message is required.' });
@@ -208,6 +215,19 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     let body;
     try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { return send(400, { error: 'Invalid message format.' }); }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return send(400, { error: 'Invalid request.' });
+    if (req.url === '/api/ai/configure') {
+      if (busy) return send(409, { error: 'Stop the current AI request before changing providers.' });
+      if (!['gemini', 'codex'].includes(body.provider)) return send(400, { error: 'Choose Gemini or Codex.' });
+      try {
+        if (body.provider === 'gemini') await google.configure(body);
+        provider = body.provider;
+        return send(200, { provider, message: 'AI settings updated on this laptop.' });
+      } catch (error) { return send(400, { error: error.message }); }
+    }
+    if (req.url === '/api/ai/test') {
+      try { if (provider !== 'gemini') return send(400, { error: 'Choose Gemini to test its API connection.' }); return send(200, await google.test()); }
+      catch (error) { return send(502, { error: error.message }); }
+    }
     if (req.url !== '/api/chat') {
       try {
         const actions = {
@@ -225,7 +245,11 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     activeAbort = abort;
     const disconnect = () => { if (!res.writableEnded) abort.abort(); };
     res.on('close', disconnect);
-    try { send(200, await runner(buildPrompt(body.messages, body.mode), { signal: abort.signal, env, cwd })); }
+    try {
+      const prompt = buildPrompt(body.messages, body.mode);
+      const result = provider === 'gemini' ? parseAnswer(await google.generate(prompt, { signal: abort.signal })) : await runner(prompt, { signal: abort.signal, env, cwd });
+      send(200, { ...result, provider });
+    }
     catch (error) { send(502, { error: error.message }); }
     finally { res.off('close', disconnect); activeAbort = undefined; busy = false; }
   });
@@ -236,7 +260,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
 }
 
 if (require.main === module) {
-  const server = createBacyServer();
+  const server = createBacyServer({ defaultProvider: 'gemini' });
   server.on('error', error => {
     console.error(error.code === 'EADDRINUSE' ? 'Port 3000 is already in use. Close the previous Bacy window and try again.' : 'Bacy could not start: ' + error.message);
     process.exitCode = 1;
@@ -244,7 +268,7 @@ if (require.main === module) {
   server.listen(3000, '127.0.0.1', () => {
     console.log('Bacy is running. Open your browser and type localhost:3000');
     console.log('Keep this window open. Press Ctrl+C to stop Bacy.');
-    console.log('Real AI replies use your signed-in Codex account and its usage limits.');
+    console.log('Open AI settings to connect Gemini privately. Codex remains an optional provider.');
   });
   const stop = () => { server.stopCurrent(); server.close(); };
   process.on('SIGINT', stop);
