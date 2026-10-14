@@ -1,650 +1,634 @@
 'use strict';
-
 (() => {
-  const byId = id => document.getElementById(id);
-  const form = byId('chat-form');
-  const input = byId('message-input');
-  const log = byId('messages');
-  const welcome = byId('welcome');
-  const sendButton = byId('send-button');
-  const clearButton = byId('clear-chat');
-  const requestStatus = byId('request-status');
-  const requestStatusText = byId('request-status-text');
-  const errorNotice = byId('error-notice');
-  const errorText = byId('error-text');
+  const $ = id => document.getElementById(id);
   const token = document.querySelector('meta[name="bacy-token"]').content;
-  const modeCaptions = {
-    normal: 'Normal · Conversational',
-    professional: 'Pro · Focused & practical',
-    hardcore: 'Power · Analytical',
-    crystal: 'Crystal · Visual & structured'
-  };
+  const input = $('message-input');
+  const form = $('chat-form');
+  const sendButton = $('send-button');
+  const micButton = $('mic-button');
+  const messagesEl = $('messages');
+  const emptyState = $('empty-state');
+  const voiceState = $('voice-state');
+  const voiceStateText = $('voice-state-text');
+  const errorBar = $('error-bar');
+  const errorText = $('error-text');
+
+  const HISTORY_KEY = 'bacy-conversation-v4';
+  const PREFS_KEY = 'bacy-prefs-v4';
   let history = [];
-  let mode = 'professional';
   let busy = false;
-  let available = false;
-  let controller = null;
-  let lastFailedMessage = null;
-  let localBusy = false;
-  let lastLocalAction = null;
-  let aiProvider = 'codex';
-  let preferences = {name:'Basani',honorific:'boss',theme:'dark',speak:true,handsfree:false};
-  let wakeUntil=0;
+  let lastFailed = '';
+  let lastFailedEl = null;
+  let chatController = null;
+  let aiConfigured = false;
+  let aiVerified = false;
+  let voiceConnected = false;
+  let voiceVerified = false;
+  let voiceId = '';
+  let gmailConnected = false;
+  let gmailConfigured = false;
+  let currentView = 'chat';
 
-  function updateSend() {
-    sendButton.disabled = busy || localBusy || !input.value.trim();
+  let prefs = { speak: true, voiceQuality: 'fast', wakePhrase: 'Hey Bacy' };
+  try { prefs = { ...prefs, ...(JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') || {}) }; } catch {}
+  $('speak-replies').checked = prefs.speak !== false;
+  $('voice-quality').value = prefs.voiceQuality === 'natural' ? 'natural' : 'fast';
+  $('wake-phrase').value = prefs.wakePhrase || 'Hey Bacy';
+
+  function savePrefs() {
+    prefs = { speak: $('speak-replies').checked, voiceQuality: $('voice-quality').value, wakePhrase: $('wake-phrase').value.trim() || 'Hey Bacy' };
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+    updateVoiceOutputLabel();
   }
 
-  function scrollToLatest() {
-    log.scrollTop = log.scrollHeight;
+  function getJson(url) {
+    return fetch(url, { cache: 'no-store' }).then(async response => {
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Bacy could not load that connection.');
+      return data;
+    });
   }
 
-  function appendMessage(role, content) {
-    welcome.hidden = true;
+  async function postJson(url, body = {}, signal) {
+    const response = await fetch(url, {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', 'X-Bacy-Token': token },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Bacy could not complete that request.');
+    return data;
+  }
+
+  function toast(message) {
+    const el = $('toast');
+    el.textContent = message; el.hidden = false;
+    clearTimeout(toast.timer); toast.timer = setTimeout(() => { el.hidden = true; }, 3200);
+  }
+
+  function setError(message, retry = true) {
+    errorText.textContent = message || '';
+    errorBar.hidden = !message;
+    $('retry-button').hidden = !retry || !lastFailed;
+  }
+  function clearError() { setError(''); }
+
+  function setStatusDot(id, state) {
+    const el = $(id); if (!el) return;
+    el.className = 'status-dot' + (state ? ' ' + state : '');
+  }
+
+  function updateOverallStatus() {
+    const rail = $('rail-status');
+    rail.className = 'rail-status ' + (aiConfigured ? 'online' : 'error');
+    $('status-line').textContent = aiConfigured
+      ? (gmailConnected ? 'Gemini online · Gmail connected' : 'Gemini online')
+      : 'Gemini connection required';
+  }
+
+  function switchView(name) {
+    currentView = name;
+    document.querySelectorAll('.view').forEach(view => { view.hidden = view.id !== name + '-view'; });
+    document.querySelectorAll('.rail-button').forEach(button => button.classList.toggle('active', button.dataset.panel === name));
+    $('mobile-sheet').hidden = true;
+    if (name === 'chat') setTimeout(() => input.focus(), 0);
+  }
+
+  document.querySelectorAll('[data-panel]').forEach(button => button.addEventListener('click', () => switchView(button.dataset.panel)));
+  $('home-button').addEventListener('click', () => switchView('chat'));
+  $('mobile-menu').addEventListener('click', () => { $('mobile-sheet').hidden = !$('mobile-sheet').hidden; });
+
+  function saveHistory() {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(-20))); } catch {}
+  }
+
+  function appendMessage(role, content, { store = true, latency = '' } = {}) {
+    emptyState.hidden = true;
     const article = document.createElement('article');
-    article.className = `message ${role}`;
-    article.setAttribute('aria-label', role === 'user' ? 'Your message' : 'Bacy response');
-    const heading = document.createElement('div');
-    heading.className = 'message-heading';
-    const icon = document.createElement('span');
-    icon.className = 'message-icon';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = role === 'user' ? 'Y' : 'B';
-    const label = document.createElement('span');
-    label.textContent = role === 'user' ? 'YOU' : 'BACY';
-    const time = document.createElement('time');
-    time.className = 'message-time';
-    const now = new Date();
-    time.dateTime = now.toISOString();
-    time.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    heading.append(icon, label, time);
-    const body = document.createElement('div');
-    body.className = 'message-body';
-    body.textContent = content;
-    article.append(heading, body);
-    log.append(article);
-    if (role === 'assistant') {
-      byId('latest-reply').textContent = content;
-      byId('latest-reply').hidden = false;
-    }
-    scrollToLatest();
+    article.className = 'message ' + role;
+    const avatar = document.createElement('div'); avatar.className = 'avatar'; avatar.textContent = role === 'user' ? 'YOU' : 'B';
+    const wrap = document.createElement('div'); wrap.className = 'message-content';
+    const p = document.createElement('p'); p.textContent = content;
+    wrap.append(p);
+    if (latency) { const meta = document.createElement('div'); meta.className = 'message-meta'; meta.textContent = latency; wrap.append(meta); }
+    article.append(avatar, wrap); messagesEl.append(article); messagesEl.scrollTop = messagesEl.scrollHeight;
+    if (store) { history.push({ role, content }); history = history.slice(-20); saveHistory(); }
     return article;
   }
 
-  function showAI(open) {
-    byId('ai-panel').hidden = !open;
-    byId('ai-button').setAttribute('aria-expanded', String(open));
-  }
-  function updateProviderFields() {
-    const google = byId('ai-provider').value === 'gemini';
-    byId('gemini-fields').hidden = !google;
-    byId('test-ai').hidden = !google;
-    byId('forget-key').hidden = !google;
-  }
-  byId('ai-button').addEventListener('click', () => showAI(byId('ai-panel').hidden));
-  byId('close-ai').addEventListener('click', () => showAI(false));
-  byId('ai-provider').addEventListener('change', updateProviderFields);
-  async function settingsAction(action) {
-    const buttons = ['save-ai', 'test-ai', 'forget-key'].map(byId);
-    buttons.forEach(button => { button.disabled = true; });
-    byId('ai-feedback').textContent = 'Connecting…';
+  function renderHistory() {
     try {
-      let result;
-      if (action === 'test') {
-        result = await api('/api/ai/test');
-        byId('gemini-model-list').replaceChildren(...(result.models || []).map(model => {
-          const option = document.createElement('option'); option.value = model.id; option.label = model.name; return option;
-        }));
-      } else {
-        const key = byId('gemini-key').value;
-        byId('gemini-key').value = '';
-        result = await api('/api/ai/configure', { provider: byId('ai-provider').value,
-          key, model: byId('gemini-model').value.trim(), remember: byId('remember-key').checked,
-          forget: action === 'forget' });
-      }
-      byId('ai-feedback').textContent = result.message || 'Settings updated. Test the connection next.';
-      await checkConnection();
-    } catch (error) { byId('ai-feedback').textContent = error.message || 'Connection failed.'; }
-    finally { buttons.forEach(button => { button.disabled = false; }); }
+      const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      if (Array.isArray(saved)) history = saved.filter(item => item && ['user','assistant'].includes(item.role) && typeof item.content === 'string').slice(-20);
+    } catch {}
+    if (!history.length) return;
+    emptyState.hidden = true;
+    history.forEach(item => appendMessage(item.role, item.content, { store: false }));
   }
-  byId('save-ai').addEventListener('click', () => settingsAction('save'));
-  byId('test-ai').addEventListener('click', () => settingsAction('test'));
-  byId('forget-key').addEventListener('click', () => settingsAction('forget'));
 
-  async function checkConnection() {
-    const button = byId('check-connection');
-    button.disabled = true;
-    button.textContent = 'Checking…';
-    byId('connection-detail').textContent = 'Checking your AI connection…';
-    const statusController = new AbortController();
-    const timeout = setTimeout(() => statusController.abort(), 30000);
-    try {
-      const response = await fetch('/api/status', { signal: statusController.signal, cache: 'no-store' });
-      if (!response.ok) throw new Error('The local server could not check AI settings.');
-      const status = await response.json();
-      aiProvider = status.provider || 'codex';
-      byId('ai-provider').value = aiProvider;
-      updateProviderFields();
-      if (status.model) byId('gemini-model').value = status.model;
-      byId('remember-key').disabled = status.platform !== 'win32';
-      available = Boolean(status.available);
-      byId('workspace-status').textContent = status.windowsTools ? 'Windows controls available' : 'Windows laptop required';
-      byId('header-status').textContent = available ? aiProvider === 'gemini' && !status.verified ? 'Key configured' : 'Ready' : 'Needs setup';
-      byId('connection-detail').textContent = status.detail || (available ? 'Codex is available. Your first message will verify the AI connection.' : 'Install Codex and sign in on this laptop, then check again.');
-      byId('header-dot').className = `status-dot ${available ? 'ready' : 'error'}`;
-      byId('connection-dot').className = `status-dot ${available ? 'ready' : 'error'}`;
-      byId('connection-banner').classList.toggle('warning', !available);
-      if (!available) byId('connection-banner').hidden = false;
-      if (!available && aiProvider === 'gemini') showAI(true);
-      byId('runtime-label').textContent = aiProvider === 'gemini' ? 'LOCAL / GOOGLE GEMINI' : status.version ? `LOCAL / CODEX ${String(status.version).replace(/^codex(?:-cli)?\s*/i, '').slice(0, 40)}` : 'LOCAL INTERFACE / CODEX BRIDGE';
-    } catch (error) {
-      available = false;
-      byId('header-status').textContent = 'Connection unavailable';
-      byId('connection-detail').textContent = 'Could not reach the local Bacy server. Check that it is still running in PowerShell.';
-      byId('header-dot').className = 'status-dot error';
-      byId('connection-dot').className = 'status-dot error';
-      byId('connection-banner').classList.add('warning');
-      byId('connection-banner').hidden = false;
-    } finally {
-      clearTimeout(timeout);
-      button.disabled = false;
-      button.textContent = 'Check again';
-      updateSend();
+  let thinkingEl = null;
+  function showThinking() {
+    if (thinkingEl) thinkingEl.remove();
+    thinkingEl = document.createElement('div'); thinkingEl.className = 'thinking-line';
+    thinkingEl.innerHTML = '<span>Bacy is thinking</span><span class="thinking-dots"><i></i><i></i><i></i></span>';
+    messagesEl.append(thinkingEl); messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+  function hideThinking() { thinkingEl?.remove(); thinkingEl = null; }
+
+  function autosize() { input.style.height = 'auto'; input.style.height = Math.min(150, input.scrollHeight) + 'px'; }
+  function updateSend() {
+    sendButton.classList.toggle('is-busy', busy);
+    sendButton.disabled = busy ? false : !input.value.trim();
+    sendButton.setAttribute('aria-label', busy ? 'Stop response' : 'Send');
+  }
+  input.addEventListener('input', () => { autosize(); updateSend(); });
+
+  function clearConversation() {
+    history = []; saveHistory();
+    [...messagesEl.querySelectorAll('.message,.thinking-line')].forEach(node => node.remove());
+    emptyState.hidden = false; lastFailed = ''; lastFailedEl = null; clearError();
+  }
+  $('new-chat').addEventListener('click', clearConversation);
+  $('clear-history').addEventListener('click', clearConversation);
+
+  async function refreshConnections() {
+    const [ai, voice, gmail] = await Promise.allSettled([getJson('/api/status'), getJson('/api/voice/status'), getJson('/api/gmail/status')]);
+    if (ai.status === 'fulfilled') {
+      aiConfigured = ai.value.provider === 'gemini' && Boolean(ai.value.available);
+      aiVerified = Boolean(ai.value.verified);
+      $('gemini-status').textContent = aiConfigured ? (aiVerified ? 'Connected' : 'Key saved · ready on first message') : 'Not connected';
+      setStatusDot('gemini-dot', aiConfigured ? 'ready' : 'error');
+    } else {
+      aiConfigured = false; $('gemini-status').textContent = 'Local server error'; setStatusDot('gemini-dot', 'error');
     }
+    if (voice.status === 'fulfilled') {
+      voiceConnected = Boolean(voice.value.configured); voiceVerified = Boolean(voice.value.verified); voiceId = voice.value.voiceId || '';
+      $('eleven-status').textContent = voiceConnected ? (voiceVerified ? 'Connected' : 'Key saved') : 'Optional natural voice';
+      setStatusDot('eleven-dot', voiceConnected ? 'ready' : '');
+      if (voiceConnected && voiceVerified) loadVoices().catch(() => {});
+    }
+    if (gmail.status === 'fulfilled') {
+      gmailConfigured = Boolean(gmail.value.configured); gmailConnected = Boolean(gmail.value.connected);
+      $('gmail-status').textContent = gmailConnected ? 'Connected to Gmail MCP' : gmailConfigured ? 'OAuth setup saved · connect Google' : 'Not connected';
+      setStatusDot('gmail-dot', gmailConnected ? 'ready' : gmailConfigured ? 'wait' : '');
+      $('disconnect-gmail').hidden = !gmailConnected;
+      $('connect-gmail').textContent = gmailConnected ? 'Reconnect Google' : 'Save & connect Google';
+    }
+    updateOverallStatus(); updateVoiceOutputLabel();
+    $('first-run').hidden = aiConfigured;
   }
 
-  async function submitMessage(content, retry = false) {
-    if (busy || !available || !content.trim()) return;
-    const message = content.trim();
-    busy = true;
-    controller = new AbortController();
-    lastFailedMessage = null;
-    byId('latest-reply').hidden = true;
-    lastLocalAction = null;
-    byId('retry-request').hidden = false;
-    errorNotice.hidden = true;
-    input.value = '';
-    input.disabled = true;
-    clearButton.disabled = true;
-    updateSend();
-    if (!retry) appendMessage('user', message);
-    requestStatus.hidden = false;
-    requestStatusText.textContent = 'Bacy is working on your response…';
-    document.body.classList.add('is-thinking');
-    const slowNotice = setTimeout(() => {
-      requestStatusText.textContent = 'Still waiting for ' + (aiProvider === 'gemini' ? 'Gemini' : 'Codex') + '. Check your proxy if this takes too long.';
-    }, 30000);
+  async function loadVoices() {
+    const data = await postJson('/api/voice/voices');
+    const select = $('voice-select'); select.replaceChildren();
+    const list = Array.isArray(data.voices) ? data.voices : [];
+    if (!list.length) { const option = document.createElement('option'); option.textContent = 'No voices returned'; select.append(option); return; }
+    list.forEach(item => {
+      const option = document.createElement('option'); option.value = item.id;
+      option.textContent = item.name + ([item.age,item.gender,item.accent].filter(Boolean).length ? ' · ' + [item.age,item.gender,item.accent].filter(Boolean).join(' · ') : '');
+      select.append(option);
+    });
+    if (list.some(v => v.id === voiceId)) select.value = voiceId;
+  }
+
+  async function connectGemini(key, remember, firstRun = false) {
+    const clean = String(key || '').trim();
+    if (!clean) throw new Error('Paste your Gemini API key first.');
+    await postJson('/api/ai/configure', { provider: 'gemini', key: clean, remember });
+    const tested = await postJson('/api/ai/test');
+    aiConfigured = true; aiVerified = true;
+    $('gemini-key').value = ''; $('first-gemini-key').value = '';
+    $('gemini-status').textContent = 'Connected · ' + (tested.model || 'fast model'); setStatusDot('gemini-dot','ready');
+    updateOverallStatus(); $('first-run').hidden = true;
+    if (!firstRun) toast('Gemini connected.');
+  }
+
+  $('connect-gemini').addEventListener('click', async () => {
+    clearError(); const button = $('connect-gemini'); button.disabled = true; button.textContent = 'Connecting…';
+    try { await connectGemini($('gemini-key').value, $('remember-gemini').checked); }
+    catch (error) { setError(error.message, false); }
+    finally { button.disabled = false; button.textContent = 'Connect'; }
+  });
+  $('first-connect').addEventListener('click', async () => {
+    const button = $('first-connect'); $('first-error').textContent = ''; button.disabled = true; button.textContent = 'Connecting…';
+    try { await connectGemini($('first-gemini-key').value, $('first-remember').checked, true); switchView('chat'); }
+    catch (error) { $('first-error').textContent = error.message; }
+    finally { button.disabled = false; button.textContent = 'Connect & open Bacy'; }
+  });
+
+  $('connect-eleven').addEventListener('click', async () => {
+    const button = $('connect-eleven'); button.disabled = true; button.textContent = 'Connecting…'; clearError();
     try {
-      const messages = [...history.slice(-18), { role: 'user', content: message }];
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Bacy-Token': token },
-        body: JSON.stringify({ messages, mode }),
-        signal: controller.signal
+      await postJson('/api/voice/configure', { key: $('eleven-key').value.trim(), remember: $('remember-eleven').checked, voiceId: $('voice-select').value || undefined });
+      const tested = await postJson('/api/voice/test');
+      voiceConnected = true; voiceVerified = true; voiceId = tested.voiceId || '';
+      $('eleven-key').value = ''; $('eleven-status').textContent = 'Connected'; setStatusDot('eleven-dot','ready');
+      const select = $('voice-select'); select.replaceChildren();
+      (tested.voices || []).forEach(item => { const option = document.createElement('option'); option.value = item.id; option.textContent = item.name + ([item.age,item.gender,item.accent].filter(Boolean).length ? ' · ' + [item.age,item.gender,item.accent].filter(Boolean).join(' · ') : ''); select.append(option); });
+      if (voiceId) { select.value = voiceId; await postJson('/api/voice/configure', { voiceId, remember: $('remember-eleven').checked }); }
+      toast('ElevenLabs connected. Choose Natural voice in Settings when you want it.'); updateVoiceOutputLabel();
+    } catch (error) { setError(error.message, false); }
+    finally { button.disabled = false; button.textContent = 'Connect'; }
+  });
+  $('voice-select').addEventListener('change', async () => {
+    if (!$('voice-select').value || !voiceConnected) return;
+    try { voiceId = $('voice-select').value; await postJson('/api/voice/configure', { voiceId, remember: $('remember-eleven').checked }); toast('Voice changed.'); }
+    catch (error) { setError(error.message, false); }
+  });
+
+  $('connect-gmail').addEventListener('click', async () => {
+    const button = $('connect-gmail'); button.disabled = true; button.textContent = 'Preparing Google…'; clearError();
+    try {
+      const clientId = $('gmail-client-id').value.trim(), clientSecret = $('gmail-client-secret').value.trim();
+      if (clientId || clientSecret || !gmailConfigured) await postJson('/api/gmail/configure', { clientId, clientSecret, remember: $('remember-gmail').checked });
+      const result = await postJson('/api/gmail/oauth/start');
+      window.location.assign(result.url);
+    } catch (error) { setError(error.message, false); button.disabled = false; button.textContent = gmailConnected ? 'Reconnect Google' : 'Save & connect Google'; }
+  });
+  $('disconnect-gmail').addEventListener('click', async () => {
+    try { await postJson('/api/gmail/disconnect'); gmailConnected = false; $('gmail-status').textContent = 'Disconnected'; setStatusDot('gmail-dot','wait'); $('disconnect-gmail').hidden = true; updateOverallStatus(); toast('Gmail disconnected.'); }
+    catch (error) { setError(error.message, false); }
+  });
+
+  $('speak-replies').addEventListener('change', savePrefs);
+  $('voice-quality').addEventListener('change', savePrefs);
+  $('wake-phrase').addEventListener('change', savePrefs);
+  function updateVoiceOutputLabel() {
+    const enabled = $('speak-replies').checked;
+    const quality = $('voice-quality').value;
+    $('voice-output-label').textContent = enabled ? (quality === 'natural' ? 'Natural voice' : 'Fast voice') : 'Voice off';
+    $('voice-output-button').classList.toggle('active', enabled);
+  }
+  $('voice-output-button').addEventListener('click', () => {
+    $('speak-replies').checked = !$('speak-replies').checked; savePrefs();
+    if (!$('speak-replies').checked) stopSpeaking();
+  });
+
+  // ---------- Voice output ----------
+  let currentAudio = null;
+  let currentUtterance = null;
+  let speaking = false, speechGeneration=0,voiceController=null,playbackFinish=null;
+  function stopSpeaking() {
+    speechGeneration++;voiceController?.abort();voiceController=null;playbackFinish?.();playbackFinish=null;
+    window.speechSynthesis?.cancel();
+    if (currentAudio) { try { currentAudio.pause(); currentAudio.src = ''; } catch {} }
+    currentAudio = null; currentUtterance = null; speaking = false;
+    document.body.classList.remove('speaking');
+    restartContinuousSoon();
+  }
+  function chooseDeviceVoice() {
+    const voices = window.speechSynthesis?.getVoices?.() || [];
+    return voices.find(v => /^en(-|_)?ZA/i.test(v.lang)) || voices.find(v => /^en(-|_)?GB/i.test(v.lang)) || voices.find(v => /^en/i.test(v.lang)) || voices[0];
+  }
+  function speakDevice(text) {
+    return new Promise(resolve=>{
+      if(!window.speechSynthesis)return resolve();
+      const session=speechGeneration;window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(String(text).slice(0,3000));currentUtterance=u;let ended=false;
+      const finish=()=>{if(ended)return;ended=true;clearTimeout(startTimer);if(playbackFinish===finish)playbackFinish=null;
+        if(session===speechGeneration){currentUtterance=null;speaking=false;document.body.classList.remove('speaking');restartContinuousSoon();}resolve();};
+      const startTimer=setTimeout(()=>{if(currentUtterance===u)window.speechSynthesis.cancel();finish();},4000);
+      playbackFinish=finish;u.onstart=()=>clearTimeout(startTimer);u.onend=u.onerror=finish;
+      const v=chooseDeviceVoice();if(v)u.voice=v;u.rate=1.03;u.pitch=1;u.volume=1;
+      speaking=true;pauseContinuousInput();document.body.classList.add('speaking');window.speechSynthesis.speak(u);
+    });
+  }
+  async function speakNatural(text) {
+    const session=speechGeneration,controller=new AbortController();voiceController=controller;
+    const timer=setTimeout(()=>controller.abort(),5000);let audio=null,url=null,reader=null;
+    speaking=true;pauseContinuousInput();document.body.classList.add('speaking');
+    try{
+      const response=await fetch('/api/voice/speak-stream',{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json','X-Bacy-Token':token},body:JSON.stringify({text:String(text).slice(0,3000)})});
+      if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||'Natural voice could not start.');}
+      const canStream=response.body&&window.MediaSource&&MediaSource.isTypeSupported?.('audio/mpeg');
+      let media;if(canStream){media=new MediaSource();url=URL.createObjectURL(media);}else url=URL.createObjectURL(await response.blob());
+      if(session!==speechGeneration||controller.signal.aborted)throw new DOMException('Voice stopped','AbortError');
+      audio=new Audio(url);currentAudio=audio;
+      await new Promise((resolve,reject)=>{
+        let finished=false;
+        const finish=error=>{if(finished)return;finished=true;if(playbackFinish===cancel)playbackFinish=null;controller.signal.removeEventListener('abort',cancel);reader?.cancel().catch(()=>{});error?reject(error):resolve();};
+        const cancel=()=>finish(new DOMException('Voice stopped','AbortError'));playbackFinish=cancel;
+        controller.signal.addEventListener('abort',cancel,{once:true});
+        audio.onplaying=()=>clearTimeout(timer);audio.onended=()=>finish();audio.onerror=()=>finish(new Error('The voice audio could not play.'));
+        if(!canStream){audio.play().catch(finish);return;}
+        media.addEventListener('sourceopen',async()=>{
+          let source;try{source=media.addSourceBuffer('audio/mpeg');}catch(error){finish(error);return;}
+          reader=response.body.getReader();const queue=[];let done=false,started=false;
+          const pump=()=>{if(finished||source.updating)return;if(queue.length){try{source.appendBuffer(queue.shift());if(!started){started=true;audio.play().catch(finish);}}catch(error){finish(error);}}
+            else if(done&&media.readyState==='open'){try{media.endOfStream();}catch{}}};
+          source.addEventListener('updateend',pump);
+          try{while(!finished){const part=await reader.read();if(part.done){done=true;pump();break;}if(part.value?.byteLength){queue.push(part.value);pump();}}}catch(error){finish(error);}
+        },{once:true});
       });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data && typeof data.error === 'string' ? data.error : 'Bacy could not get a response. Check AI settings and your proxy, then try again.');
-      const reply = data && (data.reply || data.response || data.message);
-      if (typeof reply !== 'string' || !reply.trim()) throw new Error('Your AI provider returned no answer. Please try again.');
-      history = [...messages, { role: 'assistant', content: reply }].slice(-20);
-      appendMessage('assistant', reply);
-      if (['neutral', 'happy', 'playful', 'thinking', 'serious', 'angry'].includes(data.mood)) document.body.dataset.mood = data.mood;
-      showPreview(data.preview);
-      speak(reply);
-      byId('header-status').textContent = 'Connected';
-      byId('connection-detail').textContent = 'AI replies through ' + (data.provider === 'gemini' ? 'Google Gemini' : 'Codex') + '. Windows controls remain local.';
-    } catch (error) {
-      lastFailedMessage = message;
-      input.value = message;
-      errorText.textContent = error.name === 'AbortError' ? 'You stopped this request. Your message is ready to retry or edit.' : error.message || 'The request failed. Your message is ready to retry.';
-      errorNotice.hidden = false;
-    } finally {
-      clearTimeout(slowNotice);
-      busy = false;
-      controller = null;
-      input.disabled = false;
-      clearButton.disabled = false;
-      requestStatus.hidden = true;
-      document.body.classList.remove('is-thinking');
-      updateSend();
-      input.focus();
+    }finally{
+      clearTimeout(timer);controller.abort();reader?.cancel().catch(()=>{});if(audio){audio.pause();audio.src='';}if(url)URL.revokeObjectURL(url);
+      if(voiceController===controller)voiceController=null;
+      if(session===speechGeneration){currentAudio=null;speaking=false;document.body.classList.remove('speaking');restartContinuousSoon();}
     }
+  }
+  function speak(text) {
+    if (!$('speak-replies').checked || !text) return;
+    stopSpeaking();
+    const session=speechGeneration;const natural = $('voice-quality').value === 'natural' && voiceConnected;
+    (natural ? speakNatural(text) : speakDevice(text)).catch(error => {if(session!==speechGeneration)return; if (natural) { toast('Natural voice was slow/unavailable. Switched to fast device voice.'); speakDevice(text).catch(()=>{}); } else setError(error.message, false); });
+  }
+
+  // ---------- Voice input ----------
+  let micStream = null, recognition = null, recognitionRunning = false;
+  let micGeneration=0,recognitionStarting=false,restartTimer=null,voiceTurnPending=false,tapTranscript='',tapCompleting=false,wakeUntil=0,micChanging=false,transcriptionController=null;
+  let voiceMode = 'off'; // off | tap | handsfree | live
+  let recorder = null, recorderChunks = [], fallbackNeeded = false;
+  let audioContext = null, analyser = null, levelTimer = null, audioLevel = 0;
+  let cloudRecorder = null, cloudChunks = [], cloudTimer = null, cloudTranscribing = false, cloudFallback = false;
+
+  function recognitionSupported() { return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition); }
+  async function ensureMic() {
+    if (micStream) return micStream;
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('Use current Chrome or Edge for microphone access.');
+    try { const generation=micGeneration;const stream=await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });if(generation!==micGeneration){stream.getTracks().forEach(track=>track.stop());throw new Error('Microphone request cancelled.');}micStream=stream; }
+    catch (error) {
+      if (error?.name === 'NotAllowedError') throw new Error('Microphone permission is blocked. Allow the microphone from the browser address bar.');
+      if (error?.name === 'NotFoundError') throw new Error('Windows could not find a microphone.');
+      throw new Error('Bacy could not open the microphone.');
+    }
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)(); await audioContext.resume?.();
+      const source = audioContext.createMediaStreamSource(micStream); analyser = audioContext.createAnalyser(); analyser.fftSize = 256; source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const measure = () => { if (!analyser) return; analyser.getByteFrequencyData(data); audioLevel = data.reduce((a,b)=>a+b,0)/(data.length*255); levelTimer = requestAnimationFrame(measure); }; measure();
+    } catch {}
+    return micStream;
+  }
+  function setVoiceState(text = '') { voiceStateText.textContent = text; voiceState.hidden = !text; }
+  function setVoiceMode(mode) {
+    voiceMode = mode; micButton.setAttribute('aria-pressed', String(mode === 'tap'));
+    $('handsfree-button').classList.toggle('active', mode === 'handsfree'); $('live-button').classList.toggle('active', mode === 'live');
+    if (mode === 'off') setVoiceState('');
+    else if (mode === 'handsfree') setVoiceState('Say “' + (prefs.wakePhrase || 'Hey Bacy') + '”…');
+    else if (mode === 'live') setVoiceState('Live talk · listening…');
+    else setVoiceState('Listening…');
+  }
+  function stopRecorder(discard = true) {
+    if (!recorder) return;
+    try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
+    if (discard) recorderChunks = [];
+  }
+  function stopCloud() {
+    cloudFallback = false; cloudTranscribing = false;
+    if (cloudTimer) clearTimeout(cloudTimer); cloudTimer = null;
+    if (cloudRecorder) { try { if (cloudRecorder.state !== 'inactive') cloudRecorder.stop(); } catch {} }
+    cloudRecorder = null; cloudChunks = [];
+  }
+  function disposeRecognition(){const previous=recognition;recognition=null;recognitionRunning=false;recognitionStarting=false;try{previous?.abort();}catch{}}
+  function stopMicAll() {
+    micGeneration++;clearTimeout(restartTimer);restartTimer=null;wakeUntil=0;transcriptionController?.abort();transcriptionController=null;
+    disposeRecognition();
+    stopRecorder(); recorder = null; fallbackNeeded = false; stopCloud();
+    if (levelTimer) cancelAnimationFrame(levelTimer); levelTimer = null; analyser = null;
+    audioContext?.close?.().catch(()=>{}); audioContext = null;
+    micStream?.getTracks().forEach(track => track.stop()); micStream = null; audioLevel = 0; setVoiceMode('off');
+  }
+  function preferredMime() { return ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported?.(type)) || ''; }
+  function startPassiveRecorder() {
+    if (!voiceConnected || !window.MediaRecorder || recorder) return;
+    const chunks=[];recorderChunks=chunks; const type = preferredMime(); recorder = new MediaRecorder(micStream, type ? { mimeType:type } : undefined);
+    recorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
+    recorder.start(180);
+  }
+  async function transcribeChunks(active, chunks) {
+    const mime = active?.mimeType || chunks[0]?.type || 'audio/webm';
+    const blob = new Blob(chunks, { type:mime });
+    if (blob.size < 300) throw new Error('The recording was too short.');
+    setVoiceState('Transcribing…');
+    transcriptionController?.abort();transcriptionController=new AbortController();const controller=transcriptionController;const timer=setTimeout(()=>controller.abort(),35000);
+    try{const response = await fetch('/api/voice/transcribe', { method:'POST', signal:controller.signal, headers:{ 'Content-Type':mime, 'X-Bacy-Token':token }, body:blob });
+    const data = await response.json().catch(()=>({})); if (!response.ok) throw new Error(data.error || 'Voice transcription failed.');
+    return String(data.text || '').trim();}finally{clearTimeout(timer);if(transcriptionController===controller)transcriptionController=null;}
+  }
+  async function finishTapFallback() {
+    if (!recorder) return;
+    const active = recorder; recorder = null;
+    const chunks = recorderChunks; recorderChunks = [];
+    await new Promise(resolve => { active.addEventListener('stop', resolve, { once:true }); try { active.stop(); } catch { resolve(); } });
+    disposeRecognition();
+    if (!voiceConnected) throw new Error('Connect ElevenLabs for transcription fallback.');
+    const generation=micGeneration;const text = await transcribeChunks(active, chunks);if(generation!==micGeneration)return;fallbackNeeded = false;stopMicAll();
+    await processVoiceText(text, 'tap');
+  }
+  function makeRecognition(modeAtStart) {
+    const R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) return null;
+    const rec = new R(); rec.lang = navigator.language || 'en-ZA'; rec.interimResults = true; rec.continuous = modeAtStart !== 'tap';
+    let hadFinal = false;
+    rec.onstart = () => { if(recognition!==rec)return;recognitionStarting=false;recognitionRunning = true; setVoiceState(modeAtStart === 'handsfree' ? 'Say “' + prefs.wakePhrase + '”…' : 'Listening…'); };
+    rec.onresult = event => {
+      if(recognition!==rec||hadFinal||busy||voiceTurnPending)return;
+      let finalText = '', interim = '';
+      for (let i=event.resultIndex;i<event.results.length;i++) { const text = event.results[i][0].transcript; if (event.results[i].isFinal) finalText += text; else interim += text; }
+      const shown = (finalText + ' ' + interim).trim();if(modeAtStart==='tap'&&shown)tapTranscript=shown; if (shown) setVoiceState(shown);
+      if (finalText.trim() && !speaking) {
+        hadFinal = true;
+        if (modeAtStart === 'tap') { stopMicAll(); }
+        else { disposeRecognition(); }
+        processVoiceText(finalText, modeAtStart).catch(error => setError(error.message, false));
+      }
+    };
+    rec.onerror = event => {
+      if(recognition!==rec)return;recognitionStarting=false;recognitionRunning = false;
+      if (['aborted','no-speech'].includes(event.error)) return;
+      const networkish = ['network','service-not-allowed'].includes(event.error);
+      if (networkish && voiceConnected && window.MediaRecorder) {
+        if (modeAtStart === 'tap') { fallbackNeeded = true; setVoiceState('Live transcription unavailable · keep speaking, then tap the mic'); }
+        else { cloudFallback = true; setVoiceState('Using ElevenLabs transcription…'); startCloudContinuous().catch(error => setError(error.message, false)); }
+      } else {
+        setError(event.error === 'not-allowed' ? 'Microphone permission is blocked.' : 'Live transcription failed. Connect ElevenLabs for fallback.', false);
+        if (modeAtStart === 'tap') { stopMicAll(); }
+      }
+    };
+    rec.onend = () => {
+      if(recognition!==rec)return;recognitionStarting=false;recognitionRunning = false;
+      if(modeAtStart==='tap'&&!hadFinal&&!recorder){const text=tapCompleting?tapTranscript:'';stopMicAll();tapCompleting=false;if(text)processVoiceText(text,'tap').catch(error=>setError(error.message,false));else setVoiceState('No speech detected. Tap the mic to try again.');return;}
+      if (modeAtStart === 'tap' && !hadFinal && recorder && !fallbackNeeded) { fallbackNeeded = true; setVoiceState(voiceConnected ? 'Tap the mic to finish and transcribe' : 'No speech was detected'); }
+      if (modeAtStart !== 'tap' && voiceMode === modeAtStart && !busy && !speaking && !cloudFallback) restartContinuousSoon();
+    };
+    return rec;
+  }
+  function startRecognition(mode) {
+    if (!recognitionSupported()) return false;if(recognitionRunning||recognitionStarting)return true;disposeRecognition();recognitionStarting=true;
+    recognition = makeRecognition(mode); try { recognition.start(); return true; } catch { disposeRecognition();return false; }
+  }
+  async function startTap() {
+    await ensureMic();tapTranscript=''; setVoiceMode('tap'); fallbackNeeded = false;
+    if (voiceConnected) startPassiveRecorder();
+    if (!startRecognition('tap')) {
+      if (!voiceConnected) throw new Error('Live transcription is unavailable. Connect ElevenLabs or use current Chrome/Edge.');
+      fallbackNeeded = true; setVoiceState('Recording · tap the mic when finished');
+    }
+  }
+  function escapeRegex(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  async function processVoiceText(raw, modeAtStart) {
+    let text = String(raw || '').trim(); if (!text) return;
+    if (modeAtStart === 'handsfree') {
+      const phrase = (prefs.wakePhrase || 'Hey Bacy').trim();
+      const re = new RegExp('^' + escapeRegex(phrase) + '[,!. ]*(.*)$','i');
+      const match = text.match(re);
+      if(match){wakeUntil=Date.now()+10000;text=match[1].trim();if(!text){setVoiceState('Yes, Boss. I’m listening…');restartContinuousSoon();return;}}else if(Date.now()>wakeUntil){setVoiceState('Say “'+phrase+'”…');restartContinuousSoon();return;}wakeUntil=0;
+    }
+    setVoiceState('');
+    if(voiceTurnPending)return;voiceTurnPending=true;try{await handleInput(text);}finally{voiceTurnPending=false;restartContinuousSoon();}
+  }
+  function pauseContinuousInput() {
+    if (!['handsfree','live'].includes(voiceMode)) return;
+    disposeRecognition();transcriptionController?.abort();const fallback=cloudFallback;stopCloud();cloudFallback=fallback;
+  }
+  function restartContinuousSoon() {
+    clearTimeout(restartTimer);restartTimer=null;
+    if (!['handsfree','live'].includes(voiceMode) || busy || speaking || voiceTurnPending || !micStream) return;
+    restartTimer=setTimeout(() => {
+      restartTimer=null;if (!['handsfree','live'].includes(voiceMode) || busy || speaking || voiceTurnPending || !micStream) return;
+      if (cloudFallback) startCloudContinuous().catch(error => setError(error.message, false));
+      else if (!recognitionRunning && !startRecognition(voiceMode)) {
+        if (voiceConnected) { cloudFallback = true; startCloudContinuous().catch(error => setError(error.message,false)); }
+      }
+    }, 220);
+  }
+  async function finishCloudSegment(active, chunks, modeAtStart, send) {
+    if (!active) return;const generation=micGeneration;
+    if (active.state !== 'inactive') await new Promise(resolve => { active.addEventListener('stop', resolve, {once:true}); try { active.stop(); } catch { resolve(); } });
+    if (!send || !chunks.length || voiceMode !== modeAtStart) return restartContinuousSoon();
+    cloudTranscribing = true;
+    try { const text = await transcribeChunks(active, chunks); if (text&&generation===micGeneration) await processVoiceText(text, modeAtStart); }
+    catch (error) { if (error.name!=='AbortError'&&!/short|no speech|could not hear/i.test(error.message)) setError(error.message, false); }
+    finally { cloudTranscribing = false; restartContinuousSoon(); }
+  }
+  async function startCloudContinuous() {
+    if (!['handsfree','live'].includes(voiceMode) || busy || speaking || cloudRecorder || cloudTranscribing) return;
+    await ensureMic(); if (!voiceConnected || !window.MediaRecorder) throw new Error('ElevenLabs is required for cloud transcription fallback.');
+    const modeAtStart = voiceMode, type = preferredMime();const chunks=[]; cloudChunks=chunks;
+    const active = new MediaRecorder(micStream, type ? {mimeType:type} : undefined); cloudRecorder = active;
+    active.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); }; active.start(150);
+    const started = performance.now(); let speechStart = 0, lastVoice = 0;
+    const monitor = () => {
+      if (cloudRecorder !== active || active.state === 'inactive') return;
+      if (busy || speaking || voiceMode !== modeAtStart) { cloudRecorder = null; const chunks = cloudChunks; cloudChunks=[]; finishCloudSegment(active,chunks,modeAtStart,false); return; }
+      const now = performance.now(); if (audioLevel > 0.02) { if (!speechStart) speechStart = now; lastVoice = now; setVoiceState('Listening…'); }
+      if (speechStart && now-lastVoice > 520 && now-speechStart > 280) { cloudRecorder=null; const chunks=cloudChunks; cloudChunks=[]; finishCloudSegment(active,chunks,modeAtStart,true); return; }
+      if (speechStart && now-speechStart > 8000) { cloudRecorder=null; const chunks=cloudChunks; cloudChunks=[]; finishCloudSegment(active,chunks,modeAtStart,true); return; }
+      if (!speechStart && now-started > 7000) { cloudRecorder=null; const chunks=cloudChunks; cloudChunks=[]; finishCloudSegment(active,chunks,modeAtStart,false); return; }
+      cloudTimer = setTimeout(monitor, 75);
+    };
+    cloudTimer = setTimeout(monitor, 75);
+  }
+  async function startContinuous(mode) {
+    if (voiceMode === mode) { stopMicAll(); return; }
+    stopMicAll(); await ensureMic(); setVoiceMode(mode); cloudFallback = false;
+    if (!startRecognition(mode)) {
+      if (!voiceConnected) throw new Error('Hands-free/Live talk needs Chrome/Edge speech recognition or ElevenLabs.');
+      cloudFallback = true; await startCloudContinuous();
+    }
+  }
+
+  micButton.addEventListener('click', async () => {
+    if(micChanging)return;micChanging=true;clearError();
+    try {
+      if (voiceMode === 'tap' && recorder && (fallbackNeeded || !recognitionRunning)) return await finishTapFallback();
+      if(voiceMode==='tap'){tapCompleting=true;const current=recognition;const generation=micGeneration;try{current?.stop();}catch{}await new Promise(resolve=>setTimeout(resolve,350));if(voiceMode==='tap'&&generation===micGeneration){const text=tapTranscript;stopMicAll();if(text)await processVoiceText(text,'tap');else setVoiceState('No speech detected. Tap the mic to try again.');}return;}
+      if (voiceMode !== 'off') stopMicAll();
+      await startTap();
+    } catch (error) { stopMicAll(); setError(error.message, false); }finally{micChanging=false;}
+  });
+  $('handsfree-button').addEventListener('click', () => startContinuous('handsfree').catch(error => { stopMicAll(); setError(error.message,false); }));
+  $('live-button').addEventListener('click', () => startContinuous('live').catch(error => { stopMicAll(); setError(error.message,false); }));
+
+  // ---------- Local Windows commands + chat ----------
+  function localReply(userText, reply) {
+    appendMessage('user', userText); appendMessage('assistant', reply); speak(reply); input.value=''; autosize(); updateSend();
+  }
+  async function performLocal(userText, fn) {
+    try { const reply = await fn(); localReply(userText, reply); switchView('chat'); }
+    catch (error) { lastFailed = userText; setError(error.message, true); }
+  }
+  async function openApp(id, label) {
+    const data = await postJson('/api/apps/open', { id }); return data.message || ('Opened ' + label + '.');
+  }
+  async function handleInput(raw) {
+    const message = String(raw || '').trim(); if (!message || busy) return;
+    clearError();
+    const command = message.toLowerCase().replace(/[.!?]+$/,'').replace(/^(?:hey )?bacy[, ]+/,'').replace(/^please /,'').trim();
+    if (/^(stop|stop speaking|be quiet|quiet)$/.test(command)) { stopSpeaking(); return localReply(message,'Voice stopped.'); }
+    const systemMap = { 'show desktop':'show-desktop','show my desktop':'show-desktop','volume up':'volume-up','turn up the volume':'volume-up','volume down':'volume-down','turn down the volume':'volume-down','mute':'mute','unmute':'mute' };
+    if (systemMap[command]) return performLocal(message, async () => (await postJson('/api/computer',{action:systemMap[command]})).message);
+    const search = command.match(/^(?:search(?: the web)?(?: for)?|look up) (.+)$/); if (search) return performLocal(message, async()=> (await postJson('/api/search',{query:search[1]})).message);
+    if (/^(open|show)(?: my)? files$/.test(command)) return performLocal(message, async()=>{ const chosen=await postJson('/api/files/choose'); if(!chosen.selected)return 'No folder was selected.'; return 'Folder access enabled for '+(chosen.name||'the selected folder')+'.'; });
+    const app = command.match(/^(?:open|launch|start) (.+)$/);
+    if (app) {
+      const map={browser:'browser',chrome:'chrome','google chrome':'chrome',edge:'edge','microsoft edge':'edge',firefox:'firefox',word:'word','microsoft word':'word',excel:'excel',outlook:'outlook','vs code':'vscode',notepad:'notepad',calculator:'calculator','file explorer':'explorer',settings:'settings','windows settings':'settings'};
+      const id=map[app[1]];
+      if (id) return performLocal(message,()=>openApp(id,app[1]));
+    }
+    if (/\b(gmail|email|emails|inbox|mailbox)\b/i.test(message) && !gmailConnected) {
+      switchView('connections'); lastFailed = message; return setError('Connect Gmail MCP in Connections first. Gemini can still answer normal questions.', true);
+    }
+    if (!aiConfigured) { $('first-run').hidden=false; return; }
+    await submitMessage(message);
+  }
+
+  function conversationForApi() {
+    const items = history.slice(-19);
+    while (items.length && items[0].role !== 'user') items.shift();
+    const clean = [];
+    for (const item of items) {
+      if (!clean.length || clean.at(-1).role !== item.role) clean.push({...item,content:String(item.content||'').slice(0,8000)});
+    }
+    while (clean.length && clean.at(-1).role !== 'user') clean.pop();
+    while(clean.length>1&&clean.reduce((total,item)=>total+item.content.length,0)>24000)clean.splice(0,2);
+    return clean;
+  }
+
+  async function submitMessage(message) {
+    if (busy) return;
+    busy = true; lastFailed = message; updateSend(); pauseContinuousInput(); clearError();
+    const userEl = appendMessage('user', message); lastFailedEl = userEl; input.value=''; autosize(); showThinking();
+    const started = performance.now(); chatController = new AbortController();let requestTimedOut=false;const timer=setTimeout(()=>{requestTimedOut=true;chatController?.abort();},40000);
+    try {
+      const response = await fetch('/api/chat', { method:'POST', signal:chatController.signal, headers:{'Content-Type':'application/json','X-Bacy-Token':token}, body:JSON.stringify({mode:'professional',messages:conversationForApi()}) });
+      const data = await response.json().catch(()=>({})); if(!response.ok) throw new Error(data.error || 'Bacy could not get an AI response.');
+      const reply=String(data.reply||'').trim(); if(!reply) throw new Error('Gemini returned an empty reply.');
+      hideThinking(); const seconds=((performance.now()-started)/1000).toFixed(1); appendMessage('assistant',reply,{latency:seconds+'s'}); $('latency-label').textContent=seconds+'s'; lastFailed=''; lastFailedEl=null;
+      busy=false; chatController=null; updateSend(); speak(reply); restartContinuousSoon();
+    } catch (error) {
+      hideThinking();
+      if (error.name === 'AbortError') setError(requestTimedOut?'The AI did not answer within 40 seconds. Check the connection, then retry.':'Response stopped.',requestTimedOut); else setError(error.message, true);
+      if (history.at(-1)?.role==='user' && history.at(-1)?.content===message) { history.pop(); saveHistory(); }
+      userEl.classList.add('failed'); busy=false; chatController=null; updateSend(); restartContinuousSoon();
+    }finally{clearTimeout(timer);}
   }
 
   form.addEventListener('submit', event => {
     event.preventDefault();
-    const content = input.value.trim();
-    handleInput(content, lastFailedMessage === content);
+    if (busy) { chatController?.abort(); return; }
+    handleInput(input.value);
   });
-  input.addEventListener('input', updateSend);
-  input.addEventListener('keydown', event => {
-    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-      event.preventDefault();
-      if (!sendButton.disabled) form.requestSubmit();
-    }
-  });
-  byId('cancel-request').addEventListener('click', () => { if (controller) controller.abort(); });
-  byId('retry-request').addEventListener('click', () => { if (lastLocalAction) performLocal(lastLocalAction.message, lastLocalAction.action); else if (lastFailedMessage) handleInput(lastFailedMessage, true); });
-  byId('check-connection').addEventListener('click', checkConnection);
-  clearButton.addEventListener('click', () => {
-    if (busy) return;
-    for (const article of log.querySelectorAll('.message')) article.remove();
-    history = [];
-    lastFailedMessage = null;
-    lastLocalAction = null;
-    input.value = '';
-    errorNotice.hidden = true;
-    welcome.hidden = false;
-    byId('latest-reply').hidden = true;
-    updateSend();
-    input.focus();
-  });
-  document.querySelectorAll('[data-prompt]').forEach(button => button.addEventListener('click', () => {
-    if (busy) return;
-    input.value = button.dataset.prompt;
-    updateSend();
-    input.focus();
+  input.addEventListener('keydown', event => { if (event.key==='Enter' && !event.shiftKey) { event.preventDefault(); if (busy) chatController?.abort(); else handleInput(input.value); } });
+  $('retry-button').addEventListener('click', () => { if (!lastFailed) return; lastFailedEl?.remove(); lastFailedEl=null; clearError(); handleInput(lastFailed); });
+  $('dismiss-error').addEventListener('click', clearError);
+  document.querySelectorAll('[data-prompt]').forEach(button => button.addEventListener('click', () => handleInput(button.dataset.prompt)));
+  document.querySelectorAll('[data-local]').forEach(button => button.addEventListener('click', async () => {
+    const [type,value] = button.dataset.local.split(':');
+    if (type==='app') await performLocal('Open '+value,()=>openApp(value,value));
+    else await performLocal(value.replaceAll('-',' '),async()=> (await postJson('/api/computer',{action:value})).message);
   }));
-  document.querySelectorAll('button[data-mode]').forEach(button => button.addEventListener('click', () => {
-    setMode(button.dataset.mode);
-  }));
-  function setMode(next) {
-    if (!Object.hasOwn(modeCaptions, next)) return;
-    mode = next;
-    document.body.dataset.mode = mode;
-    document.body.dataset.mood = 'neutral';
-    byId('mode-caption').textContent = modeCaptions[mode];
-    const identities = {
-      normal: ['01','Here for you.\nReady for anything.','A little curiosity.\nA conversation that feels natural.','NORMAL'],
-      professional: ['02','Precision.\nWith presence.','A sharper perspective.\nA calmer way to get things done.','PRO'],
-      hardcore: ['03','More depth.\nMore possibility.','Follow the connections.\nThink through the bigger picture.','POWER'],
-      crystal: ['04','See it clearly.\nMake it happen.','Give your ideas structure.\nTurn complexity into clarity.','CRYSTAL']
-    };
-    const [number,title,description,label] = identities[mode];
-    byId('mode-number').textContent = number;
-    byId('identity-title').textContent = title;
-    byId('identity-description').textContent = description;
-    byId('identity-mode').textContent = label + ' MODE';
-    byId('avatar-mode-label').textContent = label;
-    document.querySelectorAll('button[data-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === mode)));
+
+  window.addEventListener('beforeunload', () => { stopMicAll(); stopSpeaking(); });
+  document.addEventListener('keydown', event => { if (event.key==='Escape') { $('mobile-sheet').hidden=true; if (voiceMode!=='off') stopMicAll(); } });
+
+  async function init() {
+    renderHistory(); autosize(); updateSend(); updateVoiceOutputLabel();
+    const params = new URLSearchParams(location.search);
+    if (params.get('gmail') === 'connected') { toast('Gmail MCP connected.'); }
+    if (params.get('gmail') === 'error') setError(params.get('message') || 'Gmail connection failed.', false);
+    if (params.has('gmail')) window.history.replaceState?.(null,'',location.pathname);
+    await refreshConnections();
+    if (aiConfigured) { $('first-run').hidden=true; input.focus(); }
   }
-  async function api(route, body = {}) {
-    const response = await fetch(route, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Bacy-Token': token }, body: JSON.stringify(body) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'The local operation failed.');
-    return data;
-  }
-  function localReply(message, reply) {
-    input.value = '';
-    lastFailedMessage = null;
-    lastLocalAction = null;
-    errorNotice.hidden = true;
-    appendMessage('user', message);
-    appendMessage('assistant', reply);
-    // Local file/app receipts stay out of the online model's conversation context.
-    speak(reply);
-    updateSend();
-  }
-  async function performLocal(message, action) {
-    if (busy || localBusy) return;
-    localBusy = true; updateSend();
-    try { localReply(message, await action()); }
-    catch (error) {
-      lastFailedMessage = message; input.value = message;
-      lastLocalAction = { message, action };
-      errorText.textContent = error.message; errorNotice.hidden = false; byId('retry-request').hidden = false;
-    } finally { localBusy = false; updateSend(); }
-  }
-  async function handleInput(message, retry = false) {
-    if (!message.trim()) return;
-    const command = message.toLowerCase().trim().replace(/[.!?]+$/, '').replace(/^(?:hey )?bacy[, ]+/, '').replace(/^please /, '').replace(/(?: for me| please)$/, '');
-    if (/^(pause|stop|stop speaking|be quiet)$/.test(command)) {
-      controller?.abort(); synthesizer?.cancel(); byId('read-replies').checked = false;
-      document.body.classList.remove('is-speaking'); speaking = false;
-      return localReply(message, 'Paused. Voice playback is off.');
-    }
-    if (busy || localBusy) return;
-    if (/^(enable voice|turn on voice|read replies)$/.test(command)) {
-      if (!voices.length) return localReply(message, 'There are no browser voices available yet. Open Voice to check your options.');
-      byId('read-replies').checked = true; return localReply(message, 'Voice is on.');
-    }
-    const modeMatch = command.match(/^(?:switch|change|go)(?: (?:the )?mode)?(?: to)? (?:the )?(face|normal|brain|professional|pro|power|neural|hardcore|crystal|crystalline)(?: mode)?$/);
-    if (modeMatch) {
-      const mapping = { face: 'normal', normal: 'normal', brain: 'professional', professional: 'professional', pro: 'professional', power: 'hardcore', neural: 'hardcore', hardcore: 'hardcore', crystal: 'crystal', crystalline: 'crystal' };
-      setMode(mapping[modeMatch[1]]);
-      return localReply(message, 'Switched to ' + modeCaptions[mode] + ' mode.');
-    }
-    const theme=command.match(/^(?:switch|change|go)(?: to)? (dark|light|white|midnight|aurora)(?: theme| mode)?$/);
-    if(theme){setTheme(theme[1]==='white'?'light':theme[1]);return localReply(message,'Theme changed, '+(preferences.honorific||preferences.name||'')+'.');}
-    if(/^(?:open|show)(?: my)? (?:connections|connectors)$/.test(command)){await window.bacyConnections.show();return localReply(message,'Your connections are here.');}
-    if(/^(?:read|show|open)(?: my| the)? (?:emails|email|inbox|gmail)$/.test(command))return performLocal(message,async()=>{await window.bacyConnections.inbox();return 'Your Gmail inbox is open.';});
-    if(/^(?:show|open|read)(?: my| the)? (?:calendar|events|schedule)$/.test(command))return performLocal(message,async()=>{await window.bacyConnections.calendar();return 'Here are your upcoming calendar events.';});
-    const mood = command.match(/^(?:look|be|feel|show)(?: (?:a|your) face)? (angry|happy|funny|playful|serious|neutral)$/);
-    if (mood) {
-      document.body.dataset.mood = mood[1] === 'funny' ? 'playful' : mood[1];
-      return localReply(message, 'Expression changed to ' + mood[1] + '.');
-    }
-    if (/^(?:show|open)(?: my)? files$/.test(command)) return performLocal(message, async () => { await openFiles(); return 'Your files are open.'; });
-    if (/^(?:show|open|list)(?: my)? apps$/.test(command)) return performLocal(message, async () => { await showApps(); return 'Here are the installed apps Windows reported.'; });
-    if (/^(?:open|show|start)(?: my| the)? camera$/.test(command)) return performLocal(message, async () => { await startCamera(); return 'Your camera preview stays on this page.'; });
-    if (/^(?:close|stop)(?: my| the)? camera$/.test(command)) { stopCamera(); return localReply(message, 'Camera stopped.'); }
-    const systemActions = { 'show desktop':'show-desktop', 'show my desktop':'show-desktop', 'volume up':'volume-up', 'turn up the volume':'volume-up', 'volume down':'volume-down', 'turn down the volume':'volume-down', 'mute':'mute', 'mute sound':'mute', 'unmute':'mute' };
-    if (Object.hasOwn(systemActions,command)) return performLocal(message, async () => (await api('/api/computer',{action:systemActions[command]})).message);
-    const fileCommand = command.match(/^open (?:the )?file (.+)$/);
-    if (fileCommand) return performLocal(message, async () => {
-      const data = await api('/api/files/list', {path:filePath});
-      const file = data.entries.find(entry => !entry.directory && entry.name.toLowerCase() === fileCommand[1]);
-      if (!file) { showFilesPanel(); return 'Choose the folder with that file, then select it from Files.'; }
-      return (await api('/api/files/open', {path:file.path})).message;
-    });
-    const search = command.match(/^(?:search(?: the web)?(?: for)?|look up) (.+)$/);
-    if (search) return performLocal(message, async () => (await api('/api/search', { query: search[1] })).message);
-    const app = command.match(/^(?:open|launch|start) (.+)$/);
-    if (app) return performLocal(message, async () => {
-      let id = { browser:'browser', chrome:'chrome', 'google chrome':'chrome', edge:'edge', 'microsoft edge':'edge', firefox:'firefox', word:'word', excel:'excel', outlook:'outlook', 'vs code':'vscode', notepad:'notepad', calculator:'calculator', 'file explorer':'explorer', settings:'settings', 'windows settings':'settings' }[app[1]];
-      if (!id) {
-        const data = await api('/api/apps');
-        const exact = data.apps.find(item => item.name.toLowerCase() === app[1]);
-        const candidates = data.apps.filter(item => item.name.toLowerCase().includes(app[1]));
-        const selected = exact || (candidates.length === 1 ? candidates[0] : null);
-        if (!selected) { await showApps(app[1]); return 'Choose the app you mean from the list.'; }
-        id = selected.id;
-      }
-      return (await api('/api/apps/open', { id })).message;
-    });
-    if (!available) { errorText.textContent = 'Open AI settings to connect your provider. Local mode commands still work.'; errorNotice.hidden = false; return; }
-    submitMessage(message, retry);
-  }
-  function showPreview(preview) {
-    if (!preview || !['flow', 'steps', 'comparison'].includes(preview.kind) || !Array.isArray(preview.items) || !preview.items.length) return;
-    byId('preview-title').textContent = preview.title || 'Explanation';
-    const container = byId('preview-content'); container.replaceChildren(); container.dataset.kind = preview.kind;
-    for (const [index, item] of preview.items.slice(0, 6).entries()) {
-      const card = document.createElement('article'); card.className = 'preview-card';
-      const number = document.createElement('span'); number.className = 'preview-number'; number.textContent = String(index + 1).padStart(2, '0');
-      const heading = document.createElement('h2'); heading.textContent = item.label;
-      const detail = document.createElement('p'); detail.textContent = item.detail;
-      card.append(number, heading, detail); container.append(card);
-    }
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('preview-diagram');svg.setAttribute('role','img');svg.setAttribute('aria-label',preview.title||'Explanation diagram');
-    const items=preview.items.slice(0,6),height=items.length*72;svg.setAttribute('viewBox','0 0 330 '+height);
-    const element=(name,attributes,text)=>{const node=document.createElementNS(svg.namespaceURI,name);for(const[k,v]of Object.entries(attributes))node.setAttribute(k,v);if(text)node.textContent=text;svg.append(node);return node;};
-    items.forEach((item,i)=>{const y=i*72+5;if(i)element('path',{d:'M165 '+(y-18)+'v14m-4-4 4 4 4-4'});element('rect',{x:24,y,width:282,height:48,rx:9});element('circle',{cx:44,cy:y+24,r:3});element('text',{x:57,y:y+28},String(item.label).slice(0,32));});
-    container.prepend(svg);
-    byId('preview-panel').hidden = false;
-  }
-  byId('close-preview').addEventListener('click', () => { byId('preview-panel').hidden = true; });
-  function showTools(title, note) {
-    byId('tools-title').textContent = title; byId('tools-note').textContent = note;
-    byId('tools-content').replaceChildren(); byId('tools-panel').hidden = false;
-  }
-  function toolError(error) { byId('tools-note').textContent = error.message; }
-  async function showApps(filter = '') {
-    showTools('Your apps', 'Reading the installed-app list from Windows…');
-    byId('choose-folder').hidden = true; byId('folder-up').hidden = true;
-    const data = await api('/api/apps');
-    byId('tools-note').textContent = 'Installed apps. Opening an app does not connect Bacy to its account.';
-    for (const app of data.apps.filter(item => !filter || item.name.toLowerCase().includes(filter))) {
-      const button = document.createElement('button'); button.className = 'tool-item'; button.textContent = app.name;
-      button.addEventListener('click', () => performLocal('Open ' + app.name, async () => (await api('/api/apps/open', { id: app.id })).message));
-      byId('tools-content').append(button);
-    }
-  }
-  let filePath = '';
-  function showFilesPanel() {
-    showTools('Your files', 'Choose the folder Bacy may browse. File names are not automatically included in AI chat.');
-    byId('choose-folder').hidden = false; byId('folder-up').hidden = true;
-  }
-  async function listFiles(relative = '') {
-    const data = await api('/api/files/list', { path: relative });
-    filePath = data.path; byId('tools-title').textContent = data.name || 'Your files';
-    byId('tools-note').textContent = 'Click a folder to browse, or a document to open it in its Windows app.';
-    byId('folder-up').hidden = !filePath; byId('tools-content').replaceChildren();
-    for (const entry of data.entries) {
-      const button = document.createElement('button'); button.className = 'tool-item'; button.textContent = (entry.directory ? '▸  ' : '·  ') + entry.name;
-      button.addEventListener('click', () => {
-        if (entry.directory) listFiles(entry.path).catch(toolError);
-        else performLocal('Open ' + entry.name, async () => (await api('/api/files/open', { path: entry.path })).message);
-      });
-      byId('tools-content').append(button);
-    }
-  }
-  byId('choose-folder').addEventListener('click', async () => {
-    byId('choose-folder').disabled = true;
-    try { const result = await api('/api/files/choose'); if (result.selected) await listFiles(); }
-    catch (error) { toolError(error); }
-    finally { byId('choose-folder').disabled = false; }
-  });
-  byId('folder-up').addEventListener('click', () => listFiles(filePath.split(/[\\/]/).slice(0, -1).join('/')).catch(toolError));
-  byId('open-browser').addEventListener('click', () => performLocal('Open browser', async () => (await api('/api/apps/open', { id: 'browser' })).message));
-  byId('open-apps').addEventListener('click', () => showApps().catch(toolError));
-  async function openFiles(){
-    showFilesPanel();
-    try{await listFiles(filePath);}catch(error){
-      if(/Choose a folder/.test(error.message)){await api('/api/files/documents');await listFiles();}
-      else throw error;
-    }
-  }
-  byId('open-files').addEventListener('click',()=>openFiles().catch(toolError));
-  byId('close-tools').addEventListener('click', () => { byId('tools-panel').hidden = true; });
-  byId('open-system').addEventListener('click', () => {
-    showTools('Computer', 'These commands run locally on Windows.');
-    byId('choose-folder').hidden = true; byId('folder-up').hidden = true;
-    for (const [label,action] of [['Show desktop','show-desktop'],['Volume up','volume-up'],['Volume down','volume-down'],['Toggle mute','mute']]) {
-      const button = document.createElement('button');button.className='tool-item';button.textContent=label;
-      button.addEventListener('click',()=>performLocal(label, async () => (await api('/api/computer',{action})).message));
-      byId('tools-content').append(button);
-    }
-  });
-  let cameraStream = null, cameraRequest=0;
-  async function startCamera() {
-    if (cameraStream) { byId('camera-panel').hidden = false; return; }
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access is unavailable in this browser.');
-    const request=++cameraRequest;
-    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-    if (request!==cameraRequest) { stream.getTracks().forEach(track=>track.stop());throw new Error('Camera request cancelled.'); }
-    cameraStream=stream;
-    byId('camera-video').srcObject = cameraStream;
-    byId('camera-panel').hidden = false;
-    byId('camera-note').textContent = 'Live preview stays on this page. No images are sent to the AI.';
-  }
-  function stopCamera() {
-    cameraRequest++;
-    cameraStream?.getTracks().forEach(track=>track.stop()); cameraStream=null;
-    byId('camera-video').srcObject = null; byId('camera-panel').hidden=true;
-  }
-  byId('open-camera').addEventListener('click', ()=>performLocal('Open camera', async ()=>{await startCamera();return 'Camera preview is on. Close the panel to turn it off.';}));
-  byId('close-camera').addEventListener('click',stopCamera);
-  byId('mood-select').addEventListener('change',()=>{document.body.dataset.mood=byId('mood-select').value;});
-  const updatePresence = () => {
-    byId('presence-state').textContent = document.body.classList.contains('is-speaking')?'SPEAKING':document.body.classList.contains('is-thinking')?'THINKING':document.body.classList.contains('is-listening')?'LISTENING':'STANDING BY';
-    const mood=document.body.dataset.mood;
-    if (Array.from(byId('mood-select').options).some(option=>option.value===mood)) byId('mood-select').value=mood;
-  };
-  new MutationObserver(updatePresence).observe(document.body,{attributes:true,attributeFilter:['class','data-mood']});
-  const updateClock = () => { byId('studio-clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + ' / LOCAL TIME'; };
-  updateClock();setInterval(updateClock,30000);
-  document.querySelectorAll('[data-command]').forEach(button=>button.addEventListener('click',()=>handleInput(button.dataset.command)));
-  const drawer = byId('conversation-drawer');
-  function showDrawer(show) {
-    drawer.hidden = !show;
-    byId('conversation-button').setAttribute('aria-expanded', String(show));
-    if (show) byId('close-chat').focus();
-  }
-  byId('conversation-button').addEventListener('click', () => showDrawer(drawer.hidden));
-  byId('close-chat').addEventListener('click', () => { showDrawer(false); byId('conversation-button').focus(); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !drawer.hidden) showDrawer(false); });
-  byId('details-button').addEventListener('click', () => {
-    byId('connection-banner').hidden = !byId('connection-banner').hidden;
-    byId('details-button').setAttribute('aria-expanded', String(!byId('connection-banner').hidden));
-  });
-  function setTheme(theme){if(!['dark','light','midnight','aurora'].includes(theme))return;document.body.dataset.theme=theme;preferences.theme=theme;updateThemeLabel();api('/api/preferences',{theme}).catch(()=>{});}
-  byId('theme-select').addEventListener('change',()=>setTheme(byId('theme-select').value));
-  function updateThemeLabel(){byId('theme-select').value=document.body.dataset.theme;}
-  byId('profile-button').addEventListener('click',()=>{byId('profile-panel').hidden=!byId('profile-panel').hidden;});
-  byId('close-profile').addEventListener('click',()=>{byId('profile-panel').hidden=true;});
-  async function loadPreferences(){
-    try{const response=await fetch('/api/preferences',{cache:'no-store'});if(response.ok)preferences=await response.json();}catch{}
-    byId('profile-name').value=preferences.name||'';byId('profile-honorific').value=preferences.honorific||'';
-    byId('profile-speak').checked=preferences.speak;byId('profile-handsfree').checked=preferences.handsfree;
-    byId('read-replies').checked=preferences.speak;byId('handsfree-button').setAttribute('aria-pressed',String(preferences.handsfree));
-    document.body.dataset.theme=preferences.theme;updateThemeLabel();
-    byId('identity-title').textContent='Hello, '+(preferences.name||preferences.honorific||'there')+'.\nWhat’s next?';
-    byId('welcome').textContent='I’m here, '+(preferences.honorific||preferences.name||'')+'. What would you like to do?';
-  }
-  byId('save-profile').addEventListener('click',async()=>{
-    try{preferences=await api('/api/preferences',{name:byId('profile-name').value,honorific:byId('profile-honorific').value,speak:byId('profile-speak').checked,handsfree:byId('profile-handsfree').checked});
-      await loadPreferences();byId('profile-feedback').textContent='Saved on this laptop.';
-    }catch(error){byId('profile-feedback').textContent=error.message;}
-  });
-  let microphone = null;
-  let audioContext = null;
-  let microphonePending = false;
-  let recognition = null;
-  let recognitionRunning = false;
-  let recognitionFailed = false;
-  let speaking = false;
-  let restartSpeech;
-  let audioFrame;
-  let previousTheme = 'dark';
-  window.bacyAudioLevel = 0;
-  const synthesizer = window.speechSynthesis;
-  let voices = [];
-  function loadVoices() {
-    voices = synthesizer ? synthesizer.getVoices() : [];
-    const select = byId('voice-select'); const previous = select.value; select.replaceChildren();
-    if (!voices.length) {
-      const option = document.createElement('option'); option.textContent = 'No browser voices available'; option.value = ''; select.append(option);
-    } else {
-      voices.forEach((voice, index) => { const option = document.createElement('option'); option.value = String(index); option.textContent = voice.name + ' · ' + voice.lang; select.append(option); });
-      const preferred = voices.findIndex(voice => /^en/i.test(voice.lang) && /David|Mark|Guy|Ryan|Daniel|George/i.test(voice.name));
-      select.value = previous && voices[Number(previous)] ? previous : String(preferred >= 0 ? preferred : Math.max(0, voices.findIndex(voice => /^en/i.test(voice.lang))));
-    }
-    byId('read-replies').disabled = !voices.length;
-  }
-  if (synthesizer) synthesizer.addEventListener('voiceschanged', loadVoices);
-  loadVoices();
-  byId('voice-button').addEventListener('click', () => {
-    byId('voice-panel').hidden = !byId('voice-panel').hidden;
-    byId('voice-button').setAttribute('aria-expanded', String(!byId('voice-panel').hidden));
-  });
-  byId('read-replies').addEventListener('change', () => { preferences.speak=byId('read-replies').checked;api('/api/preferences',{speak:preferences.speak}).catch(()=>{}); if (!byId('read-replies').checked) { synthesizer?.cancel(); speaking=false;document.body.classList.remove('is-speaking');restartRecognition(); } });
-  byId('stop-voice').addEventListener('click', () => { synthesizer?.cancel(); speaking = false; document.body.classList.remove('is-speaking'); restartRecognition(); });
-  function speak(text) {
-    if (!byId('read-replies').checked || !voices.length || !synthesizer) return;
-    synthesizer.cancel();
-    const utterance = new SpeechSynthesisUtterance(text.slice(0, 3000));
-    utterance.voice = voices[Number(byId('voice-select').value)] || voices[0];
-    utterance.pitch = Number(byId('voice-pitch').value); utterance.rate = .96;
-    utterance.onstart = () => { speaking = true; document.body.classList.add('is-speaking'); recognition?.abort(); };
-    const finish = () => { speaking = false; document.body.classList.remove('is-speaking'); if (microphone) restartRecognition(); };
-    utterance.onend = finish; utterance.onerror = finish;
-    synthesizer.speak(utterance);
-  }
-  function restartRecognition() {
-    clearTimeout(restartSpeech);
-    if (!recognition || !microphone || speaking || recognitionFailed || recognitionRunning) return;
-    restartSpeech = setTimeout(() => {
-      if (!recognition || !microphone || speaking || recognitionFailed || recognitionRunning) return;
-      try { recognition.start(); recognitionRunning = true; } catch { /* A browser may still be ending the previous session. */ }
-    }, 350);
-  }
-  function startRecognition() {
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Recognition) { byId('microphone-note').textContent = 'Speech recognition is unavailable in this browser. The scene reacts to sound; type to chat.'; return; }
-    recognitionFailed = false;
-    recognition = new Recognition(); recognition.lang = 'en-US'; recognition.continuous = true; recognition.interimResults = true;
-    recognition.onresult = event => {
-      let final = '',interim='';
-      for (let i = event.resultIndex; i < event.results.length; i++) {if (event.results[i].isFinal) final += event.results[i][0].transcript;else interim+=event.results[i][0].transcript;}
-      byId('live-transcript').textContent=interim||final||'Listening…';
-      if(preferences.handsfree&&final.trim()){const wake=final.trim().match(/^(?:hey|hi|okay|ok)\s+bacy[,! .]*(.*)$/i);if(wake){wakeUntil=Date.now()+10000;final=wake[1];if(!final.trim()){byId('live-transcript').textContent='I’m listening, '+(preferences.honorific||preferences.name||'')+'.';return;}}else if(Date.now()>wakeUntil)return;wakeUntil=0;}
-      const interrupt = /^(?:hey bacy[, ]+)?(?:pause|stop|stop speaking|be quiet)[.!]?$/i.test(final.trim());
-      if (final.trim() && !speaking && ((!busy && !localBusy) || interrupt)) { input.value = final.trim(); updateSend(); handleInput(final.trim()); }
-    };
-    recognition.onerror = event => {
-      if (event.error === 'aborted' || event.error === 'no-speech') return;
-      recognitionFailed = true;
-      byId('microphone-note').textContent = 'Speech recognition could not connect. The scene still reacts to sound; type your command.';
-    };
-    recognition.onend = () => { recognitionRunning = false; restartRecognition(); };
-    byId('microphone-note').textContent = 'Listening. Try “Hey Bacy, switch to power mode.”';
-    restartRecognition();
-  }
-  function stopMicrophone() {
-    clearTimeout(restartSpeech);
-    const previousRecognition = recognition; recognition = null; recognitionRunning = false;
-    previousRecognition?.abort();
-    if (audioFrame) cancelAnimationFrame(audioFrame);
-    if (microphone) microphone.getTracks().forEach(track => track.stop());
-    if (audioContext) audioContext.close().catch(() => {});
-    microphone = null;
-    audioContext = null;
-    window.bacyAudioLevel = 0;
-    document.body.classList.remove('is-listening', 'voice-active');
-    // Preserve the theme selected by the owner.
-    updateThemeLabel();
-    byId('microphone-button').setAttribute('aria-pressed', 'false');
-    byId('microphone-button').setAttribute('aria-label', 'Start microphone');
-    byId('microphone-note').hidden = true;
-    byId('live-transcript').textContent='Your voice, your assistant.';
-    byId('handsfree-state').textContent='Click the mic to talk. Keep this page open for voice commands.';
-  }
-  byId('microphone-button').addEventListener('click', async () => {
-    if (microphonePending) return;
-    if (microphone) return stopMicrophone();
-    microphonePending = true;
-    byId('microphone-button').disabled = true;
-    previousTheme = document.body.dataset.theme;
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error('Microphone access is unavailable in this browser. Chat still works.');
-      microphone = await navigator.mediaDevices.getUserMedia({ audio: {echoCancellation:true,noiseSuppression:true} });
-      audioContext = new AudioContext();
-      await audioContext.resume();
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      audioContext.createMediaStreamSource(microphone).connect(analyser);
-      const samples = new Uint8Array(analyser.fftSize);
-      const measure = () => {
-        analyser.getByteTimeDomainData(samples);
-        let power = 0;
-        for (const sample of samples) power += ((sample - 128) / 128) ** 2;
-        window.bacyAudioLevel = Math.min(1, Math.sqrt(power / samples.length) * 5);
-        audioFrame = requestAnimationFrame(measure);
-      };
-      measure();
-      document.body.classList.add('is-listening');
-      document.body.classList.add('voice-active');
-      updateThemeLabel();
-      byId('microphone-note').hidden = false;
-      byId('microphone-button').setAttribute('aria-pressed', 'true');
-      byId('microphone-button').setAttribute('aria-label', 'Stop microphone');
-      byId('handsfree-state').textContent=preferences.handsfree?'Listening for Hey Bacy. Keep this page open.':'Listening to your commands. Click the mic to stop.';
-      startRecognition();
-      microphone.getTracks().forEach(track => track.addEventListener('ended', stopMicrophone, { once: true }));
-    } catch (error) {
-      stopMicrophone();
-      byId('retry-request').hidden = true;
-      errorText.textContent = error.name === 'NotAllowedError' ? 'Microphone permission was declined. You can keep chatting by typing.' : 'The microphone could not start. You can keep chatting by typing.';
-      errorNotice.hidden = false;
-    } finally {
-      microphonePending = false;
-      byId('microphone-button').disabled = false;
-    }
-  });
-  byId('handsfree-button').addEventListener('click',async()=>{
-    preferences.handsfree=!preferences.handsfree;
-    byId('handsfree-button').setAttribute('aria-pressed',String(preferences.handsfree));byId('profile-handsfree').checked=preferences.handsfree;
-    api('/api/preferences',{handsfree:preferences.handsfree}).catch(()=>{});
-    if(preferences.handsfree&&!microphone&&!microphonePending)byId('microphone-button').click();
-    byId('handsfree-state').textContent=preferences.handsfree?'Listening for Hey Bacy while this page is open.':'Every spoken command is accepted while the mic is on.';
-  });
-  byId('quick-stop-voice').addEventListener('click',()=>byId('stop-voice').click());
-  const audioCanvas=byId('audio-strip'),audioPen=audioCanvas.getContext('2d');let audioLast=0;
-  const wave=now=>{requestAnimationFrame(wave);if(document.hidden||now-audioLast<40)return;audioLast=now;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;audioPen.clearRect(0,0,300,35);audioPen.fillStyle=getComputedStyle(document.body).getPropertyValue('--cyan');
-    for(let i=0;i<47;i++){const active=microphone||speaking;const motion=reduced?0:Math.abs(Math.sin(now/170+i*.6)*Math.cos(now/220+i*.4));const level=speaking?.6:window.bacyAudioLevel||0;const h=active?3+motion*level*27:2;audioPen.globalAlpha=active?.8:.27;audioPen.fillRect(9+i*6,17-h/2,2,h);}
-  };requestAnimationFrame(wave);
-  loadPreferences();byId('conversation-button').setAttribute('aria-expanded','true');
-  window.addEventListener('pagehide', () => { stopCamera(); stopMicrophone(); synthesizer?.cancel(); });
-  checkConnection();
+  init().catch(error => setError(error.message,false));
 })();

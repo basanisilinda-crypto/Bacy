@@ -1,58 +1,168 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="bacy-token" content="__BACY_TOKEN__"><meta name="theme-color" content="#07111f">
-  <title>Bacy — Personal intelligence</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css">
-  <script src="/accounts.js" defer></script><script src="/app.js" defer></script><script type="module" src="/scene.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="bacy-token" content="__BACY_TOKEN__">
+  <meta name="theme-color" content="#0b0d10">
+  <title>Bacy</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
 </head>
-<body data-mode="professional" data-theme="dark" data-mood="neutral">
-  <header>
-    <a class="brand" href="/" aria-label="Bacy home"><svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M17 10v44m0-30h18c17 0 17 15 0 15H17m0 0h22c16 0 16 15 0 15H17"/><circle cx="17" cy="10" r="3"/><circle cx="35" cy="24" r="3"/><circle cx="39" cy="54" r="3"/></svg>bacy<span class="brand-dot">/</span></a>
-    <nav aria-label="Assistant mode"><button data-mode="normal" aria-pressed="false">Normal</button><button data-mode="professional" aria-pressed="true">Pro</button><button data-mode="hardcore" aria-pressed="false">Power</button><button data-mode="crystal" aria-pressed="false">Crystal</button></nav>
-    <div class="top-actions"><select id="theme-select" aria-label="Color theme"><option value="dark">Dark</option><option value="light">Light</option><option value="midnight">Midnight</option><option value="aurora">Aurora</option></select><button id="profile-button" aria-controls="profile-panel">Profile</button><button id="ai-button" aria-expanded="false" aria-controls="ai-panel">AI settings</button><button id="voice-button" aria-expanded="false" aria-controls="voice-panel">Voice</button><button id="conversation-button" aria-expanded="false" aria-controls="conversation-drawer">Chat <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button></div>
-  </header>
-  <main>
-    <div class="ambient-grid" aria-hidden="true"></div>
-    <div id="visual-scene" aria-label="Realistic digital android with animated neural connections" role="img"></div>
-    <div class="scene-fallback" id="scene-fallback" hidden><img src="/portraits.png" alt="Bacy digital portrait"><p>Animated graphics are unavailable. Chat and local controls still work.</p></div>
-    <div class="presence-status" role="status"><span class="status-dot checking" id="header-dot"></span><span id="header-status">Connecting</span><span class="presence-divider" aria-hidden="true">/</span><span id="presence-state">STANDING BY</span></div>
-    <section class="identity-copy" aria-label="Current mode"><span class="eyebrow">PERSONAL INTELLIGENCE</span><div class="mode-number"><span id="mode-number">02</span><span>/ 04</span></div><h1 id="identity-title">Precision.<br>With presence.</h1><p id="identity-description">A sharper perspective.<br>A calmer way to get things done.</p><div class="mode-signature"><span></span><span id="identity-mode">PRO MODE</span></div></section>
-    <section class="workspace-rail" aria-label="Computer controls"><div class="rail-heading"><span class="eyebrow">YOUR WORKSPACE</span><span class="local-badge">LOCAL</span></div>
-      <button id="open-browser" class="workspace-item" title="Open your default browser"><span class="tool-icon" aria-hidden="true">◎</span><span>Browser<small>Search & explore</small></span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button>
-      <button id="open-apps" class="workspace-item" title="Show installed Windows apps"><span class="tool-icon" aria-hidden="true">▦</span><span>Applications<small>Your installed apps</small></span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button>
-      <button id="open-files" class="workspace-item" title="Browse a folder you choose"><span class="tool-icon" aria-hidden="true">▱</span><span>Files<small>Documents & folders</small></span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button>
-      <button id="open-system" class="workspace-item" title="Desktop and volume controls"><span class="tool-icon" aria-hidden="true">⌘</span><span>Computer<small>Desktop & sound</small></span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button>
-      <button id="open-camera" class="workspace-item" title="Preview your camera locally"><span class="tool-icon" aria-hidden="true">◉</span><span>Camera<small>Local preview</small></span><svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button>
-      <button id="open-connections" class="workspace-item"><span class="tool-icon" aria-hidden="true">⊞</span><span>Connections<small>Email & calendar</small></span></button>
-      <div class="workspace-footnote"><span class="status-dot ready"></span><span id="workspace-status">Checking local controls</span></div>
+<body>
+  <div id="app" class="app-shell">
+    <nav class="rail" aria-label="Bacy navigation">
+      <button class="brand" id="home-button" aria-label="Bacy home">B</button>
+      <div class="rail-group">
+        <button class="rail-button active" data-panel="chat" aria-label="Chat" title="Chat">
+          <svg viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 4V5Z"/></svg>
+        </button>
+        <button class="rail-button" data-panel="connections" aria-label="Connections" title="Connections">
+          <svg viewBox="0 0 24 24"><path d="M8.5 12a3.5 3.5 0 0 1 3.5-3.5h3.5M15.5 12A3.5 3.5 0 0 1 12 15.5H8.5M8 8l-2 2a3 3 0 0 0 0 4l1 1a3 3 0 0 0 4 0l2-2M16 16l2-2a3 3 0 0 0 0-4l-1-1a3 3 0 0 0-4 0l-2 2"/></svg>
+        </button>
+        <button class="rail-button" data-panel="computer" aria-label="Computer controls" title="Computer">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </button>
+        <button class="rail-button" data-panel="settings" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1A7 7 0 0 0 15 6l-.3-2.6h-4L10.4 6a7 7 0 0 0-1.5.9l-2.4-1-2 3.4L6.6 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1A7 7 0 0 0 10.4 18l.3 2.6h4L15 18a7 7 0 0 0 1.5-.9l2.4 1 2-3.4-2-1.5a7 7 0 0 0 .1-1Z"/></svg>
+        </button>
+      </div>
+      <span id="rail-status" class="rail-status" title="Connection status"></span>
+    </nav>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div>
+          <h1>Bacy</h1>
+          <p id="status-line">Starting…</p>
+        </div>
+        <div class="top-actions">
+          <button id="new-chat" class="text-button">New chat</button>
+          <button id="mobile-menu" class="icon-button" aria-label="Open menu">
+            <svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <section id="chat-view" class="view chat-view">
+        <div id="messages" class="messages" aria-live="polite">
+          <section id="empty-state" class="empty-state">
+            <div class="pulse-mark" aria-hidden="true"><span></span></div>
+            <h2>Ready, Boss.</h2>
+            <p>Type, talk, control Windows, or connect Gmail.</p>
+            <div class="quick-actions">
+              <button data-prompt="Open Chrome">Open Chrome</button>
+              <button data-prompt="Show my desktop">Show desktop</button>
+              <button data-prompt="Check my latest emails">Check email</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="voice-state" id="voice-state" hidden>
+          <span class="voice-dot"></span><span id="voice-state-text">Listening…</span>
+        </div>
+
+        <div id="error-bar" class="error-bar" hidden>
+          <span id="error-text"></span>
+          <button id="retry-button">Retry</button>
+          <button id="dismiss-error" aria-label="Dismiss">×</button>
+        </div>
+
+        <section class="composer-wrap" aria-label="Message Bacy">
+          <form id="chat-form" class="composer">
+            <textarea id="message-input" rows="1" maxlength="8000" placeholder="Ask Bacy anything…" aria-label="Message Bacy"></textarea>
+            <button id="mic-button" type="button" class="composer-button mic-button" aria-label="Voice input" aria-pressed="false">
+              <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg>
+            </button>
+            <button id="send-button" class="composer-button send-button" aria-label="Send" disabled>
+              <svg class="send-icon" viewBox="0 0 24 24"><path d="m5 12 14-7-4 14-3-6-7-1Z"/></svg>
+              <svg class="stop-icon" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+            </button>
+          </form>
+          <div class="mode-row">
+            <button id="handsfree-button" class="mode-chip"><span></span>Hands-free</button>
+            <button id="live-button" class="mode-chip"><span></span>Live talk</button>
+            <button id="voice-output-button" class="mode-chip"><span></span><b id="voice-output-label">Fast voice</b></button>
+            <small id="latency-label"></small>
+          </div>
+        </section>
+      </section>
+
+      <section id="connections-view" class="view panel-view" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">CONNECTIONS</p><h2>Connect what Bacy uses</h2><p>Only Gemini is required. Voice and Gmail are optional.</p></div></div>
+        <div class="cards-grid">
+          <article class="settings-card">
+            <div class="card-head"><div class="service-icon">G</div><div><h3>Google Gemini</h3><p id="gemini-status">Checking…</p></div><span id="gemini-dot" class="status-dot"></span></div>
+            <label>API key<input id="gemini-key" type="password" autocomplete="off" placeholder="Paste Gemini API key"></label>
+            <div class="form-row"><label class="check-row"><input id="remember-gemini" type="checkbox" checked>Remember securely</label><button id="connect-gemini" class="primary-button">Connect</button></div>
+            <small>Bacy automatically picks a fast compatible Flash model.</small>
+          </article>
+
+          <article class="settings-card">
+            <div class="card-head"><div class="service-icon">11</div><div><h3>ElevenLabs</h3><p id="eleven-status">Optional natural voice</p></div><span id="eleven-dot" class="status-dot"></span></div>
+            <label>API key<input id="eleven-key" type="password" autocomplete="off" placeholder="Paste ElevenLabs API key"></label>
+            <label>Voice<select id="voice-select"><option value="">Connect to load voices</option></select></label>
+            <div class="form-row"><label class="check-row"><input id="remember-eleven" type="checkbox" checked>Remember securely</label><button id="connect-eleven" class="secondary-button">Connect</button></div>
+            <small>Natural voice uses streaming Flash v2.5. Fast voice uses your device and starts quicker.</small>
+          </article>
+
+          <article class="settings-card wide-card">
+            <div class="card-head"><div class="service-icon">M</div><div><h3>Gmail through MCP</h3><p id="gmail-status">Not connected</p></div><span id="gmail-dot" class="status-dot"></span></div>
+            <p class="card-copy">Bacy can use Google’s official Gmail MCP server to search mail, read threads, create drafts, and manage labels. Google currently requires Workspace Developer Preview access and a Google Cloud OAuth client.</p>
+            <div class="two-col">
+              <label>Google OAuth Client ID<input id="gmail-client-id" autocomplete="off" spellcheck="false" placeholder="OAuth client ID"></label>
+              <label>Google OAuth Client Secret<input id="gmail-client-secret" type="password" autocomplete="off" placeholder="OAuth client secret"></label>
+            </div>
+            <div class="form-row"><label class="check-row"><input id="remember-gmail" type="checkbox" checked>Remember securely</label><div class="button-row"><button id="disconnect-gmail" class="text-button" hidden>Disconnect</button><button id="connect-gmail" class="primary-button">Save & connect Google</button></div></div>
+            <small id="gmail-help">OAuth redirect: http://127.0.0.1:3000/api/gmail/oauth/callback</small>
+          </article>
+        </div>
+      </section>
+
+      <section id="computer-view" class="view panel-view" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">COMPUTER</p><h2>Quick controls</h2><p>These run locally on your Windows laptop.</p></div></div>
+        <div class="action-grid">
+          <button data-local="app:chrome"><strong>Chrome</strong><span>Open browser</span></button>
+          <button data-local="app:notepad"><strong>Notepad</strong><span>Open editor</span></button>
+          <button data-local="app:word"><strong>Word</strong><span>Open Microsoft Word</span></button>
+          <button data-local="app:calculator"><strong>Calculator</strong><span>Open calculator</span></button>
+          <button data-local="system:show-desktop"><strong>Desktop</strong><span>Show desktop</span></button>
+          <button data-local="system:volume-up"><strong>Volume +</strong><span>Turn volume up</span></button>
+          <button data-local="system:volume-down"><strong>Volume −</strong><span>Turn volume down</span></button>
+          <button data-local="system:mute"><strong>Mute</strong><span>Toggle mute</span></button>
+        </div>
+      </section>
+
+      <section id="settings-view" class="view panel-view" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">SETTINGS</p><h2>Simple controls</h2><p>No heavy visual effects. No robot renderer.</p></div></div>
+        <div class="settings-card settings-list">
+          <label class="setting-row"><span><strong>Speak replies</strong><small>Read Bacy responses aloud.</small></span><input id="speak-replies" type="checkbox" checked></label>
+          <label class="setting-row"><span><strong>Voice quality</strong><small>Fast uses Windows/browser voice. Natural uses ElevenLabs.</small></span><select id="voice-quality"><option value="fast">Fast</option><option value="natural">Natural</option></select></label>
+          <label class="setting-row"><span><strong>Wake phrase</strong><small>Used in Hands-free mode.</small></span><input id="wake-phrase" value="Hey Bacy" maxlength="30"></label>
+          <button id="clear-history" class="danger-button">Clear conversation</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="mobile-sheet" class="mobile-sheet" hidden>
+    <button data-panel="chat">Chat</button><button data-panel="connections">Connections</button><button data-panel="computer">Computer</button><button data-panel="settings">Settings</button>
+  </div>
+
+  <div id="first-run" class="modal-backdrop" hidden>
+    <section class="setup-modal">
+      <div class="pulse-mark small" aria-hidden="true"><span></span></div>
+      <p class="eyebrow">FIRST CONNECTION</p>
+      <h2>Connect Gemini to start Bacy</h2>
+      <p>Voice and Gmail can be added later. Your API key stays on this laptop and can be stored with Windows encryption.</p>
+      <label>Gemini API key<input id="first-gemini-key" type="password" autocomplete="off" placeholder="Paste your Gemini API key"></label>
+      <label class="check-row"><input id="first-remember" type="checkbox" checked>Remember securely on this Windows account</label>
+      <button id="first-connect" class="primary-button full">Connect & open Bacy</button>
+      <p id="first-error" class="inline-error" role="status"></p>
     </section>
-    <div class="avatar-caption"><span class="avatar-coordinate">B / <span id="avatar-mode-label">PRO</span></span><span class="slogan">Your world. In sync.</span></div>
-    <section class="voice-station" aria-label="Voice controls"><canvas id="audio-strip" width="300" height="35" aria-label="Microphone activity"></canvas><p id="live-transcript" aria-live="polite">Your voice, your assistant.</p><div class="voice-station-buttons"><button id="microphone-button" type="button" aria-label="Start microphone" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></button><button id="handsfree-button" aria-pressed="false">Hey Bacy <span>Hands-free</span></button><button id="quick-stop-voice" aria-label="Stop spoken reply">Stop voice</button></div><p id="handsfree-state">Click the mic to talk. Keep this page open for voice commands.</p></section>
-    <div class="mood-control"><label for="mood-select">EXPRESSION</label><select id="mood-select" aria-label="Expression"><option value="neutral">Neutral</option><option value="happy">Happy</option><option value="playful">Playful</option><option value="serious">Focused</option><option value="angry">Angry</option></select><span class="mood-swatch" aria-hidden="true"></span></div>
+  </div>
 
-    <aside id="conversation-drawer" class="conversation-drawer" aria-label="Conversation history"><div class="drawer-heading"><h1>Conversation</h1><button id="clear-chat">New chat</button><button id="close-chat" aria-label="Close conversation">×</button></div><div id="messages" class="messages" role="log" aria-live="polite"><p id="welcome">Tell me what’s on your mind, boss.</p></div>    <section class="interaction" aria-label="Talk to Bacy">
-      <div class="prompt-chips"><button data-command="open Chrome">Open Chrome <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button><button data-command="switch to power mode">Switch to Power</button><button data-command="Explain how an AI agent works visually">Explain visually</button></div>
-      <div class="latest-reply" id="latest-reply" aria-live="polite" hidden></div>
-      <div id="request-status" class="request-status" role="status" hidden><span class="pulse-dot"></span><span id="request-status-text">Thinking…</span><button id="cancel-request">Stop</button></div>
-      <div class="error-notice" id="error-notice" role="alert" hidden><p id="error-text"></p><button id="retry-request">Retry</button></div>
-      <form id="chat-form"><label class="sr-only" for="message-input">Message Bacy</label><textarea id="message-input" rows="1" maxlength="8000" placeholder="Ask anything. Or tell me what to do." required></textarea>
-
-        <button id="send-button" aria-label="Send message" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
-      </form>
-      <p id="microphone-note" class="microphone-note" hidden></p>
-      <div class="bottom-meta"><span id="mode-caption">Pro · Focused & practical</span><span id="command-hint">Your voice. Your direction.</span><button id="details-button" aria-expanded="false" aria-controls="connection-banner">Connection</button></div>
-      <div id="connection-banner" class="connection-banner" hidden><span id="connection-dot" class="status-dot checking"></span><p id="connection-detail">Checking your AI connection…</p><button id="check-connection">Check again</button><p class="connection-note">Windows app launch, web search and chosen-folder browsing use local controls. Camera preview stays local. Email, social accounts and unrestricted desktop automation are not connected. Speech recognition depends on your browser and may use an online browser service.</p></div>
-    </section></aside>
-    <aside id="preview-panel" class="conversation-drawer preview-panel" hidden aria-label="Visual explanation"><div class="drawer-heading"><h1 id="preview-title">Explanation</h1><button id="close-preview" aria-label="Close explanation">×</button></div><div id="preview-content" class="preview-content"></div></aside>
-    <aside id="tools-panel" class="conversation-drawer" hidden aria-label="Windows tools"><div class="drawer-heading"><h1 id="tools-title">Your apps</h1><button id="close-tools" aria-label="Close Windows tools">×</button></div><p id="tools-note" class="tools-note"></p><div class="tools-actions"><button id="choose-folder" hidden>Choose folder</button><button id="folder-up" hidden>Parent folder</button></div><div id="tools-content" class="tools-content"></div></aside>
-<aside id="voice-panel" class="voice-panel" hidden aria-label="Voice settings"><h2>Voice</h2><label><input id="read-replies" type="checkbox" checked> Read Bacy’s replies</label><button id="stop-voice">Stop voice</button><label for="voice-select">Browser voice</label><select id="voice-select"></select><label for="voice-pitch">Tone</label><input id="voice-pitch" type="range" min="0.65" max="1.15" step="0.05" value="0.85"><p id="voice-note">Uses voices available on your laptop. Quality varies; online voices may send text to their provider.</p></aside>
-    <aside id="profile-panel" class="voice-panel profile-panel" hidden aria-label="Personal settings"><div class="drawer-heading"><h1>Make it yours</h1><button id="close-profile" aria-label="Close personal settings">×</button></div><label for="profile-name">Your name</label><input id="profile-name" maxlength="100" autocomplete="name" placeholder="Your preferred name"><label for="profile-honorific">What should Bacy call you?</label><input id="profile-honorific" maxlength="30" placeholder="Boss"><label><input id="profile-speak" type="checkbox" checked> Speak replies automatically</label><label><input id="profile-handsfree" type="checkbox"> Require “Hey Bacy” when listening</label><button id="save-profile">Save personal settings</button><p id="profile-feedback">Preferences stay on this laptop. Your preferred name is included in AI chat.</p></aside>
-    <aside id="connections-panel" class="conversation-drawer connections-panel" hidden aria-label="Account connections"><div class="drawer-heading"><h1>Connections</h1><button id="close-connections" aria-label="Close connections">×</button></div><p id="google-status" class="tools-note">Gmail & Google Calendar</p><div class="connection-tabs"><button id="google-inbox">Inbox</button><button id="google-calendar">Calendar</button><button id="google-refresh">Refresh</button><button id="google-disconnect">Disconnect</button></div><details id="google-setup"><summary>Set up Google sign-in</summary><p class="tools-note">This needs a Google Desktop OAuth client, separate from your Gemini API key. Enable Gmail and Calendar APIs and add yourself as a test user. See READ-ME.txt for the steps.</p><label for="google-client-id">Desktop client ID</label><input id="google-client-id" autocomplete="off"><label for="google-client-secret">Client secret</label><input id="google-client-secret" type="password" autocomplete="off"><label><input id="remember-google" type="checkbox"> Remember with Windows encryption</label><button id="google-save">Save Google setup</button><button id="google-signin">Sign in with Google ↗</button></details><p id="connections-feedback" role="status" class="tools-note">Connect your account to load messages and events. Account data stays out of AI chat.</p><div id="account-content" class="account-content"></div><details class="compose-details"><summary>Write an email draft</summary><label for="draft-to">To</label><input id="draft-to" type="email"><label for="draft-subject">Subject</label><input id="draft-subject" maxlength="300"><label for="draft-text">Message</label><textarea id="draft-text" maxlength="15000" rows="4"></textarea><button id="save-draft">Save draft in Gmail</button><p class="tools-note">Review and send from Gmail.</p></details><details class="compose-details"><summary>Create a calendar event</summary><label for="event-title">Title</label><input id="event-title" maxlength="300"><label for="event-start">Starts (local time)</label><input id="event-start" type="datetime-local"><label for="event-end">Ends (local time)</label><input id="event-end" type="datetime-local"><button id="create-event">Create event</button></details><p class="tools-note">Other social accounts and arbitrary MCP servers are not connected in this version.</p></aside>
-    <aside id="camera-panel" class="conversation-drawer camera-panel" hidden aria-label="Camera preview"><div class="drawer-heading"><h1>Camera</h1><button id="close-camera" aria-label="Close camera">×</button></div><video id="camera-video" autoplay muted playsinline></video><p id="camera-note" class="tools-note">Camera stays on this page. Images are not sent to the AI.</p></aside>
-    <footer class="studio-footer"><span>BACY <span class="footer-slash">/</span> PERSONAL ASSISTANT</span><span id="studio-clock"></span></footer>
-    <span id="runtime-label" class="sr-only"></span>
-    <aside id="ai-panel" class="voice-panel ai-panel" hidden aria-label="AI settings"><div class="drawer-heading"><h1>AI connection</h1><button id="close-ai" aria-label="Close AI settings">×</button></div><label for="ai-provider">Provider</label><select id="ai-provider"><option value="gemini">Google Gemini</option><option value="codex">Codex</option></select><div id="gemini-fields"><label for="gemini-key">Gemini API key</label><input id="gemini-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste privately on this laptop"><label for="gemini-model">Text model</label><input id="gemini-model" value="gemini-flash-latest" list="gemini-model-list" autocomplete="off"><datalist id="gemini-model-list"></datalist><label class="remember-label"><input type="checkbox" id="remember-key"> Remember with Windows encryption</label><p>Use a project without paid billing for free-tier access. Model quotas and regional availability vary. Bacy cannot check your project's billing status.</p></div><button id="save-ai" class="connect-button">Save settings</button><button id="test-ai">Test Gemini connection</button><button id="forget-key">Forget saved Gemini key</button><p id="ai-feedback" role="status">The key stays on this laptop. Do not paste it into chat.</p></aside>
-  </main>
+  <div id="toast" class="toast" hidden></div>
 </body>
 </html>

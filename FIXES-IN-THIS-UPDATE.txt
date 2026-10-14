@@ -1,0 +1,40 @@
+BACY LIGHT FAST MCP - REPLY AND TRANSCRIPTION FIXES
+
+YOUR INTERFACE IS PRESERVED
+The uploaded public/index.html, public/styles.css and public/favicon.svg are
+byte-for-byte unchanged. The original and fixed initial screenshots matched.
+Changes are in runtime JavaScript and server/provider handling.
+
+REPLY FIXES
+- The selected model is tried first; guessed preset models no longer precede it.
+- A missing model triggers one catalog refresh using Google's returned model IDs.
+- Connect no longer overwrites the model with a guessed version number.
+- Quota/authentication/service errors are returned promptly without model hopping.
+- Gemini generation and Gmail-agent work have a 30-second total deadline.
+- The browser stops a stuck chat after 40 seconds and lets you retry.
+- Long conversation context is trimmed to the server's size limit.
+
+NETWORK AND VOICE
+- Gemini, ElevenLabs and Gmail use the current Windows proxy and TLS verification.
+- A stale session proxy is not preferred over your current Windows manual setting.
+- Natural speech streams through the proxy; cancelled requests are stopped.
+- If natural audio has not started within five seconds, device voice is used.
+- Stop voice prevents a delayed natural request from playing afterwards.
+- Final MediaRecorder chunks are preserved when you finish a voice note.
+- Tap-to-talk releases microphone tracks after finishing.
+- Stale recognition events and duplicate restart timers are ignored.
+- Hey Bacy can precede a separate command within ten seconds.
+- Gmail SSE results are read as they arrive without waiting for the stream to close.
+
+VERIFICATION
+24 tests for this package passed, including six new latency/streaming regressions.
+Browser checks passed with simulated recognition, recordings, Windows and AI.
+Real Windows speech services, API accounts and network speed need verification
+on your laptop. No paid key, account or live email was used in these checks.
+
+UPDATE
+Stop your current Bacy window with Ctrl+C. Extract this entire ZIP into a new
+folder, then run START-BACY.cmd. Your remembered Windows account keys remain
+outside this folder in LocalAppData\Bacy. Keep your required proxy connected.
+Browser speech recognition can still be blocked by a network; connect ElevenLabs
+for the existing fallback if needed. Check remaining service quota on errors.

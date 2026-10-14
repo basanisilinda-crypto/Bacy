@@ -1,0 +1,40 @@
+BACY LIGHTWEIGHT REDESIGN — CHANGES
+
+1. PERFORMANCE
+- Removed Three.js, 3D scene, portrait image, robot renderer, and mouth animation.
+- Rebuilt home UI using only HTML/CSS/vanilla JavaScript.
+- Removed automatic remote-service tests during page startup.
+- Reduced Gemini fallback attempts and prioritized a low-latency Flash-Lite model.
+- Added Stop response control and reply latency display.
+
+2. VOICE
+- Browser live transcription is tried first for immediate interim words.
+- ElevenLabs transcription is a fallback instead of the first path.
+- Continuous cloud fallback uses shorter silence windows.
+- Fast device voice is default.
+- Natural ElevenLabs voice uses Flash v2.5 and a streaming server endpoint when possible.
+- Removed visual mouth animation entirely.
+
+3. DESIGN
+- Completely new chat-first interface.
+- No robot on screen.
+- Minimal navigation: Chat, Connections, Computer, Settings.
+- Fewer labels and no old mode/workspace clutter.
+- Mobile layout included.
+
+4. GMAIL / MCP
+- Added Google OAuth connection storage using Windows DPAPI.
+- Added official Gmail MCP endpoint support using Streamable HTTP.
+- Added MCP tool discovery and Gemini function-calling loop for email requests.
+- Read email tools are available automatically after connection.
+- Write/modifying tools are only offered when the user explicitly asks for an email action.
+- Added prompt-injection protection instructions for email/tool content.
+
+5. CONNECTION / STARTUP
+- Bacy waits for the localhost server before the browser is opened.
+- localhost bypasses Windows proxy settings.
+- Gemini, ElevenLabs and Gmail use your current configured proxy with TLS verification.
+- Gmail OAuth connection is optional and does not block Bacy startup.
+
+AUTOMATED TEST RESULT
+See FIXES-IN-THIS-UPDATE.txt for the current regression results.

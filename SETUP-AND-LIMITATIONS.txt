@@ -1,0 +1,26 @@
+BACY SETUP NOTES
+
+REQUIRED
+- Windows laptop
+- Node.js LTS
+- Internet connection
+- Gemini API key
+
+OPTIONAL
+- ElevenLabs API key for natural voice and cloud transcription fallback
+- Google Workspace Developer Preview + Google Cloud OAuth client for Gmail MCP
+
+GMAIL MCP ONE-TIME REQUIREMENTS
+Google's official Gmail MCP server is a Developer Preview feature. In Google Cloud you must enable the Gmail/Gmail MCP services, configure OAuth consent, and create an OAuth client allowed for an AI-powered agent. Add this redirect URI:
+http://127.0.0.1:3000/api/gmail/oauth/callback
+
+Then enter the OAuth Client ID and Client Secret under Bacy > Connections > Gmail through MCP and choose Save & connect Google.
+
+WHY FAST VOICE IS DEFAULT
+ElevenLabs is natural but still needs a network round trip. Bacy's Fast voice starts locally. Natural voice can be selected under Settings after ElevenLabs is connected.
+
+WHY TRANSCRIPTION CAN STILL VARY
+Chrome/Edge SpeechRecognition can provide fast partial words, but its online recognition service can be blocked by some proxies/networks. If that happens, Bacy can use ElevenLabs transcription when connected. That fallback necessarily takes longer because recorded audio must be uploaded and processed.
+
+GMAIL SAFETY
+Bacy treats email contents as untrusted text and does not intentionally follow instructions contained inside emails. Gmail modifying tools are only exposed when your own request explicitly asks for an action. Review drafts/label changes before relying on them.

@@ -1,0 +1,26 @@
+BACY LIGHT — START HERE (Windows)
+
+1. Keep your old Bacy folder as a backup.
+2. Extract this ZIP fully into a NEW folder (do not run from inside the ZIP).
+3. Install Node.js LTS if it is not already installed.
+4. Double-click START-BACY.cmd. Leave the black window open.
+5. Open http://127.0.0.1:3000 in Edge or Chrome.
+6. Add your Gemini API key in the Bacy connection screen if asked. Do not share your keys.
+7. For the fastest voice, choose Fast voice (your device voice). For a more natural voice, enter your ElevenLabs API key and choose Natural voice; online voice takes longer.
+8. Microphone and hands-free features need microphone permission. Their speed depends on the speech service and network.
+
+WHAT CHANGED
+- Light chat-focused UI without robot portrait, 3D scene, or mouth animation.
+- Sidebar for Connections, Computer and Settings instead of a cluttered home screen.
+- Cancel response control; smaller stored conversation history.
+- Fast device voice option; streamed ElevenLabs playback when available.
+- Gmail MCP connector and OAuth setup page with separate permissions.
+- Existing approved Windows controls retained.
+
+LIMITS / HONEST NOTES
+- These changes reduce local rendering overhead; they cannot guarantee fast replies from Gemini, ElevenLabs, or your internet connection.
+- Google Gmail MCP currently requires Google Workspace Developer Preview access and a Google Cloud OAuth client, and is not connected until you authorize it.
+- Gmail uses the official developer-preview endpoint. Sending messages is NOT enabled in this build. Review drafts before sending them yourself.
+- These email controls are for Gmail, not Outlook. Outlook needs its own Microsoft connection.
+- Do not share keys, passwords, or OAuth secrets in ChatGPT.
+- Bacy is still hosted locally on Windows, using online Gemini and ElevenLabs services.

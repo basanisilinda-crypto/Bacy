@@ -1,182 +1,89 @@
-BACY - INTERACTIVE LOCAL ASSISTANT
+BACY — LIGHTWEIGHT ONLINE BUILD
 
-REQUIREMENTS
-Windows and Node.js. Gemini is the default online AI provider.
-Edge or Chrome is recommended for browser speech features. Availability varies.
-Gemini needs your own Google AI Studio API key; no npm installation is needed.
-Codex remains optional and uses your signed-in ChatGPT allowance.
-Three.js 0.180.0 is bundled locally, with its MIT license.
+WHAT CHANGED
+- The old robot/3D scene and Three.js files were removed completely.
+- The interface was rebuilt from scratch as a lightweight chat-first desktop UI.
+- No canvas renderer, robot animation, mouth animation, large portrait, or heavy blur effects are used.
+- Chat, microphone, Hands-free, Live talk, Connections, and Windows controls remain.
+- The app no longer tests every remote service while the page is opening. This makes startup/navigation feel faster.
+- Gemini is the required online AI brain.
+- Bacy prefers a low-latency Gemini Flash-Lite model and automatically falls back to compatible Flash models.
+- Gemini retries were reduced so a bad/busy model does not make the whole UI appear frozen for a long time.
+- The Send button becomes a Stop button while Bacy is answering.
+- Replies show the actual response time in seconds.
 
-START
-Extract the entire ZIP into Documents\Bacy, keeping all files and public together.
-Replace the previous Bacy app files when updating. Your index.js learning file
-and package.json can stay. Double-click START-BACY.cmd and keep its window open.
-In your browser enter localhost:3000. Ctrl+C in the server window stops Bacy.
-Alternative: node server.cjs in PowerShell inside Documents\Bacy.
-Keep your required Windows proxy connected. Bacy respects HTTPS_PROXY or reads
-the manual Windows proxy settings. PAC and authenticated proxies need setup.
-Certificate verification is never disabled.
+VOICE SPEED
+- Fast voice is now the default. It uses the Windows/browser speech engine and starts almost immediately.
+- Natural voice is optional and uses ElevenLabs.
+- ElevenLabs uses Flash v2.5 and a streaming endpoint when the browser supports streamed MP3 playback.
+- The UI no longer has a robot mouth, so there is no lip-sync mismatch.
+- Microphone input tries the browser's live SpeechRecognition first because it can show words immediately.
+- When browser live transcription is unavailable, Bacy can fall back to ElevenLabs transcription.
+- For a normal voice note, Bacy records in parallel when ElevenLabs is connected, so a browser speech-service failure does not force a full app restart.
+- Hands-free and Live talk can also fall back to short ElevenLabs transcription segments, with shorter silence detection than the previous build.
 
-GEMINI SETUP
-After starting Bacy, click AI in the top-right corner. Choose Google Gemini.
-Paste your key in the password field, then click Save settings and Test Gemini
-connection. Never paste keys into chat or commit them to GitHub.
-The default model is gemini-flash-latest; choose another available text model
-if your project cannot use it. The connection test checks key access; the first
-chat reply checks model generation and quota. Free quotas vary by model and region.
-Use a project without paid billing if you want only free-tier access. Bacy cannot
-inspect billing status, and a billed project can incur API charges.
-Keys stay in server memory unless you check Remember with Windows encryption.
-That option stores settings encrypted for your Windows user in LocalAppData\Bacy,
-not in this folder. Forget saved Gemini key removes that saved credential.
-Without Remember, restarting Bacy requires entering the key again. Browser fields
-are cleared after saving; keys are never returned to the page or logged by Bacy.
-Windows curl.exe handles Gemini requests with TLS verification and your proxy.
-The cloud development tests use fake API responses; verify your live connection
-on your laptop. Existing Codex installation and sign-in do not need deleting.
+GMAIL MCP
+- A new Connections screen includes Gmail through Model Context Protocol (MCP).
+- The build targets Google's official Gmail remote MCP server:
+  https://gmailmcp.googleapis.com/mcp/v1
+- Gmail MCP uses Google OAuth 2.0. Bacy never asks for your Gmail password.
+- Bacy can discover whatever Gmail tools Google exposes to your account and let Gemini call them for email requests.
+- Read-only tools are available for normal email questions.
+- Bacy only exposes modifying Gmail tools to Gemini when your message clearly asks for an action such as creating a draft or changing a label.
+- Email/tool output is treated as untrusted data so instructions hidden inside emails are not supposed to become Bacy instructions.
+- Google's Gmail MCP is currently a Google Workspace Developer Preview feature. Your Google Cloud project must be eligible and have the required Gmail/Gmail MCP services and OAuth client configured.
+- The OAuth redirect URI to add in Google Cloud is:
+  http://127.0.0.1:3000/api/gmail/oauth/callback
 
-MODES AND PERSONALITY
-Normal: a turquoise holographic face and relaxed conversational style.
-Pro: a realistic mechanical android and focused, practical recommendations.
-Power: a luminous neural face and deeper analytical explanations.
-Crystal: violet crystalline accents and structured visual explanations.
-New original portrait artwork takes inspiration from your supplied references.
-Animated pathways, blinking, mouth movement, and expression deformation respond
-to mode, mood and speech playback. This is a stylized animated portrait, not a
-fully rigged 3D character or exact lip synchronization. Reduced motion is supported.
-Modes change style instructions to the same selected model; Power does not buy
-extra quota or switch to a stronger model. Recommendations are opinions, not
-human feelings. No Ultra or Max plan is needed for the interface or local controls.
+FIRST START
+1. Extract the ZIP into a NEW folder.
+2. Double-click START-BACY.cmd.
+3. Keep the black window open.
+4. Bacy opens at http://127.0.0.1:3000.
+5. If Gemini is not saved yet, Bacy shows one simple Gemini connection screen.
+6. Voice and Gmail are optional and can be connected later under Connections.
+7. Allow microphone access in Chrome or Edge if you want voice input.
 
-COMMANDS - TYPE THEM, OR SAY THEM WHILE THE MICROPHONE IS ON
-switch to normal mode
-switch to pro mode
-switch to power mode
-switch to crystal mode
-look happy / look funny / look angry / look serious / look neutral
-You can also use the Expression selector; moods preserve the selected mode.
-open browser / open Chrome / open Edge / open Firefox
-open Word / open Excel / open Outlook / open VS Code
-open calculator / open notepad / open file explorer / open settings
-show desktop / volume up / volume down / mute / unmute
-open camera / close camera
-open file <filename in your chosen folder>
-show apps / open <installed app name>
-search for <your query>
-show files
-enable voice / pause / stop speaking
-An optional prefix is Hey Bacy, for example Hey Bacy, switch to crystal mode.
-It is not a system-wide wake-word service: the page and microphone must be active.
-Mode changes, expressions, and local Windows commands do not consume AI requests.
+GEMINI
+- Put your Gemini API key only inside Bacy's Connections screen.
+- Do not paste API keys into chat.
+- Remembered keys are encrypted for the current Windows account with Windows DPAPI.
+- Bacy prefers the text model returned by Test connection for fast everyday replies and can fall back to current Flash models such as gemini-3.8-flash when needed.
 
-VOICE
-Click the microphone and permit access to listen for commands. The scene reacts
-to sound and switches to white/blue. Click again to stop and release the mic.
-Speech recognition uses the browser implementation; it may send audio to its
-online service and can fail on restricted networks. Typed commands still work.
-Open Voice and enable Read Bacy's replies. Pick an installed browser voice and
-adjust Tone for a deeper or higher pitch. Stop voice stops playback.
-Quality depends on your laptop's available voices; a custom, natural teenage
-voice is not guaranteed. Online voices may send text to their provider.
-Recognition pauses during Bacy's speech to avoid hearing its own replies.
-Stop voice remains available in the Voice panel during playback.
+ELEVENLABS
+- In ElevenLabs, keep API-key restrictions enabled.
+- Allow Text to Speech, Speech to Text, and voice-list/read permission if your key settings show those controls.
+- Connect the key in Bacy > Connections.
+- Choose Natural under Settings if you want ElevenLabs replies.
+- Leave Fast selected when response speed matters more than voice quality.
 
-WINDOWS CONTROLS
-Browser opens a web page in the default browser; search opens Bing results.
-Apps reads the Start menu's installed-app list. Click a listed app to launch it.
-Open files or the Files control opens Documents on your explicit request.
-Choose folder uses a native Windows dialog to change that scope. Browsing stays
-within the active folder, including
-symlink checks. Click a document or media file to open it in its Windows app.
-Executable files cannot be opened through the file browser.
-File listings and local-action receipts are not added to the online AI context.
-If you enable an online voice, text read aloud may go to its voice provider.
-Opening an app does not give Bacy access to its account or all its controls.
-The app reports that Windows received a launch request; it cannot guarantee an
-application completed startup. Native operations must be checked on your laptop.
+WINDOWS CONTROL
+These still run locally on the laptop:
+- open Chrome
+- open Notepad
+- open Word
+- open calculator
+- show desktop
+- volume up / volume down / mute
+- search for <something>
+- show files
 
-VISUAL EXPLANATIONS
-Ask an explanation or comparison. Bacy can return an explanation panel with
-steps, flow cards, or comparisons. Close it when you want the central scene back.
-Preview fields are bounded text; generated HTML and code are not executed.
+SECURITY
+- Bacy listens only on 127.0.0.1.
+- Browser POST requests use a random local-session token.
+- API keys/secrets are not returned to the webpage after saving.
+- Saved Gemini, ElevenLabs, and Gmail OAuth settings use Windows DPAPI encryption.
+- Gmail OAuth tokens are stored in the same encrypted Windows-user context when Remember is enabled.
+- File access still requires you to choose a folder and is restricted to that folder.
+- TLS certificate verification remains enabled.
 
-LIMITATIONS
-Direct email sending, other social-account integrations, AI camera vision, arbitrary desktop clicking,
-file editing/deletion, and automatic analysis of large files are not implemented.
-Crystal can discuss and structure data you supply; it does not inspect all files.
-Long chats may need New chat. Your browser tab stores history only for the session.
-Messages and recognized words submitted as chat are sent online to the selected provider (Google Gemini or Codex).
-The local server listens only on this laptop and checks request origins and tokens.
-Codex chat uses read-only mode and disabled shell tools. Windows actions are
-handled separately by explicit local commands, not arbitrary model commands.
+IMPORTANT LIMITS
+- I/O speed still depends on your internet connection and each online provider's own response time/quota.
+- ElevenLabs cloud transcription cannot be truly instant because audio must travel to the service and back. Browser live transcription is used first when available.
+- Google's Gmail MCP feature requires Google's Developer Preview eligibility; the code cannot bypass that requirement.
+- This build does not send Gmail messages directly. Google's current Gmail MCP toolset creates drafts and manages mail/labels; you can review a draft before sending it in Gmail.
 
-TROUBLESHOOTING
-Check codex.cmd --version and codex.cmd login if chat cannot connect.
-If your plan limit is reached, wait for the reset time shown in your account.
-Check the proxy connection if an online request fails.
-If speech recognition is unavailable, use typed commands and browser voices.
-If no voices are available, check your Windows/browser speech settings.
-If port 3000 is busy, stop the previous Bacy server first.
-Extract all files, including windows-tools.cjs, response-schema.json, and public.
-
-DEVELOPMENT
-Run node --test test/*.test.cjs. The tests use fixture AI and Windows adapters;
-they do not claim live account responses or real Windows app launches.
-Use the existing cloud checkout. Cloud tasks are already isolated; do not create
-a Git worktree unless requested.
-
-NEW LOCAL CONTROLS
-Chrome and other named apps must be installed and listed by Windows Get-StartApps.
-Bacy launches their registered Windows identifiers; it does not assume an app
-opened successfully or gain control of that app's account by launching it.
-Desktop and sound controls run fixed Windows actions without sending commands
-to the AI. Mute and unmute both toggle the Windows mute state; use the Computer
-panel for that action. Camera preview requires browser permission, stops when
-you close the panel or page, and is never submitted to Gemini or Codex.
-This version supports explicit app launches, desktop/sound commands, web search,
-and chosen-folder browsing. Arbitrary desktop clicking, account integrations,
-and editing/deleting files require additional work.
-
-VOICE STUDIO UPDATE
-The large mic button shows activity and live recognized words. Hey Bacy enables
-wake-phrase filtering after you grant microphone permission. Say Hey Bacy plus
-a command, or Hey Bacy then a command within ten seconds. Browser recognition
-needs this page active and may require internet. This is not an OS-wide always-on
-wake service. Stop voice interrupts playback. Speaking pauses recognition to
-reduce echoes; use Stop voice to interrupt a reply. Browser voice quality varies.
-Replies are spoken automatically when voices are available. Profile lets you set
-your full preferred name (for example your name and surname) and an honorific.
-Preferences are saved locally; the preferred name is included in AI chat.
-Four independent color themes: Dark, Light, Midnight and Aurora.
-Diagram requests ask the model for nodes and draw a diagram automatically.
-"Open files" opens your local Documents folder after the explicit command;
-Choose folder changes the scope. Names are never automatically added to AI chat.
-
-GOOGLE ACCOUNT CONNECTIONS
-Gmail and Google Calendar use Google OAuth, not the Gemini API key and not your
-ChatGPT subscription. No account is connected until you sign in on your laptop.
-1. Open Google Cloud Console and choose/create your Bacy project.
-2. Enable Gmail API and Google Calendar API in APIs & Services.
-3. Configure Google Auth Platform consent for an External app in Testing mode.
-   Add your own Google email as a test user and configure requested scopes:
-   openid, email, gmail.modify, calendar.events. For public distribution Google
-   may require verification; testing grants can expire and require reconnecting.
-4. Create an OAuth client of type Desktop app. Copy its client ID and client
-   secret into Bacy's Connections > Set up Google sign-in, privately on the laptop.
-5. Save Google setup, then Sign in with Google and approve the requested access.
-   Return to Bacy and Refresh, then open Inbox or Calendar.
-No service account, app password, or Gemini key can replace desktop OAuth here.
-The loopback callback is http://127.0.0.1:3000/oauth/google (the actual port is
-used), protected by one-use OAuth state and PKCE. If your proxy handles localhost,
-exclude localhost and 127.0.0.1 so the sign-in callback can reach Bacy.
-Windows encrypted Remember stores OAuth setup and tokens in LocalAppData\Bacy.
-Otherwise sign-in lives only in server memory. Secrets are not returned to the
-page, put in command arguments, or included in the downloadable ZIP.
-Inbox supports read, mark read, star and archive. Email drafts are saved in Gmail
-for you to review and send. Calendar creation requires entering and confirming
-an event in the app. Inbox/event data is displayed locally and is not silently
-sent to the AI model. Disconnect forgets credentials locally; revoke grants in
-Google Account permissions when desired. Other social platforms and arbitrary
-MCP servers require additional integrations and are not advertised as connected.
-Live Google authorization and real Windows behavior must be verified on your PC;
-development tests use simulated Google responses and Windows adapters.
+TESTING
+- JavaScript syntax checks pass.
+- 18 automated tests pass, including Gemini, ElevenLabs, local-server security, Windows controls, and Gmail MCP/OAuth mock tests.
+- Real provider accounts, microphone hardware, Windows application launching, and Google Developer Preview eligibility still have to be tested on your laptop.
