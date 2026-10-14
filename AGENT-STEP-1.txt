@@ -1,0 +1,73 @@
+BACY — AGENT UPGRADE, STEP 1
+
+YOUR INTERFACE IS PRESERVED
+This update uses your Bacy-Light-Fast-MCP interface. The page layout, styles,
+logo and theme files are unchanged. The three portrait images remain design
+references; they have not replaced your current interface.
+
+START ON WINDOWS
+1. Stop the old Bacy command window with Ctrl+C. Keep the old folder as backup.
+2. Extract Bacy-Agent-Step1.zip into a NEW folder.
+3. Double-click START-BACY.cmd and leave that window open.
+4. Open http://127.0.0.1:3000 in Chrome or Edge. Refresh an old browser tab.
+5. Saved Windows-encrypted connection settings can be reused on the same
+   Windows account. If asked, enter keys privately in Connections.
+No new Python, LiveKit, npm library or AI subscription is required by this step.
+Online AI and optional online voice still require their own access and quota.
+
+TRY THESE ONE AT A TIME
+remember my name = Basani Silinda S
+recall my name
+forget my name
+Could you open Chrome and search for JavaScript lessons?
+
+Memory commands run locally without an AI request. Remembered facts are used
+as bounded context for future AI replies. On Windows, memory is plain JSON at
+%LOCALAPPDATA%\Bacy\bacy-memory.json. Do not store passwords or private keys
+in memory. Connection credentials use their separate Windows encryption.
+Only facts you explicitly ask to remember are saved; emails and files are
+not automatically added to memory. Forget removes an assistant-memory fact,
+not any text already in your visible chat history.
+
+MULTI-STEP COMPUTER TASKS
+Gemini can now use registered tools to plan a short sequence of known app
+launches, web searches and desktop/sound controls. A browser search opens a
+search page; it does not read web pages or click through websites. A Windows
+launch result means Windows accepted the request, not that Bacy inspected
+the resulting window. File access still needs your chosen folder.
+
+GMAIL AND MCP
+Google sign-in and MCP verification are separate. Bacy checks discovery or
+initialization, response IDs, protocol compatibility and the tool catalog.
+Only discovered tools with acceptable arguments can run. Google must still
+make its Gmail MCP service available to your project/account. This update
+does not bypass Google eligibility, OAuth or service availability.
+
+For a requested email change, Bacy shows the tool name and exact arguments.
+Nothing runs until you type the displayed command, for example:
+confirm 123456abcdef
+Or cancel it with:
+cancel 123456abcdef
+Use the real ID displayed by Bacy, not this example. IDs expire after five
+minutes and work once. Changing the Gmail account invalidates the proposal.
+Read tools are selected conservatively by their registered operation names;
+that selection and protocol verification are not a security certification.
+
+SPEED AND VOICE
+Previous fixes remain: no repeated model guessing on service/quota failures,
+bounded response waits, current Windows proxy support, preserved final audio
+chunks, safer microphone restarts and device-voice fallback when online speech
+takes too long. AI tool tasks can take extra turns; network/provider latency
+cannot be removed by changing the interface.
+
+WHAT IS STILL LATER
+Full visual desktop control, Playwright website interactions, LiveKit real-time
+audio, native offline transcription, arbitrary MCP servers, Google Calendar,
+and new animated avatars are not included in this first step. The reference
+projects are reviewed in REFERENCE-REVIEW.md. Their YouTube videos could not
+be accessed here; no claim is made that those videos were watched.
+
+VALIDATION
+Automated server/provider/MCP tests and browser simulations cover this update.
+Real Windows application launches, spoken transcription accuracy and your
+provider/Google accounts still need checking on your laptop.

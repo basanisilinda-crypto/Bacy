@@ -169,7 +169,7 @@
     }
     if (gmail.status === 'fulfilled') {
       gmailConfigured = Boolean(gmail.value.configured); gmailConnected = Boolean(gmail.value.connected);
-      $('gmail-status').textContent = gmailConnected ? 'Connected to Gmail MCP' : gmailConfigured ? 'OAuth setup saved · connect Google' : 'Not connected';
+      $('gmail-status').textContent = gmailConnected ? (gmail.value.verified?'Verified Gmail MCP':'Google signed in · MCP unchecked') : gmailConfigured ? 'OAuth setup saved · connect Google' : 'Not connected';
       setStatusDot('gmail-dot', gmailConnected ? 'ready' : gmailConfigured ? 'wait' : '');
       $('disconnect-gmail').hidden = !gmailConnected;
       $('connect-gmail').textContent = gmailConnected ? 'Reconnect Google' : 'Save & connect Google';
@@ -555,6 +555,14 @@
     clearError();
     const command = message.toLowerCase().replace(/[.!?]+$/,'').replace(/^(?:hey )?bacy[, ]+/,'').replace(/^please /,'').trim();
     if (/^(stop|stop speaking|be quiet|quiet)$/.test(command)) { stopSpeaking(); return localReply(message,'Voice stopped.'); }
+    const approval=command.match(/^(confirm|cancel) ([a-f0-9]{12})$/);
+    if(approval)return performLocal(message,async()=>{const data=await postJson('/api/actions/'+approval[1],{id:approval[2]});return data.message;});
+    const remember=message.match(/^remember(?: that)? (.{1,64}?)\s*(?:=|:| is )\s*(.+)$/i);
+    if(remember)return performLocal(message,async()=>(await postJson('/api/memory/remember',{key:remember[1],value:remember[2]})).message);
+    const forget=message.match(/^forget (.{1,64})$/i);
+    if(forget)return performLocal(message,async()=>(await postJson('/api/memory/forget',{key:forget[1]})).message);
+    const recall=message.match(/^(?:recall|what do you remember|show memory)(?: (.*))?$/i);
+    if(recall)return performLocal(message,async()=>{const data=await postJson('/api/memory',{query:recall[1]||''});return data.facts.length?data.facts.map(item=>item.key+': '+item.value).join('\n'):'No matching saved facts.';});
     const systemMap = { 'show desktop':'show-desktop','show my desktop':'show-desktop','volume up':'volume-up','turn up the volume':'volume-up','volume down':'volume-down','turn down the volume':'volume-down','mute':'mute','unmute':'mute' };
     if (systemMap[command]) return performLocal(message, async () => (await postJson('/api/computer',{action:systemMap[command]})).message);
     const search = command.match(/^(?:search(?: the web)?(?: for)?|look up) (.+)$/); if (search) return performLocal(message, async()=> (await postJson('/api/search',{query:search[1]})).message);

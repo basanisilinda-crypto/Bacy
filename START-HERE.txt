@@ -1,5 +1,7 @@
 BACY LIGHT — START HERE (Windows)
 
+CURRENT UPDATE: Read AGENT-STEP-1.txt for the new commands and exact limits.
+
 1. Keep your old Bacy folder as a backup.
 2. Extract this ZIP fully into a NEW folder (do not run from inside the ZIP).
 3. Install Node.js LTS if it is not already installed.
@@ -20,7 +22,7 @@ WHAT CHANGED
 LIMITS / HONEST NOTES
 - These changes reduce local rendering overhead; they cannot guarantee fast replies from Gemini, ElevenLabs, or your internet connection.
 - Google Gmail MCP currently requires Google Workspace Developer Preview access and a Google Cloud OAuth client, and is not connected until you authorize it.
-- Gmail uses the official developer-preview endpoint. Sending messages is NOT enabled in this build. Review drafts before sending them yourself.
+- Gmail uses the official developer-preview endpoint. Modifying tools require your explicit confirmation of the displayed arguments. Available operations depend on Google's verified tool catalog.
 - These email controls are for Gmail, not Outlook. Outlook needs its own Microsoft connection.
 - Do not share keys, passwords, or OAuth secrets in ChatGPT.
 - Bacy is still hosted locally on Windows, using online Gemini and ElevenLabs services.

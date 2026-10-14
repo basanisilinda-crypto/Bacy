@@ -20,6 +20,7 @@ test('Gmail MCP OAuth configuration keeps secrets private and discovers tools', 
       const body = JSON.parse(request.body);
       assert.equal(request.url, GMAIL_MCP_URL);
       assert.equal(request.headers['MCP-Protocol-Version'], PROTOCOL_VERSION);
+      if(body.method==='server/discover')return {jsonrpc:'2.0',id:body.id,result:{supportedVersions:[PROTOCOL_VERSION],capabilities:{tools:{}}}};
       if (body.method === 'tools/list') return { jsonrpc:'2.0', id:body.id, result:{ tools:[{ name:'search_threads', description:'Search Gmail', inputSchema:{type:'object',properties:{query:{type:'string'}}} }] } };
       throw new Error('unexpected request');
     }
@@ -50,6 +51,7 @@ test('Gmail MCP only calls tools returned by the server', async () => {
     store, now:()=>1_000_000,
     transport: async request => {
       const body=JSON.parse(request.body);
+      if(body.method==='server/discover')return {jsonrpc:'2.0',id:body.id,result:{supportedVersions:[PROTOCOL_VERSION],capabilities:{tools:{}}}};
       if(body.method==='tools/list') return {jsonrpc:'2.0',id:body.id,result:{tools:[{name:'search_threads',description:'Search',inputSchema:{type:'object',properties:{}}}]}};
       if(body.method==='tools/call') return {jsonrpc:'2.0',id:body.id,result:{content:[{type:'text',text:'ok'}]}};
       throw new Error('unexpected');

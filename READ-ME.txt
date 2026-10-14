@@ -1,5 +1,8 @@
 BACY — LIGHTWEIGHT ONLINE BUILD
 
+CURRENT UPDATE: Read AGENT-STEP-1.txt for memory, multi-step tools and human
+email review. REFERENCE-REVIEW.md records the reviewed projects and limits.
+
 WHAT CHANGED
 - The old robot/3D scene and Three.js files were removed completely.
 - The interface was rebuilt from scratch as a lightweight chat-first desktop UI.
@@ -7,7 +10,7 @@ WHAT CHANGED
 - Chat, microphone, Hands-free, Live talk, Connections, and Windows controls remain.
 - The app no longer tests every remote service while the page is opening. This makes startup/navigation feel faster.
 - Gemini is the required online AI brain.
-- Bacy prefers a low-latency Gemini Flash-Lite model and automatically falls back to compatible Flash models.
+- Bacy uses the configured model first. Test connection discovers available models instead of guessing model names.
 - Gemini retries were reduced so a bad/busy model does not make the whole UI appear frozen for a long time.
 - The Send button becomes a Stop button while Bacy is answering.
 - Replies show the actual response time in seconds.
@@ -28,8 +31,9 @@ GMAIL MCP
   https://gmailmcp.googleapis.com/mcp/v1
 - Gmail MCP uses Google OAuth 2.0. Bacy never asks for your Gmail password.
 - Bacy can discover whatever Gmail tools Google exposes to your account and let Gemini call them for email requests.
-- Read-only tools are available for normal email questions.
+- Read operations are selected conservatively from the verified tool catalog for normal email questions.
 - Bacy only exposes modifying Gmail tools to Gemini when your message clearly asks for an action such as creating a draft or changing a label.
+- Modifying tools prepare a proposal with exact arguments and require your explicit confirmation before running. The model cannot approve it.
 - Email/tool output is treated as untrusted data so instructions hidden inside emails are not supposed to become Bacy instructions.
 - Google's Gmail MCP is currently a Google Workspace Developer Preview feature. Your Google Cloud project must be eligible and have the required Gmail/Gmail MCP services and OAuth client configured.
 - The OAuth redirect URI to add in Google Cloud is:
@@ -48,7 +52,7 @@ GEMINI
 - Put your Gemini API key only inside Bacy's Connections screen.
 - Do not paste API keys into chat.
 - Remembered keys are encrypted for the current Windows account with Windows DPAPI.
-- Bacy prefers the text model returned by Test connection for fast everyday replies and can fall back to current Flash models such as gemini-3.8-flash when needed.
+- Bacy uses the text model returned by Test connection. A missing model gets one catalog refresh; quota, authentication and service errors stop without repeated model hopping.
 
 ELEVENLABS
 - In ElevenLabs, keep API-key restrictions enabled.
@@ -81,9 +85,9 @@ IMPORTANT LIMITS
 - I/O speed still depends on your internet connection and each online provider's own response time/quota.
 - ElevenLabs cloud transcription cannot be truly instant because audio must travel to the service and back. Browser live transcription is used first when available.
 - Google's Gmail MCP feature requires Google's Developer Preview eligibility; the code cannot bypass that requirement.
-- This build does not send Gmail messages directly. Google's current Gmail MCP toolset creates drafts and manages mail/labels; you can review a draft before sending it in Gmail.
+- Available Gmail operations depend on Google's actual tool catalog for your account. Any modifying operation requires the exact review command shown by Bacy; no email operation was tested against a real account here.
 
 TESTING
 - JavaScript syntax checks pass.
-- 18 automated tests pass, including Gemini, ElevenLabs, local-server security, Windows controls, and Gmail MCP/OAuth mock tests.
+- 36 packaged automated tests cover Gemini, ElevenLabs, local-server security, Windows controls, memory, human confirmation and Gmail MCP/OAuth simulations.
 - Real provider accounts, microphone hardware, Windows application launching, and Google Developer Preview eligibility still have to be tested on your laptop.

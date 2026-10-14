@@ -218,9 +218,11 @@ function createGemini({ env = process.env, transport = curlRequest, store = defa
         }
         contents.push({ role: 'model', parts });
         const responses = [];
-        for (const call of calls.slice(0, 2)) {
-          const result = await execute(call.name, call.args && typeof call.args === 'object' ? call.args : {}, {signal});
-          responses.push({ functionResponse: { name: call.name, response: { result } } });
+        if(calls.length>4)throw new Error('The task requested too many actions at once. Split it into smaller steps.');
+        for (const call of calls) {
+          let result;try{result=await execute(call.name,call.args&&typeof call.args==='object'?call.args:{},{signal});}catch(error){if(signal.aborted)throw error;result={error:String(error.message||'Tool failed').slice(0,1000)};}
+          if(result?.pending)return result.message;
+          responses.push({functionResponse:{name:call.name,response:{result}}});
         }
         contents.push({ role: 'user', parts: responses });
       }
