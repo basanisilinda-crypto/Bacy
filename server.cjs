@@ -131,7 +131,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
   const headers = {
     'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
     'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+    'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()'
   };
   function checkCodex() {
     return new Promise(resolve => {
@@ -158,7 +158,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
       return send(200, { available: Boolean(version), version, platform: process.platform, proxyConfigured: Boolean(env.HTTPS_PROXY || env.https_proxy), detail: version ? 'Codex detected. Your first message checks sign-in and the online connection.' : 'Codex is unavailable. Check codex.cmd --version in PowerShell, then check again.' });
     }
     if (req.method === 'GET') {
-      const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'] };
+      const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/scene.js': ['scene.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/vendor/three.module.min.js': ['vendor/three.module.min.js', 'text/javascript'], '/vendor/three.core.min.js': ['vendor/three.core.min.js', 'text/javascript'] };
       const file = files[req.url];
       if (!file) return send(404, { error: 'Not found.' });
       try {

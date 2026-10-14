@@ -14,9 +14,9 @@
   const errorText = byId('error-text');
   const token = document.querySelector('meta[name="bacy-token"]').content;
   const modeCaptions = {
-    normal: 'A friendly face for your everyday questions and ideas.',
-    professional: 'A point-cloud presence. Your future connections, held in view.',
-    hardcore: 'A neural view. The same AI, with a different visual presence.'
+    normal: 'Face',
+    professional: 'Brain',
+    hardcore: 'Neural'
   };
   let history = [];
   let mode = 'professional';
@@ -24,27 +24,6 @@
   let available = false;
   let controller = null;
   let lastFailedMessage = null;
-
-  function drawPoints(target, bounds, step, phase) {
-    const fragment = document.createDocumentFragment();
-    const ns = 'http://www.w3.org/2000/svg';
-    for (let y = bounds.y; y < bounds.y + bounds.height; y += step) {
-      for (let x = bounds.x; x < bounds.x + bounds.width; x += step) {
-        const circle = document.createElementNS(ns, 'circle');
-        const wave = (Math.sin(x * .081 + y * .057 + phase) + 1) / 2;
-        const center = Math.max(.15, 1 - Math.abs(x - 230) / 240);
-        circle.setAttribute('cx', String(x + Math.sin(y * .033) * 1.25));
-        circle.setAttribute('cy', String(y));
-        circle.setAttribute('r', String(.45 + wave * .65));
-        circle.setAttribute('fill', 'url(#point-light)');
-        circle.setAttribute('opacity', String(.12 + wave * center * .75));
-        fragment.append(circle);
-      }
-    }
-    byId(target).append(fragment);
-  }
-  drawPoints('human-points', { x: 23, y: 33, width: 410, height: 321 }, 4.5, 1);
-  drawPoints('brain-points', { x: 73, y: 68, width: 315, height: 251 }, 5, 2);
 
   function updateSend() {
     sendButton.disabled = busy || !available || !input.value.trim();
@@ -78,6 +57,10 @@
     body.textContent = content;
     article.append(heading, body);
     log.append(article);
+    if (role === 'assistant') {
+      byId('latest-reply').textContent = content;
+      byId('latest-reply').hidden = false;
+    }
     scrollToLatest();
     return article;
   }
@@ -94,11 +77,12 @@
       if (!response.ok) throw new Error('The local server could not check Codex.');
       const status = await response.json();
       available = Boolean(status.available);
-      byId('header-status').textContent = available ? 'Codex available' : 'Codex needs setup';
+      byId('header-status').textContent = available ? 'Ready' : 'Needs setup';
       byId('connection-detail').textContent = status.detail || (available ? 'Codex is available. Your first message will verify the AI connection.' : 'Install Codex and sign in on this laptop, then check again.');
       byId('header-dot').className = `status-dot ${available ? 'ready' : 'error'}`;
       byId('connection-dot').className = `status-dot ${available ? 'ready' : 'error'}`;
       byId('connection-banner').classList.toggle('warning', !available);
+      if (!available) byId('connection-banner').hidden = false;
       byId('runtime-label').textContent = status.version ? `LOCAL / CODEX ${String(status.version).replace(/^codex(?:-cli)?\s*/i, '').slice(0, 40)}` : 'LOCAL INTERFACE / CODEX BRIDGE';
     } catch (error) {
       available = false;
@@ -107,6 +91,7 @@
       byId('header-dot').className = 'status-dot error';
       byId('connection-dot').className = 'status-dot error';
       byId('connection-banner').classList.add('warning');
+      byId('connection-banner').hidden = false;
     } finally {
       clearTimeout(timeout);
       button.disabled = false;
@@ -121,6 +106,8 @@
     busy = true;
     controller = new AbortController();
     lastFailedMessage = null;
+    byId('latest-reply').hidden = true;
+    byId('retry-request').hidden = false;
     errorNotice.hidden = true;
     input.value = '';
     input.disabled = true;
@@ -147,7 +134,7 @@
       if (typeof reply !== 'string' || !reply.trim()) throw new Error('Codex returned no answer. Please try again.');
       history = [...messages, { role: 'assistant', content: reply }].slice(-20);
       appendMessage('assistant', reply);
-      byId('header-status').textContent = 'AI connected';
+      byId('header-status').textContent = 'Connected';
       byId('connection-detail').textContent = 'Real AI through your Codex account. Tools and service connections are not enabled yet.';
     } catch (error) {
       lastFailedMessage = message;
@@ -191,6 +178,7 @@
     input.value = '';
     errorNotice.hidden = true;
     welcome.hidden = false;
+    byId('latest-reply').hidden = true;
     updateSend();
     input.focus();
   });
@@ -206,5 +194,88 @@
     byId('mode-caption').textContent = modeCaptions[mode];
     document.querySelectorAll('button[data-mode]').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
   }));
+  const drawer = byId('conversation-drawer');
+  function showDrawer(show) {
+    drawer.hidden = !show;
+    byId('conversation-button').setAttribute('aria-expanded', String(show));
+    if (show) byId('close-chat').focus();
+  }
+  byId('conversation-button').addEventListener('click', () => showDrawer(drawer.hidden));
+  byId('close-chat').addEventListener('click', () => { showDrawer(false); byId('conversation-button').focus(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !drawer.hidden) showDrawer(false); });
+  byId('details-button').addEventListener('click', () => {
+    byId('connection-banner').hidden = !byId('connection-banner').hidden;
+    byId('details-button').setAttribute('aria-expanded', String(!byId('connection-banner').hidden));
+  });
+  byId('theme-button').addEventListener('click', () => {
+    document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    updateThemeLabel();
+  });
+  function updateThemeLabel() {
+    const light = document.body.dataset.theme === 'light';
+    byId('theme-button').textContent = light ? 'Dark' : 'Light';
+    byId('theme-button').setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  }
+  let microphone = null;
+  let audioContext = null;
+  let microphonePending = false;
+  let audioFrame;
+  let previousTheme = 'dark';
+  window.bacyAudioLevel = 0;
+  function stopMicrophone() {
+    if (audioFrame) cancelAnimationFrame(audioFrame);
+    if (microphone) microphone.getTracks().forEach(track => track.stop());
+    if (audioContext) audioContext.close().catch(() => {});
+    microphone = null;
+    audioContext = null;
+    window.bacyAudioLevel = 0;
+    document.body.classList.remove('is-listening');
+    document.body.dataset.theme = previousTheme;
+    updateThemeLabel();
+    byId('microphone-button').setAttribute('aria-pressed', 'false');
+    byId('microphone-button').setAttribute('aria-label', 'Start microphone visualization');
+    byId('microphone-note').hidden = true;
+  }
+  byId('microphone-button').addEventListener('click', async () => {
+    if (microphonePending) return;
+    if (microphone) return stopMicrophone();
+    microphonePending = true;
+    byId('microphone-button').disabled = true;
+    previousTheme = document.body.dataset.theme;
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('Microphone access is unavailable in this browser. Chat still works.');
+      microphone = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new AudioContext();
+      await audioContext.resume();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      audioContext.createMediaStreamSource(microphone).connect(analyser);
+      const samples = new Uint8Array(analyser.fftSize);
+      const measure = () => {
+        analyser.getByteTimeDomainData(samples);
+        let power = 0;
+        for (const sample of samples) power += ((sample - 128) / 128) ** 2;
+        window.bacyAudioLevel = Math.min(1, Math.sqrt(power / samples.length) * 5);
+        audioFrame = requestAnimationFrame(measure);
+      };
+      measure();
+      document.body.classList.add('is-listening');
+      document.body.dataset.theme = 'light';
+      updateThemeLabel();
+      byId('microphone-note').hidden = false;
+      byId('microphone-button').setAttribute('aria-pressed', 'true');
+      byId('microphone-button').setAttribute('aria-label', 'Stop microphone visualization');
+      microphone.getTracks().forEach(track => track.addEventListener('ended', stopMicrophone, { once: true }));
+    } catch (error) {
+      stopMicrophone();
+      byId('retry-request').hidden = true;
+      errorText.textContent = error.name === 'NotAllowedError' ? 'Microphone permission was declined. You can keep chatting by typing.' : 'The microphone could not start. You can keep chatting by typing.';
+      errorNotice.hidden = false;
+    } finally {
+      microphonePending = false;
+      byId('microphone-button').disabled = false;
+    }
+  });
+  window.addEventListener('pagehide', stopMicrophone);
   checkConnection();
 })();

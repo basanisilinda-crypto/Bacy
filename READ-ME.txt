@@ -22,16 +22,22 @@ npm proxy settings only configure npm, not Codex's online requests.
 
 WHAT WORKS
 Real AI chat through your installed Codex CLI, conversation context, new chat,
-request cancellation, error messages, and three visual modes.
-Normal: friendly robot. Professional: point-cloud humanoid.
-Hardcore: connected-brain illustration. Modes change appearance only for now.
-The design is the first version of your brief, not the complete final design.
+request cancellation, error messages, and three 3D visual modes.
+Face: a sculpted face, without hands or a body. Brain: folded hemispheres with
+floating pathways and neurons. Neural: a wireframe neural view.
+The wide layout has dark-blue and white/blue themes. Modes change appearance only.
+Chat history and connection details open on demand instead of filling the screen.
+Microphone button: requests permission, then reacts visually to sound, switches to
+white/blue, and stops when clicked again. It does NOT transcribe speech or send
+audio online. Type to chat. Microphone can be declined without disabling chat.
+3D needs WebGL; a simpler fallback appears if it is unavailable.
 
 NEXT FEATURES
-Voice, microphone, wake phrase, camera, Gmail, social connections, and desktop
-control are not enabled in this release. Each needs its own integration and test.
-Connection graphics are illustrative; the interface lists 0 connected services.
-No youthful voice is provided yet. Future voice quality depends on its provider.
+Speech transcription, Bacy's speaking voice, wake phrase, camera, Gmail, social
+connections, and desktop control need separate integrations and tests.
+The neural graphic is decorative; it does not represent connected services.
+No youthful or deep-bass speaking voice is provided yet. Future voice quality
+depends on its provider. The visual redesign needs no additional API key.
 
 PRIVACY
 Messages are sent online through Codex. Chat history is held in your browser tab,
@@ -53,7 +59,9 @@ If interface files are missing, extract the whole download, including public.
 Requests time out after three minutes. Stop cancels the process Bacy started.
 
 DEVELOPMENT
-Node.js is the only app dependency. Run node --test test/server.test.cjs for
+Node.js is the only server dependency. Three.js 0.180.0 is bundled locally with
+its MIT license, so the 3D scene needs no CDN or extra npm installation.
+Run node --test test/server.test.cjs for
 request handling, CLI protocol, timeout, cancellation, and concurrency tests.
 Tests use a fixture CLI; they do not claim a live account connection.
 Use the existing checkout in cloud tasks, which are already isolated.
