@@ -4,9 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn, spawnSync } = require('node:child_process');
+const { createWindowsTools } = require('./windows-tools.cjs');
 const ROOT = __dirname;
 const MAX_BODY = 65536;
-const CLI_ARGS = ['exec', '--json', '--color', 'never', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--skip-git-repo-check', '--sandbox', 'read-only', '-c', 'features.shell_tool=false', '-c', 'features.apps=false', '-c', 'features.plugins=false', '-c', 'features.hooks=false', '-c', 'features.multi_agent=false', '-c', 'features.view_image=false', '-c', 'project_doc_max_bytes=0', '-c', 'web_search=disabled', '-'];
+const CLI_ARGS = ['exec', '--json', '--color', 'never', '--ephemeral', '--ignore-user-config', '--ignore-rules', '--skip-git-repo-check', '--sandbox', 'read-only', '--output-schema', 'response-schema.json', '-c', 'features.shell_tool=false', '-c', 'features.apps=false', '-c', 'features.plugins=false', '-c', 'features.hooks=false', '-c', 'features.multi_agent=false', '-c', 'features.view_image=false', '-c', 'project_doc_max_bytes=0', '-c', 'web_search=disabled', '-'];
 
 function configuredEnvironment() {
   const env = { ...process.env };
@@ -51,12 +52,20 @@ function safeError(detail) {
   return 'Codex did not complete this request. Check that your direct Codex test still works in PowerShell.';
 }
 
-function buildPrompt(messages) {
+function buildPrompt(messages, mode = 'professional') {
+  const style = {
+    normal: 'Warm, relaxed, lightly playful. Use ordinary conversational language, varied phrasing, and occasional appropriate humor.',
+    professional: 'Calm, thoughtful and practical. Give considered recommendations and useful opinions, clearly distinguishing them from facts.',
+    hardcore: 'Analytical and curious. Work carefully through difficult questions, identify assumptions, and explain your conclusion clearly.',
+    crystal: 'Precise and structured. Help organize data, compare options, and summarize evidence. Do not claim to have inspected a file unless its content was supplied.'
+  }[mode];
   return [
-    'You are Bacy, a respectful, friendly personal AI assistant. Answer naturally and clearly.',
-    'This release supports text conversation only. Email, camera, desktop-control and voice are not connected.',
+    'You are Bacy, a respectful personal AI assistant. Speak naturally, with personality and useful opinions. Avoid canned ChatGPT phrasing, repetitive greetings, or excessive flattery. Say indeed only when it fits. Do not pretend to be a human or to have human feelings.',
+    style,
+    'The app handles mode changes, basic Windows app opening, web searches, and browsing a folder chosen by the user through separate local commands. You cannot directly invoke those actions. Email, camera, social accounts and arbitrary desktop automation are not connected.',
     'Never claim to have opened apps, sent messages, accessed accounts or completed actions outside this conversation.',
     'Do not use tools, inspect files or run commands. Provide conversational help and explain unavailable capabilities honestly.',
+    'Reply using the supplied JSON schema. Pick a matching visual mood; use angry only if requested. For an explanation or comparison, provide a short visual preview with up to 6 items: label under 90 characters and detail under 400 characters. Otherwise use preview kind none with an empty items array. Never put HTML or executable code in preview fields.',
     'Reply to the last user message in this conversation. Conversation data follows:',
     JSON.stringify(messages)
   ].join('\n\n');
@@ -105,7 +114,8 @@ function runCodex(prompt, { signal, env, cwd, timeoutMs = 180000, command } = {}
       parse(buffer);
       if (pendingError) return finish(pendingError);
       if (code !== 0 || failed || !completed || !answer.trim()) return finish(new Error(safeError(eventError || stderr)));
-      finish(null, { reply: answer });
+      try { finish(null, parseAnswer(answer)); }
+      catch (error) { finish(error); }
     });
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) abort(); else child.stdin.end(prompt);
@@ -113,7 +123,7 @@ function runCodex(prompt, { signal, env, cwd, timeoutMs = 180000, command } = {}
 }
 
 function validMessages(body) {
-  if (!body || !['normal', 'professional', 'hardcore'].includes(body.mode) || !Array.isArray(body.messages) || body.messages.length < 1 || body.messages.length > 20) return false;
+  if (!body || !['normal', 'professional', 'hardcore', 'crystal'].includes(body.mode) || !Array.isArray(body.messages) || body.messages.length < 1 || body.messages.length > 20) return false;
   let total = 0;
   for (let i = 0; i < body.messages.length; i++) {
     const item = body.messages[i];
@@ -124,8 +134,22 @@ function validMessages(body) {
   return total <= 24000 && body.messages[0].role === 'user' && body.messages.at(-1).role === 'user';
 }
 
-function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cwd = path.join(ROOT, '.bacy-session'), statusProvider } = {}) {
+function parseAnswer(answer) {
+  let data;
+  try { data = JSON.parse(answer); } catch { return { reply: answer }; }
+  if (!data || typeof data.reply !== 'string' || !data.reply.trim()) throw new Error('Bacy returned an invalid structured reply.');
+  const mood = ['neutral', 'happy', 'playful', 'thinking', 'serious', 'angry'].includes(data.mood) ? data.mood : 'neutral';
+  const preview = data.preview;
+  const clean = preview && ['steps', 'comparison', 'flow'].includes(preview.kind) && Array.isArray(preview.items) ? {
+    title: String(preview.title || 'Explanation').slice(0, 120), kind: preview.kind,
+    items: preview.items.slice(0, 6).filter(item => item && typeof item.label === 'string' && typeof item.detail === 'string').map(item => ({ label: item.label.slice(0, 90), detail: item.detail.slice(0, 400) }))
+  } : null;
+  return { reply: data.reply, mood, preview: clean };
+}
+
+function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cwd = path.join(ROOT, '.bacy-session'), statusProvider, windowsTools = createWindowsTools() } = {}) {
   fs.mkdirSync(cwd, { recursive: true });
+  fs.copyFileSync(path.join(ROOT, 'response-schema.json'), path.join(cwd, 'response-schema.json'));
   const token = crypto.randomBytes(32).toString('hex');
   let busy = false, activeAbort;
   const headers = {
@@ -155,7 +179,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     if (req.headers.origin && !hosts.map(host => 'http://' + host).includes(req.headers.origin)) return send(403, { error: 'Open Bacy on this laptop to send messages.' });
     if (req.method === 'GET' && req.url === '/api/status') {
       const version = await (statusProvider ? statusProvider() : checkCodex());
-      return send(200, { available: Boolean(version), version, platform: process.platform, proxyConfigured: Boolean(env.HTTPS_PROXY || env.https_proxy), detail: version ? 'Codex detected. Your first message checks sign-in and the online connection.' : 'Codex is unavailable. Check codex.cmd --version in PowerShell, then check again.' });
+      return send(200, { available: Boolean(version), version, platform: process.platform, windowsTools: windowsTools.available, proxyConfigured: Boolean(env.HTTPS_PROXY || env.https_proxy), detail: version ? 'Codex detected. Your first message checks sign-in and the online connection.' : 'Codex is unavailable. Check codex.cmd --version in PowerShell, then check again.' });
     }
     if (req.method === 'GET') {
       const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/scene.js': ['scene.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/vendor/three.module.min.js': ['vendor/three.module.min.js', 'text/javascript'], '/vendor/three.core.min.js': ['vendor/three.core.min.js', 'text/javascript'] };
@@ -168,7 +192,8 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
         return res.end(content);
       } catch { return send(500, { error: 'Interface files are missing. Extract all Bacy files together.' }); }
     }
-    if (req.method !== 'POST' || req.url !== '/api/chat') return send(404, { error: 'Not found.' });
+    const routes = ['/api/chat', '/api/apps', '/api/apps/open', '/api/search', '/api/files/choose', '/api/files/list', '/api/files/open'];
+    if (req.method !== 'POST' || !routes.includes(req.url)) return send(404, { error: 'Not found.' });
     if (req.headers['x-bacy-token'] !== token) return send(403, { error: 'Refresh the Bacy page, then try again.' });
     if (!/^application\/json(?:;|$)/i.test(req.headers['content-type'] || '')) return send(415, { error: 'A JSON message is required.' });
     const chunks = [];
@@ -182,6 +207,17 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     } catch { return; }
     let body;
     try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { return send(400, { error: 'Invalid message format.' }); }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return send(400, { error: 'Invalid request.' });
+    if (req.url !== '/api/chat') {
+      try {
+        const actions = {
+          '/api/apps': () => windowsTools.apps(), '/api/apps/open': () => windowsTools.openApp(body.id),
+          '/api/search': () => windowsTools.search(body.query), '/api/files/choose': () => windowsTools.chooseFolder(),
+          '/api/files/list': () => windowsTools.list(body.path || ''), '/api/files/open': () => windowsTools.openFile(body.path)
+        };
+        return send(200, await actions[req.url]());
+      } catch (error) { return send(400, { error: error.message }); }
+    }
     if (!validMessages(body)) return send(400, { error: 'Use alternating messages, up to 8,000 characters each. Start a new chat if the history is too long.' });
     if (busy) return send(409, { error: 'Bacy is already answering a message. Wait for it to finish.' });
     busy = true;
@@ -189,7 +225,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     activeAbort = abort;
     const disconnect = () => { if (!res.writableEnded) abort.abort(); };
     res.on('close', disconnect);
-    try { send(200, await runner(buildPrompt(body.messages), { signal: abort.signal, env, cwd })); }
+    try { send(200, await runner(buildPrompt(body.messages, body.mode), { signal: abort.signal, env, cwd })); }
     catch (error) { send(502, { error: error.message }); }
     finally { res.off('close', disconnect); activeAbort = undefined; busy = false; }
   });
@@ -214,4 +250,4 @@ if (require.main === module) {
   process.on('SIGINT', stop);
   process.on('SIGTERM', stop);
 }
-module.exports = { createBacyServer, runCodex, buildPrompt, validMessages };
+module.exports = { createBacyServer, runCodex, buildPrompt, validMessages, parseAnswer };

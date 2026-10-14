@@ -1,68 +1,95 @@
-BACY - FIRST REAL AI CHAT RELEASE
+BACY - INTERACTIVE LOCAL ASSISTANT
 
-Requirements: Windows, Node.js, Codex CLI signed in with your ChatGPT account.
-No Express, npm install, or separate API key is needed for this app.
-AI replies use your Codex plan and remain subject to its usage limits.
+REQUIREMENTS
+Windows, Node.js, and Codex CLI signed in with your ChatGPT account.
+Edge or Chrome is recommended for browser speech features. Availability varies.
+This version needs no new API key or npm installation. Codex usage uses your plan.
+Three.js 0.180.0 is bundled locally, with its MIT license.
 
-START ON WINDOWS
-1. Extract all files into Documents\Bacy. Keep server.cjs and public together.
-   Existing index.js and package.json from your learning steps can stay as they are.
-2. Double-click START-BACY.cmd. Keep its window open.
-3. Open your browser and type localhost:3000 in its address bar.
-4. Send a message. A complete AI reply appears after Codex finishes.
-Press Ctrl+C in the server window to stop Bacy.
-Alternative: run node server.cjs in PowerShell inside the Bacy folder.
+START
+Extract the entire ZIP into Documents\Bacy, keeping all files and public together.
+Replace the previous Bacy app files when updating. Your index.js learning file
+and package.json can stay. Double-click START-BACY.cmd and keep its window open.
+In your browser enter localhost:3000. Ctrl+C in the server window stops Bacy.
+Alternative: node server.cjs in PowerShell inside Documents\Bacy.
+Keep your required Windows proxy connected. Bacy respects HTTPS_PROXY or reads
+the manual Windows proxy settings. PAC and authenticated proxies need setup.
+Certificate verification is never disabled.
 
-PROXY
-Keep your required Windows proxy connected. Bacy uses HTTPS_PROXY from the
-PowerShell session when present. Otherwise, it reads the manual Windows proxy
-host and port from Internet Settings. It never disables TLS verification.
-PAC setup scripts and authenticated proxies require separate configuration.
-npm proxy settings only configure npm, not Codex's online requests.
+MODES AND PERSONALITY
+Face: a relaxed, conversational style with a sculpted, expressive face.
+Brain: thoughtful conversation and practical recommendations.
+Neural: analytical explanations and a neural wireframe.
+Crystal (Pro): a crystalline brain and structured comparisons or data explanations.
+Modes change the style instructions sent to the same Codex model; they do not
+magically increase intelligence. Recommendations are opinions, not human feelings.
 
-WHAT WORKS
-Real AI chat through your installed Codex CLI, conversation context, new chat,
-request cancellation, error messages, and three 3D visual modes.
-Face: a sculpted face, without hands or a body. Brain: folded hemispheres with
-floating pathways and neurons. Neural: a wireframe neural view.
-The wide layout has dark-blue and white/blue themes. Modes change appearance only.
-Chat history and connection details open on demand instead of filling the screen.
-Microphone button: requests permission, then reacts visually to sound, switches to
-white/blue, and stops when clicked again. It does NOT transcribe speech or send
-audio online. Type to chat. Microphone can be declined without disabling chat.
-3D needs WebGL; a simpler fallback appears if it is unavailable.
+COMMANDS - TYPE THEM, OR SAY THEM WHILE THE MICROPHONE IS ON
+switch to face mode
+switch to brain mode
+switch to neural mode
+switch to crystal mode
+look happy / look funny / look angry / look serious / look neutral
+open browser / open calculator / open notepad
+show apps / open <installed app name>
+search for <your query>
+show files
+enable voice / pause / stop speaking
+An optional prefix is Hey Bacy, for example Hey Bacy, switch to crystal mode.
+It is not a system-wide wake-word service: the page and microphone must be active.
+Mode changes, expressions, and local Windows commands do not consume AI requests.
 
-NEXT FEATURES
-Speech transcription, Bacy's speaking voice, wake phrase, camera, Gmail, social
-connections, and desktop control need separate integrations and tests.
-The neural graphic is decorative; it does not represent connected services.
-No youthful or deep-bass speaking voice is provided yet. Future voice quality
-depends on its provider. The visual redesign needs no additional API key.
+VOICE
+Click the microphone and permit access to listen for commands. The scene reacts
+to sound and switches to white/blue. Click again to stop and release the mic.
+Speech recognition uses the browser implementation; it may send audio to its
+online service and can fail on restricted networks. Typed commands still work.
+Open Voice and enable Read Bacy's replies. Pick an installed browser voice and
+adjust Tone for a deeper or higher pitch. Stop voice stops playback.
+Quality depends on your laptop's available voices; a custom, natural teenage
+voice is not guaranteed. Online voices may send text to their provider.
+Recognition pauses during Bacy's speech to avoid hearing its own replies.
+Stop voice remains available in the Voice panel during playback.
 
-PRIVACY
-Messages are sent online through Codex. Chat history is held in your browser tab,
-not saved by this app. Refreshing, closing, or clearing the tab resets it.
-Recent conversation context is sent with each request. Long chats may need reset.
-The local server listens only on 127.0.0.1, not the public network.
-Do not paste passwords or API keys into chat. The app does not log messages.
-This chat release disables Codex shell tools and uses its read-only sandbox.
-It ignores custom Codex configuration and does not import connected accounts.
-It creates an empty .bacy-session folder for isolated CLI requests.
+WINDOWS CONTROLS
+Browser opens a web page in the default browser; search opens Bing results.
+Apps reads the Start menu's installed-app list. Click a listed app to launch it.
+Files asks you to choose a folder using a native Windows dialog. No folder is
+accessible until you choose one. Browsing stays within that folder, including
+symlink checks. Click a document or media file to open it in its Windows app.
+Executable files cannot be opened through the file browser.
+File listings and local-action receipts are not added to the online AI context.
+If you enable an online voice, text read aloud may go to its voice provider.
+Opening an app does not give Bacy access to its account or all its controls.
+The app reports that Windows received a launch request; it cannot guarantee an
+application completed startup. Native operations must be checked on your laptop.
+
+VISUAL EXPLANATIONS
+Ask an explanation or comparison. Bacy can return an explanation panel with
+steps, flow cards, or comparisons. Close it when you want the central scene back.
+Preview fields are bounded text; generated HTML and code are not executed.
+
+LIMITATIONS
+Email sending, social-account integrations, camera, arbitrary desktop clicking,
+file editing/deletion, and automatic analysis of large files are not implemented.
+Crystal can discuss and structure data you supply; it does not inspect all files.
+Long chats may need New chat. Your browser tab stores history only for the session.
+Messages and recognized words submitted as chat are sent online through Codex.
+The local server listens only on this laptop and checks request origins and tokens.
+Codex chat uses read-only mode and disabled shell tools. Windows actions are
+handled separately by explicit local commands, not arbitrary model commands.
 
 TROUBLESHOOTING
-If Codex is unavailable, check codex.cmd --version in PowerShell.
-If sign-in is required, run codex.cmd login, then restart Bacy.
-If your plan limit is reached, wait for the reset shown in your account.
-If the online connection fails, check the required proxy is still connected.
-If port 3000 is busy, stop the previous Bacy server before starting this one.
-If interface files are missing, extract the whole download, including public.
-Requests time out after three minutes. Stop cancels the process Bacy started.
+Check codex.cmd --version and codex.cmd login if chat cannot connect.
+If your plan limit is reached, wait for the reset time shown in your account.
+Check the proxy connection if an online request fails.
+If speech recognition is unavailable, use typed commands and browser voices.
+If no voices are available, check your Windows/browser speech settings.
+If port 3000 is busy, stop the previous Bacy server first.
+Extract all files, including windows-tools.cjs, response-schema.json, and public.
 
 DEVELOPMENT
-Node.js is the only server dependency. Three.js 0.180.0 is bundled locally with
-its MIT license, so the 3D scene needs no CDN or extra npm installation.
-Run node --test test/server.test.cjs for
-request handling, CLI protocol, timeout, cancellation, and concurrency tests.
-Tests use a fixture CLI; they do not claim a live account connection.
-Use the existing checkout in cloud tasks, which are already isolated.
-Do not create a Git worktree unless specifically requested.
+Run node --test test/*.test.cjs. The tests use fixture AI and Windows adapters;
+they do not claim live account responses or real Windows app launches.
+Use the existing cloud checkout. Cloud tasks are already isolated; do not create
+a Git worktree unless requested.

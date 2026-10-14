@@ -6,28 +6,33 @@
   <title>Bacy</title><link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script><script type="module" src="/scene.js"></script>
 </head>
-<body data-mode="professional" data-theme="dark">
+<body data-mode="professional" data-theme="dark" data-mood="neutral">
   <header><a class="brand" href="/">Bacy<span>.</span></a>
-    <nav aria-label="Visual mode"><button data-mode="normal" aria-pressed="false">Face</button><button data-mode="professional" aria-pressed="true">Brain</button><button data-mode="hardcore" aria-pressed="false">Neural</button></nav>
-    <div class="top-actions"><button id="theme-button" aria-label="Switch to light theme">Light</button><button id="conversation-button" aria-expanded="false" aria-controls="conversation-drawer">Chat</button></div>
+    <nav aria-label="Assistant mode"><button data-mode="normal" aria-pressed="false">Face</button><button data-mode="professional" aria-pressed="true">Brain</button><button data-mode="hardcore" aria-pressed="false">Neural</button><button data-mode="crystal" aria-pressed="false">Crystal</button></nav>
+    <div class="top-actions"><button id="theme-button" aria-label="Switch to light theme">Light</button><button id="voice-button" aria-expanded="false" aria-controls="voice-panel">Voice</button><button id="conversation-button" aria-expanded="false" aria-controls="conversation-drawer">Chat</button></div>
   </header>
   <main>
     <div id="visual-scene" aria-label="Three-dimensional brain with floating neural connections" role="img"></div>
     <div class="scene-fallback" id="scene-fallback" hidden><svg viewBox="0 0 460 385" aria-hidden="true"><path d="M226 82c-15-18-42-19-56-3-25-8-43 9-44 28-23 3-33 22-29 43-22 13-25 41-11 58-11 19-3 44 18 51 3 24 26 38 48 31 18 21 46 20 62 3l16 19 16-19c16 17 44 18 62-3 22 7 45-7 48-31 21-7 29-32 18-51 14-17 11-45-11-58 4-21-6-40-29-43-1-19-19-36-44-28-14-16-41-15-56 3zM230 87v215"/></svg><p>3D is unavailable in this browser. Chat still works.</p></div>
     <div class="presence-status" role="status"><span class="status-dot checking" id="header-dot"></span><span id="header-status">Connecting</span></div>
+    <div class="service-orbit" aria-label="Windows controls"><button id="open-browser" class="orbit-browser" title="Open your browser"><span class="orbit-node" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><ellipse cx="12" cy="12" rx="3" ry="8"/><path d="M4 12h16"/></svg></span>Browser</button><button id="open-apps" class="orbit-apps" title="Show installed Windows apps"><span class="orbit-node" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></span>Apps</button><button id="open-files" class="orbit-files" title="Browse a folder you choose"><span class="orbit-node" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v12H3z"/></svg></span>Files</button></div>
+    <p class="slogan">Your world. One conversation.</p>
     <section class="interaction" aria-label="Talk to Bacy">
       <div class="latest-reply" id="latest-reply" aria-live="polite" hidden></div>
       <div id="request-status" class="request-status" role="status" hidden><span class="pulse-dot"></span><span id="request-status-text">Thinking…</span><button id="cancel-request">Stop</button></div>
       <div class="error-notice" id="error-notice" role="alert" hidden><p id="error-text"></p><button id="retry-request">Retry</button></div>
       <form id="chat-form"><label class="sr-only" for="message-input">Message Bacy</label><textarea id="message-input" rows="1" maxlength="8000" placeholder="Talk to Bacy…" required></textarea>
-        <button id="microphone-button" type="button" aria-label="Start microphone visualization" aria-pressed="false" title="Microphone visualization. Voice transcription is not connected yet."><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></button>
+        <button id="microphone-button" type="button" aria-label="Start microphone" aria-pressed="false" title="Listen for commands using browser speech recognition, where supported"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></button>
         <button id="send-button" aria-label="Send message" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
       </form>
-      <p id="microphone-note" class="microphone-note" hidden>Microphone visualization only. Type to chat.</p>
-      <div class="bottom-meta"><span id="mode-caption">Brain</span><span>Visual modes · same AI</span><button id="details-button" aria-expanded="false" aria-controls="connection-banner">Connection</button></div>
-      <div id="connection-banner" class="connection-banner" hidden><span id="connection-dot" class="status-dot checking"></span><p id="connection-detail">Checking Codex…</p><button id="check-connection">Check again</button><p class="connection-note">Voice, camera, email and laptop-control tools are not connected yet. Microphone access is optional, for visual response only.</p></div>
+      <p id="microphone-note" class="microphone-note" hidden></p>
+      <div class="bottom-meta"><span id="mode-caption">Thoughtful · Brain</span><span id="command-hint">Try “switch to crystal mode”</span><button id="details-button" aria-expanded="false" aria-controls="connection-banner">Connection</button></div>
+      <div id="connection-banner" class="connection-banner" hidden><span id="connection-dot" class="status-dot checking"></span><p id="connection-detail">Checking Codex…</p><button id="check-connection">Check again</button><p class="connection-note">Windows app launch, web search and chosen-folder browsing use local controls. Email, camera, social accounts and unrestricted desktop automation are not connected. Speech recognition depends on your browser and may use an online browser service.</p></div>
     </section>
     <aside id="conversation-drawer" class="conversation-drawer" hidden aria-label="Conversation history"><div class="drawer-heading"><h1>Conversation</h1><button id="clear-chat">New chat</button><button id="close-chat" aria-label="Close conversation">×</button></div><div id="messages" class="messages" role="log" aria-live="polite"><p id="welcome">Your conversation appears here.</p></div></aside>
+    <aside id="preview-panel" class="conversation-drawer preview-panel" hidden aria-label="Visual explanation"><div class="drawer-heading"><h1 id="preview-title">Explanation</h1><button id="close-preview" aria-label="Close explanation">×</button></div><div id="preview-content" class="preview-content"></div></aside>
+    <aside id="tools-panel" class="conversation-drawer" hidden aria-label="Windows tools"><div class="drawer-heading"><h1 id="tools-title">Your apps</h1><button id="close-tools" aria-label="Close Windows tools">×</button></div><p id="tools-note" class="tools-note"></p><div class="tools-actions"><button id="choose-folder" hidden>Choose folder</button><button id="folder-up" hidden>Parent folder</button></div><div id="tools-content" class="tools-content"></div></aside>
+<aside id="voice-panel" class="voice-panel" hidden aria-label="Voice settings"><h2>Voice</h2><label><input id="read-replies" type="checkbox"> Read Bacy’s replies</label><button id="stop-voice">Stop voice</button><label for="voice-select">Browser voice</label><select id="voice-select"></select><label for="voice-pitch">Tone</label><input id="voice-pitch" type="range" min="0.65" max="1.15" step="0.05" value="0.85"><p id="voice-note">Uses voices available on your laptop. Quality varies; online voices may send text to their provider.</p></aside>
     <span id="runtime-label" class="sr-only"></span>
   </main>
 </body>

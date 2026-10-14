@@ -31,6 +31,7 @@ function initialize() {
 
   const brain = new THREE.Group();
   const material = new THREE.MeshPhysicalMaterial({ color: 0xaabed4, metalness: .32, roughness: .33, clearcoat: .7, clearcoatRoughness: .2, emissive: 0x0b2144, emissiveIntensity: .2 });
+  const eyes = [];
   for (const side of [-1, 1]) {
     const geometry = new THREE.SphereGeometry(1, 152, 112);
     const vertices = geometry.attributes.position;
@@ -72,6 +73,7 @@ function initialize() {
   for (const side of [-1, 1]) {
     const eye = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: 0x62baff }));
     eye.scale.set(.072, .012, .014); eye.position.set(side * .227, .233, .615); face.add(eye);
+    eyes.push({ eye, side });
   }
   const mouth = new THREE.EllipseCurve(0, 0, .12, .014, 0, Math.PI, false, 0);
   const lip = new THREE.Line(new THREE.BufferGeometry().setFromPoints(mouth.getPoints(24)), new THREE.LineBasicMaterial({ color: 0x455e7c, transparent: true, opacity: .7 }));
@@ -116,6 +118,15 @@ function initialize() {
   }
   const neuralSurface = new THREE.Points(new THREE.BufferGeometry().setFromPoints(internalNodes), new THREE.PointsMaterial({ color: 0x7fd5ff, size: .022, opacity: .9, transparent: true }));
   brain.add(neuralSurface);
+  const crystals = new THREE.Group();
+  const crystalMaterial = new THREE.MeshPhysicalMaterial({ color: 0x7bb7f0, metalness: .3, roughness: .12, clearcoat: 1, transparent: true, opacity: .58 });
+  for (let i = 0; i < 26; i++) {
+    const angle = i * 2.399963;
+    const jewel = new THREE.Mesh(new THREE.OctahedronGeometry(.07 + (i % 3) * .012), crystalMaterial);
+    jewel.position.set(Math.cos(angle) * 1.3, Math.sin(angle) * .9, -.15 + Math.sin(angle * 1.7) * .5);
+    jewel.rotation.set(angle, angle * .5, angle * .25); crystals.add(jewel);
+  }
+  brain.add(crystals);
 
   const base = new THREE.Group();
   const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.48, 1.53, .045, 120), new THREE.MeshPhysicalMaterial({ color: 0x152945, metalness: .75, roughness: .28, transparent: true, opacity: .65 }));
@@ -154,6 +165,7 @@ function initialize() {
     if (state.mode !== mode) {
       brain.visible = mode !== 'normal'; face.visible = mode === 'normal';
       neuralSurface.visible = mode === 'hardcore';
+      crystals.visible = mode === 'crystal';
       material.wireframe = mode === 'hardcore';
       material.transparent = mode === 'hardcore';
       material.opacity = mode === 'hardcore' ? .21 : 1;
@@ -174,6 +186,16 @@ function initialize() {
     const rotate = reducedMotion ? -.24 : -.24 + Math.sin(seconds * .12) * .13 + state.pointerX * .12;
     brain.rotation.y += (rotate - brain.rotation.y) * .025;
     face.rotation.y += (state.pointerX * .14 - face.rotation.y) * .025;
+    const mood = document.body.dataset.mood || 'neutral';
+    const blink = reducedMotion ? 1 : Math.sin(seconds * .65) > .996 ? .1 : 1;
+    for (const { eye, side } of eyes) {
+      eye.rotation.z = mood === 'angry' ? -side * .35 : mood === 'playful' ? side * .16 : 0;
+      eye.scale.y = .012 * blink * (mood === 'happy' ? .6 : 1);
+      eye.material.color.set(mood === 'angry' ? 0xffb16b : 0x62baff);
+    }
+    lip.scale.y = mood === 'happy' || mood === 'playful' ? -1.5 : mood === 'angry' || mood === 'serious' ? .4 : .8;
+    if (document.body.classList.contains('is-speaking')) lip.scale.y *= 1.4 + Math.sin(seconds * 13) * .6;
+    crystals.rotation.y = seconds * .045;
     material.emissiveIntensity = .15 + audio * .45 + (thinking ? .12 : 0);
     nodeMaterial.opacity = .48 + audio * .35 + (thinking ? .15 : 0);
     lineMaterial.opacity = (mode === 'hardcore' ? .34 : .16) + audio * .24;

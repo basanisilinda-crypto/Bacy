@@ -20,6 +20,13 @@ test('CLI bridge rejects incomplete turns and a message followed by a failed tur
   await assert.rejects(run('incomplete'), /did not complete/);
   await assert.rejects(run('fail'), /valid sign-in/);
 });
+test('CLI bridge parses structured model replies and rejects invalid structured results safely', async () => {
+  const answer = await run('structured');
+  assert.equal(answer.reply, 'A structured reply.');
+  assert.equal(answer.mood, 'happy');
+  assert.equal(answer.preview.items[0].label, 'Start');
+  await assert.rejects(run('invalid-structured'), /invalid structured reply/);
+});
 test('CLI bridge stops a hung process on timeout and on cancellation', async () => {
   await assert.rejects(run('hang', { timeoutMs: 100 }), /request was stopped/);
   const abort = new AbortController();

@@ -1,0 +1,16 @@
+{
+  "type": "object", "additionalProperties": false,
+  "required": ["reply", "mood", "preview"],
+  "properties": {
+    "reply": {"type": "string"},
+    "mood": {"type": "string", "enum": ["neutral", "happy", "playful", "thinking", "serious", "angry"]},
+    "preview": {
+      "type": "object", "additionalProperties": false, "required": ["title", "kind", "items"],
+      "properties": {
+        "title": {"type": "string"},
+        "kind": {"type": "string", "enum": ["none", "steps", "comparison", "flow"]},
+        "items": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["label", "detail"], "properties": {"label": {"type": "string"}, "detail": {"type": "string"}}}}
+      }
+    }
+  }
+}
