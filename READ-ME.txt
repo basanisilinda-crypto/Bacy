@@ -36,20 +36,31 @@ The cloud development tests use fake API responses; verify your live connection
 on your laptop. Existing Codex installation and sign-in do not need deleting.
 
 MODES AND PERSONALITY
-Face: a relaxed, conversational style with a sculpted, expressive face.
-Brain: thoughtful conversation and practical recommendations.
-Neural: analytical explanations and a neural wireframe.
-Crystal (Pro): a crystalline brain and structured comparisons or data explanations.
-Modes change the style instructions sent to the selected AI model; they do not
-magically increase intelligence. Recommendations are opinions, not human feelings.
+Normal: a turquoise holographic face and relaxed conversational style.
+Pro: a realistic mechanical android and focused, practical recommendations.
+Power: a luminous neural face and deeper analytical explanations.
+Crystal: violet crystalline accents and structured visual explanations.
+New original portrait artwork takes inspiration from your supplied references.
+Animated pathways, blinking, mouth movement, and expression deformation respond
+to mode, mood and speech playback. This is a stylized animated portrait, not a
+fully rigged 3D character or exact lip synchronization. Reduced motion is supported.
+Modes change style instructions to the same selected model; Power does not buy
+extra quota or switch to a stronger model. Recommendations are opinions, not
+human feelings. No Ultra or Max plan is needed for the interface or local controls.
 
 COMMANDS - TYPE THEM, OR SAY THEM WHILE THE MICROPHONE IS ON
-switch to face mode
-switch to brain mode
-switch to neural mode
+switch to normal mode
+switch to pro mode
+switch to power mode
 switch to crystal mode
 look happy / look funny / look angry / look serious / look neutral
-open browser / open calculator / open notepad
+You can also use the Expression selector; moods preserve the selected mode.
+open browser / open Chrome / open Edge / open Firefox
+open Word / open Excel / open Outlook / open VS Code
+open calculator / open notepad / open file explorer / open settings
+show desktop / volume up / volume down / mute / unmute
+open camera / close camera
+open file <filename in your chosen folder>
 show apps / open <installed app name>
 search for <your query>
 show files
@@ -89,7 +100,7 @@ steps, flow cards, or comparisons. Close it when you want the central scene back
 Preview fields are bounded text; generated HTML and code are not executed.
 
 LIMITATIONS
-Email sending, social-account integrations, camera, arbitrary desktop clicking,
+Email sending, social-account integrations, AI camera vision, arbitrary desktop clicking,
 file editing/deletion, and automatic analysis of large files are not implemented.
 Crystal can discuss and structure data you supply; it does not inspect all files.
 Long chats may need New chat. Your browser tab stores history only for the session.
@@ -112,3 +123,15 @@ Run node --test test/*.test.cjs. The tests use fixture AI and Windows adapters;
 they do not claim live account responses or real Windows app launches.
 Use the existing cloud checkout. Cloud tasks are already isolated; do not create
 a Git worktree unless requested.
+
+NEW LOCAL CONTROLS
+Chrome and other named apps must be installed and listed by Windows Get-StartApps.
+Bacy launches their registered Windows identifiers; it does not assume an app
+opened successfully or gain control of that app's account by launching it.
+Desktop and sound controls run fixed Windows actions without sending commands
+to the AI. Mute and unmute both toggle the Windows mute state; use the Computer
+panel for that action. Camera preview requires browser permission, stops when
+you close the panel or page, and is never submitted to Gemini or Codex.
+This version supports explicit app launches, desktop/sound commands, web search,
+and chosen-folder browsing. Arbitrary desktop clicking, account integrations,
+and editing/deleting files require additional work.

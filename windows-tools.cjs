@@ -52,13 +52,28 @@ function createWindowsTools({ run = powershell, open = launch, platform = proces
     },
     async openApp(id) {
       requireWindows();
-      const builtins = { browser: ['explorer.exe', ['https://www.bing.com']], notepad: ['notepad.exe', []], calculator: ['calc.exe', []] };
+      const builtins = { browser: ['explorer.exe', ['https://www.bing.com']], notepad: ['notepad.exe', []], calculator: ['calc.exe', []], explorer: ['explorer.exe', []], settings: ['explorer.exe', ['ms-settings:']] };
       if (Object.hasOwn(builtins, id)) { await open(...builtins[id]); return { message: 'Windows received the request to open ' + id + '.' }; }
       if (!appCache.length) await this.apps();
-      const app = appCache.find(item => item.AppID === id);
+      const aliases = { chrome: ['google chrome', 'chrome'], edge: ['microsoft edge'], firefox: ['mozilla firefox', 'firefox'], word: ['word', 'microsoft word'], excel: ['excel', 'microsoft excel'], outlook: ['outlook', 'outlook (classic)', 'outlook (new)'], vscode: ['visual studio code'] };
+      const names = aliases[id];
+      const app = appCache.find(item => names ? names.includes(item.Name.toLowerCase()) : item.AppID === id);
       if (!app || !/^[A-Za-z0-9_.!{}\\/: -]+$/.test(app.AppID)) throw new Error('Choose an app from the installed-app list.');
       await open('explorer.exe', ['shell:AppsFolder\\' + app.AppID]);
       return { message: 'Windows received the request to open ' + app.Name + '.' };
+    },
+    async computer(action) {
+      requireWindows();
+      if (action === 'show-desktop') {
+        await run("(New-Object -ComObject Shell.Application).MinimizeAll()");
+        return { message: 'Windows received the request to show your desktop.' };
+      }
+      const keys = { 'volume-up': 175, 'volume-down': 174, 'mute': 173 };
+      if (!Object.hasOwn(keys, action)) throw new Error('Choose a supported desktop or sound control.');
+      const script = `Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class BacyKeys { [DllImport("user32.dll")] public static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra); }'; ` +
+        `[BacyKeys]::keybd_event(${keys[action]},0,0,[UIntPtr]::Zero);[BacyKeys]::keybd_event(${keys[action]},0,2,[UIntPtr]::Zero)`;
+      await run(script);
+      return { message: action === 'mute' ? 'Windows received the request to toggle mute.' : 'Windows received the request to turn the volume ' + (action === 'volume-up' ? 'up.' : 'down.') };
     },
     async search(query) {
       requireWindows();

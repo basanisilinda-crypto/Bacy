@@ -158,7 +158,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
   const headers = {
     'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
     'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
-    'Permissions-Policy': 'camera=(), microphone=(self), geolocation=()'
+    'Permissions-Policy': 'camera=(self), microphone=(self), geolocation=()'
   };
   function checkCodex() {
     return new Promise(resolve => {
@@ -189,17 +189,18 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
       return send(200, { available: Boolean(version), provider, version, platform: process.platform, windowsTools: windowsTools.available, proxyConfigured: Boolean(env.HTTPS_PROXY || env.https_proxy), detail: version ? 'Codex detected. Your first message checks sign-in and the online connection.' : 'Codex is unavailable. Check codex.cmd --version in PowerShell, then check again.' });
     }
     if (req.method === 'GET') {
-      const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/scene.js': ['scene.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/vendor/three.module.min.js': ['vendor/three.module.min.js', 'text/javascript'], '/vendor/three.core.min.js': ['vendor/three.core.min.js', 'text/javascript'] };
+      const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/scene.js': ['scene.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/favicon.svg': ['favicon.svg', 'image/svg+xml'], '/vendor/three.module.min.js': ['vendor/three.module.min.js', 'text/javascript'], '/vendor/three.core.min.js': ['vendor/three.core.min.js', 'text/javascript'] };
+      if (req.url === '/portraits.png') files['/portraits.png'] = ['portraits.png', 'image/png'];
       const file = files[req.url];
       if (!file) return send(404, { error: 'Not found.' });
       try {
-        let content = fs.readFileSync(path.join(ROOT, 'public', file[0]), 'utf8');
+        let content = fs.readFileSync(path.join(ROOT, 'public', file[0]), file[1] === 'image/png' ? undefined : 'utf8');
         if (req.url === '/') content = content.replace('__BACY_TOKEN__', token);
         res.writeHead(200, { ...headers, 'Content-Type': file[1] + '; charset=utf-8' });
         return res.end(content);
       } catch { return send(500, { error: 'Interface files are missing. Extract all Bacy files together.' }); }
     }
-    const routes = ['/api/chat', '/api/ai/configure', '/api/ai/test', '/api/apps', '/api/apps/open', '/api/search', '/api/files/choose', '/api/files/list', '/api/files/open'];
+    const routes = ['/api/chat', '/api/ai/configure', '/api/ai/test', '/api/apps', '/api/apps/open', '/api/computer', '/api/search', '/api/files/choose', '/api/files/list', '/api/files/open'];
     if (req.method !== 'POST' || !routes.includes(req.url)) return send(404, { error: 'Not found.' });
     if (req.headers['x-bacy-token'] !== token) return send(403, { error: 'Refresh the Bacy page, then try again.' });
     if (!/^application\/json(?:;|$)/i.test(req.headers['content-type'] || '')) return send(415, { error: 'A JSON message is required.' });
@@ -232,7 +233,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
       try {
         const actions = {
           '/api/apps': () => windowsTools.apps(), '/api/apps/open': () => windowsTools.openApp(body.id),
-          '/api/search': () => windowsTools.search(body.query), '/api/files/choose': () => windowsTools.chooseFolder(),
+          '/api/computer': () => windowsTools.computer(body.action), '/api/search': () => windowsTools.search(body.query), '/api/files/choose': () => windowsTools.chooseFolder(),
           '/api/files/list': () => windowsTools.list(body.path || ''), '/api/files/open': () => windowsTools.openFile(body.path)
         };
         return send(200, await actions[req.url]());

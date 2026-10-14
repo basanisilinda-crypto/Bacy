@@ -14,10 +14,10 @@
   const errorText = byId('error-text');
   const token = document.querySelector('meta[name="bacy-token"]').content;
   const modeCaptions = {
-    normal: 'Relaxed · Face',
-    professional: 'Thoughtful · Brain',
-    hardcore: 'Analytical · Neural',
-    crystal: 'Precise · Crystal'
+    normal: 'Normal · Conversational',
+    professional: 'Pro · Focused & practical',
+    hardcore: 'Power · Analytical',
+    crystal: 'Crystal · Visual & structured'
   };
   let history = [];
   let mode = 'professional';
@@ -126,6 +126,7 @@
       if (status.model) byId('gemini-model').value = status.model;
       byId('remember-key').disabled = status.platform !== 'win32';
       available = Boolean(status.available);
+      byId('workspace-status').textContent = status.windowsTools ? 'Windows controls available' : 'Windows laptop required';
       byId('header-status').textContent = available ? aiProvider === 'gemini' && !status.verified ? 'Key configured' : 'Ready' : 'Needs setup';
       byId('connection-detail').textContent = status.detail || (available ? 'Codex is available. Your first message will verify the AI connection.' : 'Install Codex and sign in on this laptop, then check again.');
       byId('header-dot').className = `status-dot ${available ? 'ready' : 'error'}`;
@@ -180,9 +181,9 @@
         signal: controller.signal
       });
       const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data && typeof data.error === 'string' ? data.error : 'Bacy could not get a response. Check Codex sign-in and your proxy, then try again.');
+      if (!response.ok) throw new Error(data && typeof data.error === 'string' ? data.error : 'Bacy could not get a response. Check AI settings and your proxy, then try again.');
       const reply = data && (data.reply || data.response || data.message);
-      if (typeof reply !== 'string' || !reply.trim()) throw new Error('Codex returned no answer. Please try again.');
+      if (typeof reply !== 'string' || !reply.trim()) throw new Error('Your AI provider returned no answer. Please try again.');
       history = [...messages, { role: 'assistant', content: reply }].slice(-20);
       appendMessage('assistant', reply);
       if (['neutral', 'happy', 'playful', 'thinking', 'serious', 'angry'].includes(data.mood)) document.body.dataset.mood = data.mood;
@@ -251,6 +252,18 @@
     document.body.dataset.mode = mode;
     document.body.dataset.mood = 'neutral';
     byId('mode-caption').textContent = modeCaptions[mode];
+    const identities = {
+      normal: ['01','Here for you.\nReady for anything.','A little curiosity.\nA conversation that feels natural.','NORMAL'],
+      professional: ['02','Precision.\nWith presence.','A sharper perspective.\nA calmer way to get things done.','PRO'],
+      hardcore: ['03','More depth.\nMore possibility.','Follow the connections.\nThink through the bigger picture.','POWER'],
+      crystal: ['04','See it clearly.\nMake it happen.','Give your ideas structure.\nTurn complexity into clarity.','CRYSTAL']
+    };
+    const [number,title,description,label] = identities[mode];
+    byId('mode-number').textContent = number;
+    byId('identity-title').textContent = title;
+    byId('identity-description').textContent = description;
+    byId('identity-mode').textContent = label + ' MODE';
+    byId('avatar-mode-label').textContent = label;
     document.querySelectorAll('button[data-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === mode)));
   }
   async function api(route, body = {}) {
@@ -282,7 +295,7 @@
   }
   async function handleInput(message, retry = false) {
     if (!message.trim()) return;
-    const command = message.toLowerCase().trim().replace(/[.!?]+$/, '').replace(/^(?:hey )?bacy[, ]+/, '').replace(/^please /, '');
+    const command = message.toLowerCase().trim().replace(/[.!?]+$/, '').replace(/^(?:hey )?bacy[, ]+/, '').replace(/^please /, '').replace(/(?: for me| please)$/, '');
     if (/^(pause|stop|stop speaking|be quiet)$/.test(command)) {
       controller?.abort(); synthesizer?.cancel(); byId('read-replies').checked = false;
       document.body.classList.remove('is-speaking'); speaking = false;
@@ -293,24 +306,35 @@
       if (!voices.length) return localReply(message, 'There are no browser voices available yet. Open Voice to check your options.');
       byId('read-replies').checked = true; return localReply(message, 'Voice is on.');
     }
-    const modeMatch = command.match(/^(?:switch|change|go)(?: (?:the )?mode)?(?: to)? (?:the )?(face|normal|brain|professional|pro|neural|hardcore|crystal|crystalline)(?: mode)?$/);
+    const modeMatch = command.match(/^(?:switch|change|go)(?: (?:the )?mode)?(?: to)? (?:the )?(face|normal|brain|professional|pro|power|neural|hardcore|crystal|crystalline)(?: mode)?$/);
     if (modeMatch) {
-      const mapping = { face: 'normal', normal: 'normal', brain: 'professional', professional: 'crystal', pro: 'crystal', neural: 'hardcore', hardcore: 'hardcore', crystal: 'crystal', crystalline: 'crystal' };
+      const mapping = { face: 'normal', normal: 'normal', brain: 'professional', professional: 'professional', pro: 'professional', power: 'hardcore', neural: 'hardcore', hardcore: 'hardcore', crystal: 'crystal', crystalline: 'crystal' };
       setMode(mapping[modeMatch[1]]);
       return localReply(message, 'Switched to ' + modeCaptions[mode] + ' mode.');
     }
     const mood = command.match(/^(?:look|be|feel|show)(?: (?:a|your) face)? (angry|happy|funny|playful|serious|neutral)$/);
     if (mood) {
-      setMode('normal'); document.body.dataset.mood = mood[1] === 'funny' ? 'playful' : mood[1];
-      return localReply(message, 'Face changed to ' + mood[1] + '.');
+      document.body.dataset.mood = mood[1] === 'funny' ? 'playful' : mood[1];
+      return localReply(message, 'Expression changed to ' + mood[1] + '.');
     }
     if (/^(?:show|open)(?: my)? files$/.test(command)) return performLocal(message, async () => { showFilesPanel(); return 'Choose a folder and I’ll show its files here.'; });
     if (/^(?:show|open|list)(?: my)? apps$/.test(command)) return performLocal(message, async () => { await showApps(); return 'Here are the installed apps Windows reported.'; });
+    if (/^(?:open|show|start)(?: my| the)? camera$/.test(command)) return performLocal(message, async () => { await startCamera(); return 'Your camera preview stays on this page.'; });
+    if (/^(?:close|stop)(?: my| the)? camera$/.test(command)) { stopCamera(); return localReply(message, 'Camera stopped.'); }
+    const systemActions = { 'show desktop':'show-desktop', 'show my desktop':'show-desktop', 'volume up':'volume-up', 'turn up the volume':'volume-up', 'volume down':'volume-down', 'turn down the volume':'volume-down', 'mute':'mute', 'mute sound':'mute', 'unmute':'mute' };
+    if (Object.hasOwn(systemActions,command)) return performLocal(message, async () => (await api('/api/computer',{action:systemActions[command]})).message);
+    const fileCommand = command.match(/^open (?:the )?file (.+)$/);
+    if (fileCommand) return performLocal(message, async () => {
+      const data = await api('/api/files/list', {path:filePath});
+      const file = data.entries.find(entry => !entry.directory && entry.name.toLowerCase() === fileCommand[1]);
+      if (!file) { showFilesPanel(); return 'Choose the folder with that file, then select it from Files.'; }
+      return (await api('/api/files/open', {path:file.path})).message;
+    });
     const search = command.match(/^(?:search(?: the web)?(?: for)?|look up) (.+)$/);
     if (search) return performLocal(message, async () => (await api('/api/search', { query: search[1] })).message);
-    const app = command.match(/^open (.+)$/);
+    const app = command.match(/^(?:open|launch|start) (.+)$/);
     if (app) return performLocal(message, async () => {
-      let id = { browser: 'browser', notepad: 'notepad', calculator: 'calculator' }[app[1]];
+      let id = { browser:'browser', chrome:'chrome', 'google chrome':'chrome', edge:'edge', 'microsoft edge':'edge', firefox:'firefox', word:'word', excel:'excel', outlook:'outlook', 'vs code':'vscode', notepad:'notepad', calculator:'calculator', 'file explorer':'explorer', settings:'settings', 'windows settings':'settings' }[app[1]];
       if (!id) {
         const data = await api('/api/apps');
         const exact = data.apps.find(item => item.name.toLowerCase() === app[1]);
@@ -384,6 +408,44 @@
   byId('open-apps').addEventListener('click', () => showApps().catch(toolError));
   byId('open-files').addEventListener('click', showFilesPanel);
   byId('close-tools').addEventListener('click', () => { byId('tools-panel').hidden = true; });
+  byId('open-system').addEventListener('click', () => {
+    showTools('Computer', 'These commands run locally on Windows.');
+    byId('choose-folder').hidden = true; byId('folder-up').hidden = true;
+    for (const [label,action] of [['Show desktop','show-desktop'],['Volume up','volume-up'],['Volume down','volume-down'],['Toggle mute','mute']]) {
+      const button = document.createElement('button');button.className='tool-item';button.textContent=label;
+      button.addEventListener('click',()=>performLocal(label, async () => (await api('/api/computer',{action})).message));
+      byId('tools-content').append(button);
+    }
+  });
+  let cameraStream = null, cameraRequest=0;
+  async function startCamera() {
+    if (cameraStream) { byId('camera-panel').hidden = false; return; }
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera access is unavailable in this browser.');
+    const request=++cameraRequest;
+    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    if (request!==cameraRequest) { stream.getTracks().forEach(track=>track.stop());throw new Error('Camera request cancelled.'); }
+    cameraStream=stream;
+    byId('camera-video').srcObject = cameraStream;
+    byId('camera-panel').hidden = false;
+    byId('camera-note').textContent = 'Live preview stays on this page. No images are sent to the AI.';
+  }
+  function stopCamera() {
+    cameraRequest++;
+    cameraStream?.getTracks().forEach(track=>track.stop()); cameraStream=null;
+    byId('camera-video').srcObject = null; byId('camera-panel').hidden=true;
+  }
+  byId('open-camera').addEventListener('click', ()=>performLocal('Open camera', async ()=>{await startCamera();return 'Camera preview is on. Close the panel to turn it off.';}));
+  byId('close-camera').addEventListener('click',stopCamera);
+  byId('mood-select').addEventListener('change',()=>{document.body.dataset.mood=byId('mood-select').value;});
+  const updatePresence = () => {
+    byId('presence-state').textContent = document.body.classList.contains('is-speaking')?'SPEAKING':document.body.classList.contains('is-thinking')?'THINKING':document.body.classList.contains('is-listening')?'LISTENING':'STANDING BY';
+    const mood=document.body.dataset.mood;
+    if (Array.from(byId('mood-select').options).some(option=>option.value===mood)) byId('mood-select').value=mood;
+  };
+  new MutationObserver(updatePresence).observe(document.body,{attributes:true,attributeFilter:['class','data-mood']});
+  const updateClock = () => { byId('studio-clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + ' / LOCAL TIME'; };
+  updateClock();setInterval(updateClock,30000);
+  document.querySelectorAll('[data-command]').forEach(button=>button.addEventListener('click',()=>handleInput(button.dataset.command)));
   const drawer = byId('conversation-drawer');
   function showDrawer(show) {
     drawer.hidden = !show;
@@ -437,7 +499,7 @@
     byId('voice-panel').hidden = !byId('voice-panel').hidden;
     byId('voice-button').setAttribute('aria-expanded', String(!byId('voice-panel').hidden));
   });
-  byId('read-replies').addEventListener('change', () => { if (!byId('read-replies').checked) synthesizer?.cancel(); });
+  byId('read-replies').addEventListener('change', () => { if (!byId('read-replies').checked) { synthesizer?.cancel(); speaking=false;document.body.classList.remove('is-speaking');restartRecognition(); } });
   byId('stop-voice').addEventListener('click', () => { synthesizer?.cancel(); speaking = false; document.body.classList.remove('is-speaking'); restartRecognition(); });
   function speak(text) {
     if (!byId('read-replies').checked || !voices.length || !synthesizer) return;
@@ -475,7 +537,7 @@
       byId('microphone-note').textContent = 'Speech recognition could not connect. The scene still reacts to sound; type your command.';
     };
     recognition.onend = () => { recognitionRunning = false; restartRecognition(); };
-    byId('microphone-note').textContent = 'Listening. Try “Hey Bacy, switch to crystal mode.”';
+    byId('microphone-note').textContent = 'Listening. Try “Hey Bacy, switch to power mode.”';
     restartRecognition();
   }
   function stopMicrophone() {
@@ -488,7 +550,7 @@
     microphone = null;
     audioContext = null;
     window.bacyAudioLevel = 0;
-    document.body.classList.remove('is-listening');
+    document.body.classList.remove('is-listening', 'voice-active');
     document.body.dataset.theme = previousTheme;
     updateThemeLabel();
     byId('microphone-button').setAttribute('aria-pressed', 'false');
@@ -519,7 +581,7 @@
       };
       measure();
       document.body.classList.add('is-listening');
-      document.body.dataset.theme = 'light';
+      document.body.classList.add('voice-active');
       updateThemeLabel();
       byId('microphone-note').hidden = false;
       byId('microphone-button').setAttribute('aria-pressed', 'true');
@@ -536,6 +598,6 @@
       byId('microphone-button').disabled = false;
     }
   });
-  window.addEventListener('pagehide', () => { stopMicrophone(); synthesizer?.cancel(); });
+  window.addEventListener('pagehide', () => { stopCamera(); stopMicrophone(); synthesizer?.cancel(); });
   checkConnection();
 })();

@@ -1,213 +1,94 @@
 import * as THREE from './vendor/three.module.min.js';
 
+// Original portrait artwork with animated neural pathways and facial deformation.
+// This is an animated portrait, not a camera feed or a fully rigged 3D person.
 const host = document.getElementById('visual-scene');
-const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let renderer;
-try {
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
-} catch {
-  document.getElementById('scene-fallback').hidden = false;
-}
-if (renderer) initialize();
-
-function initialize() {
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
-  renderer.setClearColor(0x000000, 0);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.25;
-  host.append(renderer.domElement);
+try { renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:'low-power' }); }
+catch { document.getElementById('scene-fallback').hidden = false; }
+if (renderer) init();
+function init() {
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  renderer.setClearColor(0x000000,0); host.append(renderer.domElement);
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(32, 1, .1, 100);
-  camera.position.set(.1, .3, 7.9);
-  camera.lookAt(0, -.12, 0);
-  scene.add(new THREE.AmbientLight(0xabc8f2, 1.15));
-  const key = new THREE.DirectionalLight(0xffffff, 3.7);
-  key.position.set(-3, 5, 4); scene.add(key);
-  const rim = new THREE.DirectionalLight(0x4f9cff, 4);
-  rim.position.set(3, 2, -2); scene.add(rim);
-  const fill = new THREE.DirectionalLight(0x91bdff, 1.6);
-  fill.position.set(2, -1, 4); scene.add(fill);
-
-  const brain = new THREE.Group();
-  const material = new THREE.MeshPhysicalMaterial({ color: 0xaabed4, metalness: .32, roughness: .33, clearcoat: .7, clearcoatRoughness: .2, emissive: 0x0b2144, emissiveIntensity: .2 });
-  const eyes = [];
-  for (const side of [-1, 1]) {
-    const geometry = new THREE.SphereGeometry(1, 152, 112);
-    const vertices = geometry.attributes.position;
-    for (let i = 0; i < vertices.count; i++) {
-      const x = vertices.getX(i), y = vertices.getY(i), z = vertices.getZ(i);
-      const first = Math.abs(Math.sin(10 * y + 2.7 * Math.sin(4 * z) + 1.8 * Math.sin(5 * x)));
-      const second = Math.abs(Math.sin(11 * z + 2.1 * Math.sin(6 * y) + 1.1 * Math.sin(4 * x)));
-      const furrow = .105 * (1 - first) ** 5 + .07 * (1 - second) ** 6;
-      const radius = 1 - furrow + .017 * Math.sin(4 * x + 3 * z);
-      // Two folded hemispheres, separated by a deep central fissure.
-      const inner = side * x < 0 ? .75 : 1;
-      vertices.setXYZ(i, x * .73 * radius * inner + side * .5, y * .9 * radius + .08, z * 1.05 * radius);
-    }
-    geometry.computeVertexNormals();
-    brain.add(new THREE.Mesh(geometry, material));
-  }
-  const cerebellum = new THREE.Mesh(new THREE.SphereGeometry(.33, 56, 40), material);
-  cerebellum.scale.set(1.2, .65, .7); cerebellum.position.set(0, -.79, -.53); brain.add(cerebellum);
-  const stem = new THREE.Mesh(new THREE.CylinderGeometry(.11, .08, .34, 32), material);
-  stem.position.set(0, -.98, -.23); stem.rotation.x = -.3; brain.add(stem);
-  brain.rotation.set(.08, -.24, -.015); scene.add(brain);
-
-  const face = new THREE.Group();
-  const faceGeometry = new THREE.SphereGeometry(1, 120, 100);
-  const faceVertices = faceGeometry.attributes.position;
-  const gaussian = (x, y, cx, cy, spread) => Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / spread);
-  for (let i = 0; i < faceVertices.count; i++) {
-    const x = faceVertices.getX(i), y = faceVertices.getY(i), z = faceVertices.getZ(i);
-    const front = Math.max(0, z) ** 5;
-    const nose = .27 * gaussian(x, y, 0, .02, .025) + .08 * gaussian(x, y, 0, .27, .03);
-    const sockets = .1 * (gaussian(x, y, -.3, .22, .018) + gaussian(x, y, .3, .22, .018));
-    const cheeks = .045 * (gaussian(x, y, -.36, -.15, .08) + gaussian(x, y, .36, -.15, .08));
-    const lips = .065 * gaussian(x, y, 0, -.28, .016);
-    const lower = THREE.MathUtils.smoothstep(-y, .2, .85);
-    faceVertices.setXYZ(i, x * .76 * (1 - lower * .16), y * 1.07, z * .65 + front * (nose - sockets + cheeks + lips));
-  }
-  faceGeometry.computeVertexNormals();
-  face.add(new THREE.Mesh(faceGeometry, material));
-  for (const side of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: 0x62baff }));
-    eye.scale.set(.072, .012, .014); eye.position.set(side * .227, .233, .615); face.add(eye);
-    eyes.push({ eye, side });
-  }
-  const mouth = new THREE.EllipseCurve(0, 0, .12, .014, 0, Math.PI, false, 0);
-  const lip = new THREE.Line(new THREE.BufferGeometry().setFromPoints(mouth.getPoints(24)), new THREE.LineBasicMaterial({ color: 0x455e7c, transparent: true, opacity: .7 }));
-  lip.position.set(0, -.299, .705); face.add(lip);
-  face.visible = false; scene.add(face);
-
-  // Independent neural network behind the brain: fine pathways, floating nodes.
-  let seed = 91;
-  const random = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-  const network = new THREE.Group();
-  const nodes = [];
-  for (let i = 0; i < 165; i++) {
-    const angle = random() * Math.PI * 2;
-    const radius = 1.4 + random() * 1.35;
-    nodes.push(new THREE.Vector3(Math.cos(angle) * radius * 1.35, Math.sin(angle) * radius * .64, -1.1 - random() * 1.1));
-  }
-  const nodeGeometry = new THREE.BufferGeometry().setFromPoints(nodes);
-  const nodeMaterial = new THREE.PointsMaterial({ color: 0x8bc5ff, size: .025, transparent: true, opacity: .65, sizeAttenuation: true });
-  network.add(new THREE.Points(nodeGeometry, nodeMaterial));
-  const segments = [];
-  for (let i = 0; i < nodes.length; i++) {
-    const nearby = nodes.map((point, index) => ({ index, distance: point.distanceTo(nodes[i]) })).filter(item => item.index > i && item.distance < .85).sort((a, b) => a.distance - b.distance).slice(0, 2);
-    for (const neighbor of nearby) segments.push(nodes[i], nodes[neighbor.index]);
-  }
-  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x5a8ac4, transparent: true, opacity: .18 });
-  network.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(segments), lineMaterial));
-  const pulses = [];
-  for (let i = 0; i < 10; i++) {
-    const side = i % 2 ? 1 : -1;
-    const y = (i / 10 - .5) * 2;
-    const curve = new THREE.CubicBezierCurve3(new THREE.Vector3(side * .65, y * .35, -.4), new THREE.Vector3(side * 1.5, y * 1.2 + .5, -1.1), new THREE.Vector3(side * 2.4, y * .3 - .6, -1.5), new THREE.Vector3(side * 3.25, y, -1.8));
-    network.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(75)), new THREE.LineBasicMaterial({ color: 0x85b8ff, opacity: .2, transparent: true })));
-    const pulse = new THREE.Mesh(new THREE.SphereGeometry(.019, 8, 8), new THREE.MeshBasicMaterial({ color: 0xe4f3ff }));
-    network.add(pulse); pulses.push({ mesh: pulse, curve, offset: random() });
-  }
-  scene.add(network);
-  const internalNodes = [];
-  for (let i = 0; i < 230; i++) {
-    const vertex = brain.children[i % 2].geometry.attributes.position;
-    const index = Math.floor(random() * vertex.count);
-    internalNodes.push(new THREE.Vector3(vertex.getX(index), vertex.getY(index), vertex.getZ(index)).multiplyScalar(1.012));
-  }
-  const neuralSurface = new THREE.Points(new THREE.BufferGeometry().setFromPoints(internalNodes), new THREE.PointsMaterial({ color: 0x7fd5ff, size: .022, opacity: .9, transparent: true }));
-  brain.add(neuralSurface);
-  const crystals = new THREE.Group();
-  const crystalMaterial = new THREE.MeshPhysicalMaterial({ color: 0x7bb7f0, metalness: .3, roughness: .12, clearcoat: 1, transparent: true, opacity: .58 });
-  for (let i = 0; i < 26; i++) {
-    const angle = i * 2.399963;
-    const jewel = new THREE.Mesh(new THREE.OctahedronGeometry(.07 + (i % 3) * .012), crystalMaterial);
-    jewel.position.set(Math.cos(angle) * 1.3, Math.sin(angle) * .9, -.15 + Math.sin(angle * 1.7) * .5);
-    jewel.rotation.set(angle, angle * .5, angle * .25); crystals.add(jewel);
-  }
-  brain.add(crystals);
-
-  const base = new THREE.Group();
-  const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.48, 1.53, .045, 120), new THREE.MeshPhysicalMaterial({ color: 0x152945, metalness: .75, roughness: .28, transparent: true, opacity: .65 }));
-  disc.position.y = -1.5; base.add(disc);
-  for (const radius of [1.48, 1.61]) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, .006, 8, 120), new THREE.MeshBasicMaterial({ color: 0x6baaff, transparent: true, opacity: .48 }));
-    ring.rotation.x = Math.PI / 2; ring.position.y = -1.47; base.add(ring);
-  }
-  scene.add(base);
-  const state = { mode: '', theme: '', pointerX: 0, pointerY: 0 };
-  host.addEventListener('pointermove', event => {
-    const box = host.getBoundingClientRect();
-    state.pointerX = (event.clientX - box.left) / box.width - .5;
-    state.pointerY = (event.clientY - box.top) / box.height - .5;
-  });
-  host.addEventListener('pointerleave', () => { state.pointerX = state.pointerY = 0; });
-  const resize = () => {
-    const { width, height } = host.getBoundingClientRect();
-    if (width <= 0 || height <= 0) return;
-    renderer.setSize(width, height);
-    camera.aspect = width / height;
-    camera.position.z = width < 650 ? 9.6 : 7.9;
-    camera.updateProjectionMatrix();
+  const camera = new THREE.OrthographicCamera(-3,3,2,-2,.1,100);camera.position.z=10;
+  const texture = new THREE.TextureLoader().load('/portraits.png',undefined,undefined,()=>{document.getElementById('scene-fallback').hidden=false;renderer.domElement.hidden=true;});
+  texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;
+  const uniforms = {
+    uPortrait:{value:1},uPrevious:{value:1},uTransition:{value:1},uTime:{value:0},uSpeaking:{value:0},
+    uSmile:{value:0},uAnger:{value:0},uBlink:{value:0},uAudio:{value:0},uLight:{value:0},uCrystal:{value:0},uTexture:{value:texture}
   };
-  const observer = new ResizeObserver(resize); observer.observe(host); resize();
-  const clock = new THREE.Clock();
-  let frame;
-  let stopped = false;
-  function draw() {
-    if (stopped) return;
-    const seconds = reducedMotion ? 0 : clock.getElapsedTime();
-    const mode = document.body.dataset.mode;
-    const theme = document.body.dataset.theme;
-    const thinking = document.body.classList.contains('is-thinking');
-    const audio = window.bacyAudioLevel || 0;
-    if (state.mode !== mode) {
-      brain.visible = mode !== 'normal'; face.visible = mode === 'normal';
-      neuralSurface.visible = mode === 'hardcore';
-      crystals.visible = mode === 'crystal';
-      material.wireframe = mode === 'hardcore';
-      material.transparent = mode === 'hardcore';
-      material.opacity = mode === 'hardcore' ? .21 : 1;
-      state.mode = mode;
-      host.setAttribute('aria-label', mode === 'normal' ? 'Sculpted face without a body or hands' : 'Three-dimensional brain with connected neurons');
+  const material = new THREE.ShaderMaterial({transparent:true,uniforms,vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,fragmentShader:`
+    uniform sampler2D uTexture;uniform float uPortrait,uPrevious,uTransition,uTime,uSpeaking,uSmile,uAnger,uBlink,uAudio,uLight,uCrystal;varying vec2 vUv;
+    float area(vec2 p,vec2 c,vec2 r){return exp(-dot((p-c)/r,(p-c)/r));}
+    vec4 portrait(float id){
+      vec2 p=vUv;float mouthY=mix(.31,.292,step(.5,id)* (1.0-step(1.5,id)));
+      float lips=area(p,vec2(.5,mouthY),vec2(.17,.055));
+      p.y+=lips*uSmile*(abs(p.x-.5)-.065)*.23;
+      p.y+=lips*uSpeaking*(p.y-mouthY)*-.6;
+      float eyes=area(p,vec2(.345,.55),vec2(.1,.044))+area(p,vec2(.65,.55),vec2(.1,.044));
+      p.y+=eyes*uBlink*.032;
+      p.y+=uAnger*area(p,vec2(.5,.59),vec2(.25,.04))*(.065-abs(p.x-.5))*.18;
+      vec4 c=texture2D(uTexture,vec2((clamp(p.x,.002,.998)+id)/3.0,clamp(p.y,.002,.998)));
+      float lipOpen=area(vUv,vec2(.5,mouthY),vec2(.075,.009+uSpeaking*.012));
+      float brightness=max(c.r,max(c.g,c.b));
+      c.rgb*=1.0-lipOpen*uSpeaking*.48;
+      c.rgb+=vec3(.16,.4,.37)*(uAudio*.055+uSpeaking*.02)*eyes;
+      float scan=sin(vUv.y*790.0-uTime*1.3)*.011*(1.0-step(.5,id));c.rgb+=scan;
+      c.rgb=mix(c.rgb,c.rgb*vec3(.94,.83,1.08),uCrystal*.65);
+      float edge=smoothstep(0.0,.09,vUv.x)*smoothstep(0.0,.09,1.0-vUv.x)*smoothstep(0.0,.15,vUv.y)*smoothstep(0.0,.025,1.0-vUv.y);
+      c.a=edge*smoothstep(.045,.13,brightness);
+      return c;
     }
-    if (state.theme !== theme) {
-      const light = theme === 'light';
-      material.color.set(light ? 0x779ac5 : 0xaabed4);
-      lineMaterial.color.set(light ? 0x548ac5 : 0x5a8ac4);
-      nodeMaterial.color.set(light ? 0x397dca : 0x8bc5ff);
-      disc.material.color.set(light ? 0xbbd0e7 : 0x152945);
-      renderer.toneMappingExposure = light ? 1.05 : 1.25;
-      state.theme = theme;
-    }
-    const bob = Math.sin(seconds * .65) * .045;
-    brain.position.y = face.position.y = bob;
-    const rotate = reducedMotion ? -.24 : -.24 + Math.sin(seconds * .12) * .13 + state.pointerX * .12;
-    brain.rotation.y += (rotate - brain.rotation.y) * .025;
-    face.rotation.y += (state.pointerX * .14 - face.rotation.y) * .025;
-    const mood = document.body.dataset.mood || 'neutral';
-    const blink = reducedMotion ? 1 : Math.sin(seconds * .65) > .996 ? .1 : 1;
-    for (const { eye, side } of eyes) {
-      eye.rotation.z = mood === 'angry' ? -side * .35 : mood === 'playful' ? side * .16 : 0;
-      eye.scale.y = .012 * blink * (mood === 'happy' ? .6 : 1);
-      eye.material.color.set(mood === 'angry' ? 0xffb16b : 0x62baff);
-    }
-    lip.scale.y = mood === 'happy' || mood === 'playful' ? -1.5 : mood === 'angry' || mood === 'serious' ? .4 : .8;
-    if (document.body.classList.contains('is-speaking')) lip.scale.y *= 1.4 + Math.sin(seconds * 13) * .6;
-    crystals.rotation.y = seconds * .045;
-    material.emissiveIntensity = .15 + audio * .45 + (thinking ? .12 : 0);
-    nodeMaterial.opacity = .48 + audio * .35 + (thinking ? .15 : 0);
-    lineMaterial.opacity = (mode === 'hardcore' ? .34 : .16) + audio * .24;
-    rim.intensity = 3.6 + audio * 2.3;
-    for (const pulse of pulses) pulse.mesh.position.copy(pulse.curve.getPoint((seconds * (thinking ? .2 : .07) + pulse.offset) % 1));
-    renderer.render(scene, camera);
-    frame = requestAnimationFrame(draw);
+    void main(){gl_FragColor=mix(portrait(uPrevious),portrait(uPortrait),smoothstep(0.0,1.0,uTransition));}
+  `});
+  const portrait = new THREE.Mesh(new THREE.PlaneGeometry(3.15*661/793,3.15),material);portrait.position.z=.1;scene.add(portrait);
+  const network = new THREE.Group();scene.add(network);
+  const random = (()=>{let seed=221;return()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};})();
+  const nodes=[];
+  for(let i=0;i<115;i++){
+    const side=i%2?1:-1;const x=side*(1.05+random()*1.65);const y=(random()-.5)*2.7;
+    nodes.push(new THREE.Vector3(x,y,-.3));
   }
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { cancelAnimationFrame(frame); stopped = true; }
-    else if (stopped) { stopped = false; draw(); }
-  });
-  window.addEventListener('pagehide', () => { stopped = true; cancelAnimationFrame(frame); observer.disconnect(); renderer.dispose(); });
-  draw();
+  const nodeMaterial=new THREE.PointsMaterial({color:0x94ced3,size:.012,transparent:true,opacity:.55});
+  network.add(new THREE.Points(new THREE.BufferGeometry().setFromPoints(nodes),nodeMaterial));
+  const links=[];
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++)if(nodes[i].distanceTo(nodes[j])<.45&&random()>.4)links.push(nodes[i],nodes[j]);
+  const lineMaterial=new THREE.LineBasicMaterial({color:0x60868a,transparent:true,opacity:.14});
+  network.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(links),lineMaterial));
+  const pulses=[];
+  for(let i=0;i<10;i++){
+    const side=i%2?1:-1;const y=(i/10-.5)*2.3;
+    const curve=new THREE.CubicBezierCurve3(new THREE.Vector3(side*.78,y*.6,-.1),new THREE.Vector3(side*1.25,y+.3,-.25),new THREE.Vector3(side*2,y-.4,-.3),new THREE.Vector3(side*2.8,y*.85,-.4));
+    network.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(60)),new THREE.LineBasicMaterial({color:0x91cfd2,transparent:true,opacity:.14})));
+    const pulse=new THREE.Mesh(new THREE.SphereGeometry(.016,6,6),new THREE.MeshBasicMaterial({color:0xb8e4d5,transparent:true,opacity:.75}));network.add(pulse);pulses.push({pulse,curve,offset:random()});
+  }
+  const ring=new THREE.Mesh(new THREE.RingGeometry(1.25,1.255,128),new THREE.MeshBasicMaterial({color:0xa5d9c8,transparent:true,opacity:.13,side:THREE.DoubleSide}));
+  ring.scale.y=.12;ring.position.set(0,-1.65,-.2);scene.add(ring);
+  let mode='', lastFrame=0, pointerX=0, pointerY=0, transitionAt=0;
+  host.addEventListener('pointermove',e=>{const r=host.getBoundingClientRect();pointerX=(e.clientX-r.left)/r.width-.5;pointerY=(e.clientY-r.top)/r.height-.5;});
+  host.addEventListener('pointerleave',()=>{pointerX=pointerY=0;});
+  const resize=()=>{const r=host.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(r.width,r.height);camera.left=-2*r.width/r.height;camera.right=2*r.width/r.height;camera.updateProjectionMatrix();const mobile=r.width<750;portrait.scale.setScalar(mobile?.88:1.12);portrait.position.set(0,-.06,.1);network.scale.setScalar(mobile?.8:1);};
+  new ResizeObserver(resize).observe(host);resize();
+  function animate(now){
+    requestAnimationFrame(animate);if(document.hidden||now-lastFrame<33)return;lastFrame=now;
+    const t=reduced?0:now/1000, next=document.body.dataset.mode;
+    if(next!==mode){uniforms.uPrevious.value=uniforms.uPortrait.value;uniforms.uPortrait.value=next==='normal'?0:next==='professional'?1:2;transitionAt=now;mode=next;host.dataset.portrait=next;}
+    uniforms.uTransition.value=reduced?1:Math.min(1,(now-transitionAt)/650);
+    uniforms.uTime.value=t;uniforms.uAudio.value=window.bacyAudioLevel||0;
+    const mood=document.body.dataset.mood;
+    uniforms.uSmile.value=mood==='happy'?1:mood==='playful'?1.6:mood==='angry'?-.6:0;
+    uniforms.uAnger.value=mood==='angry'?1:mood==='serious'?.45:0;
+    uniforms.uCrystal.value=mode==='crystal'?1:0;
+    const speaking=document.body.classList.contains('is-speaking');
+    uniforms.uSpeaking.value=reduced?0:speaking?.3+Math.abs(Math.sin(t*9)*Math.sin(t*13))*.6:0;
+    const blinkPhase=t%6.5;uniforms.uBlink.value=reduced?0:blinkPhase>6.25?Math.sin((blinkPhase-6.25)/.25*Math.PI):0;
+    if(!reduced){portrait.position.x+=(pointerX*.08-portrait.position.x+(0))*.035;portrait.rotation.y+=(pointerX*.035-portrait.rotation.y)*.03;portrait.rotation.z=Math.sin(t*.35)*.002+pointerY*.005;network.rotation.z=Math.sin(t*.08)*.007;
+    pulses.forEach(({pulse,curve,offset})=>pulse.position.copy(curve.getPoint((t*(document.body.classList.contains('is-thinking')?.18:.07)+offset)%1)));}
+    const active=document.body.classList.contains('is-listening')||speaking;
+    nodeMaterial.opacity=active?.75:.4;lineMaterial.opacity=active?.24:.13;
+    renderer.render(scene,camera);
+  }
+  requestAnimationFrame(animate);
 }

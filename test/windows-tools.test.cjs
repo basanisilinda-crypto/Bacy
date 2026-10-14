@@ -52,3 +52,13 @@ test('AI previews are bounded data; modes give different personality instruction
   assert.match(buildPrompt([{ role: 'user', content: 'Hello' }], 'normal'), /lightly playful/);
   assert.match(buildPrompt([{ role: 'user', content: 'Hello' }], 'crystal'), /organize data/);
 });
+
+test('named browser apps use Windows catalog IDs and computer controls reject unknown actions',async()=>{
+ const launches=[],scripts=[];
+ const tools=createWindowsTools({platform:'win32',run:async script=>{scripts.push(script);return script.includes('Get-StartApps')?JSON.stringify([{Name:'Google Chrome',AppID:'ChromeRegisteredId'}]):'';},open:async(...args)=>launches.push(args)});
+ await tools.openApp('chrome');assert.deepEqual(launches[0],['explorer.exe',['shell:AppsFolder\\ChromeRegisteredId']]);
+ await assert.rejects(tools.openApp('firefox'),/installed-app list/);assert.equal(launches.length,1);
+ const before=scripts.length;await assert.rejects(tools.computer('volume-up;Remove-Item'),/supported/);assert.equal(scripts.length,before);
+ await tools.computer('volume-up');assert.match(scripts.at(-1),/keybd_event\(175,0,2/);
+ await tools.computer('show-desktop');assert.match(scripts.at(-1),/MinimizeAll/);
+});
