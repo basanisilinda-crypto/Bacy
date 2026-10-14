@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="bacy-token" content="__BACY_TOKEN__">
+  <meta name="theme-color" content="#0b1114">
+  <title>Bacy — Personal intelligence</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body data-mode="professional">
+  <svg class="symbol-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 4zM9 9h6M9 12h4"/></symbol>
+    <symbol id="icon-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></symbol>
+    <symbol id="icon-camera" viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3z"/></symbol>
+    <symbol id="icon-link" viewBox="0 0 24 24"><path d="m10 13 4-4M8 16l-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0M16 8l2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0" transform="translate(2 0) scale(.85)"/></symbol>
+    <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></symbol>
+    <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></symbol>
+    <symbol id="icon-app" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  </svg>
+
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="Bacy home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>BACY<span class="brand-period">.</span></span></a>
+      <div class="header-description">YOUR PERSONAL INTELLIGENCE</div>
+      <div class="session-label"><span class="status-dot checking" id="header-dot"></span><span id="header-status">Checking Codex</span><span class="local-label">LOCAL</span></div>
+    </header>
+
+    <main class="workspace">
+      <section class="presence-panel" aria-labelledby="presence-heading">
+        <div class="panel-heading"><span class="eyebrow">01 / PRESENCE</span><span class="edition">FIRST RELEASE</span></div>
+        <h1 id="presence-heading">A little closer<br>to <span>possibility.</span></h1>
+        <p class="presence-intro">Your space to think, ask, and build.<br>Real AI. Running through your own Codex sign-in.</p>
+
+        <div class="visual-stage" aria-hidden="true">
+          <div class="stage-halo"></div>
+          <svg class="presence-art" viewBox="0 0 460 385" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="point-light"><stop offset="0" stop-color="#b8f2de"/><stop offset=".55" stop-color="#64b9ab"/><stop offset="1" stop-color="#35676a"/></radialGradient>
+              <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#364d53"/><stop offset=".4" stop-color="#1a282f"/><stop offset="1" stop-color="#0b1117"/></linearGradient>
+              <linearGradient id="body-shade" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#84caba" stop-opacity=".3"/><stop offset="1" stop-color="#84caba" stop-opacity="0"/></linearGradient>
+              <linearGradient id="thread" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#79bfab" stop-opacity=".1"/><stop offset=".5" stop-color="#79bfab" stop-opacity=".8"/><stop offset="1" stop-color="#79bfab" stop-opacity=".1"/></linearGradient>
+              <clipPath id="human-shape">
+                <path d="M207 162l-7-18-2-28c-11-5-12-23-5-28-3-36 12-54 36-54 25 0 43 17 39 54 8 5 5 24-5 28l-3 28-8 18 2 13c11 10 33 12 46 26 13 13 22 39 33 44 19 9 43-11 62-25l-5-13-2-18c1-5 5-3 6 1l4 12 4-21c1-6 5-4 5 1l-1 20 9-21c2-5 6-2 4 3l-6 19 12-16c3-4 7-1 4 3l-10 18 14-9c5-3 7 1 3 5l-19 17-4 15c-27 23-58 49-80 43-26-7-35-41-45-46l-4 33 15 77H184l14-77-3-33c-11 5-20 39-46 46-22 6-53-20-80-43l-4-15-19-17c-4-4-2-8 3-5l14 9-10-18c-3-4 1-7 4-3l12 16-6-19c-2-5 2-8 4-3l9 21-1-20c0-5 4-7 5-1l4 21 4-12c1-4 5-6 6-1l-2 18-5 13c19 14 43 34 62 25 11-5 20-31 33-44 13-14 35-16 46-26z"/>
+              </clipPath>
+              <clipPath id="brain-shape"><path d="M226 82c-15-18-42-19-56-3-25-8-43 9-44 28-23 3-33 22-29 43-22 13-25 41-11 58-11 19-3 44 18 51 3 24 26 38 48 31 18 21 46 20 62 3l16 19 16-19c16 17 44 18 62-3 22 7 45-7 48-31 21-7 29-32 18-51 14-17 11-45-11-58 4-21-6-40-29-43-1-19-19-36-44-28-14-16-41-15-56 3z"/></clipPath>
+            </defs>
+            <g class="stage-rings"><ellipse cx="230" cy="349" rx="125" ry="17"/><ellipse cx="230" cy="349" rx="166" ry="23"/><path d="M27 349h32M401 349h32M230 13v11"/></g>
+
+            <g class="art-mode art-professional">
+              <g class="connection-threads"><path d="M89 229 54 167 24 167M88 229 40 285 15 285M382 229l27-62h27M383 229l37 56h23"/><circle cx="54" cy="167" r="3"/><circle cx="40" cy="285" r="3"/><circle cx="409" cy="167" r="3"/><circle cx="420" cy="285" r="3"/></g>
+              <g clip-path="url(#human-shape)"><rect x="15" y="26" width="430" height="331" fill="url(#body-shade)"/><g id="human-points"></g></g>
+              <path class="human-detail" d="M215 90q14-7 27 0M214 129q16 10 29-1M213 108l-3 10 12 2M225 161v93M207 194l19 12 27-13M203 214l23 16 31-17M228 262v45"/>
+              <circle class="core-light" cx="228" cy="212" r="3"/><circle class="core-orbit" cx="228" cy="212" r="10"/>
+              <g class="floating-port"><rect x="6" y="147" width="34" height="34" rx="10"/><use href="#icon-mail" x="13" y="154" width="20" height="20"/></g>
+              <g class="floating-port"><rect x="1" y="271" width="34" height="34" rx="10"/><use href="#icon-app" x="8" y="278" width="20" height="20"/></g>
+              <g class="floating-port"><rect x="420" y="147" width="34" height="34" rx="10"/><use href="#icon-globe" x="427" y="154" width="20" height="20"/></g>
+              <g class="floating-port"><rect x="427" y="271" width="30" height="30" rx="10"/><use href="#icon-camera" x="432" y="276" width="20" height="20"/></g>
+            </g>
+
+            <g class="art-mode art-normal">
+              <path class="robot-antenna" d="M230 73v22"/><circle class="antenna-tip" cx="230" cy="68" r="5"/>
+              <rect class="robot-body" x="148" y="240" width="164" height="81" rx="40"/>
+              <path class="robot-arm" d="M148 263q-28 2-33 25M312 263q28 2 33 25"/>
+              <rect class="robot-ear" x="113" y="147" width="21" height="70" rx="10"/><rect class="robot-ear" x="326" y="147" width="21" height="70" rx="10"/>
+              <rect class="robot-head" x="129" y="104" width="202" height="159" rx="51"/>
+              <rect class="robot-face" x="150" y="126" width="160" height="114" rx="36"/>
+              <g class="robot-eyes"><rect x="180" y="162" width="18" height="23" rx="9"/><rect x="262" y="162" width="18" height="23" rx="9"/></g>
+              <path class="robot-mouth" d="M215 201q15 12 30 0"/>
+              <path class="robot-badge" d="M218 282h24M225 291h10"/>
+              <path class="robot-highlight" d="M162 113q38-10 74-4"/>
+            </g>
+
+            <g class="art-mode art-hardcore">
+              <g class="brain-threads"><path d="M95 185H37v-37M359 185h62v-37M127 279l-31 27H38M331 279l31 27h60M230 307v33"/><circle cx="37" cy="141" r="6"/><circle cx="421" cy="141" r="6"/><circle cx="31" cy="306" r="6"/><circle cx="429" cy="306" r="6"/></g>
+              <g clip-path="url(#brain-shape)"><rect x="65" y="65" width="335" height="251" fill="url(#body-shade)"/><g id="brain-points"></g></g>
+              <path class="brain-outline" d="M226 82c-15-18-42-19-56-3-25-8-43 9-44 28-23 3-33 22-29 43-22 13-25 41-11 58-11 19-3 44 18 51 3 24 26 38 48 31 18 21 46 20 62 3l16 19 16-19c16 17 44 18 62-3 22 7 45-7 48-31 21-7 29-32 18-51 14-17 11-45-11-58 4-21-6-40-29-43-1-19-19-36-44-28-14-16-41-15-56 3z"/>
+              <g class="brain-folds"><path d="M230 87v215M180 80q-17 23 2 45t-10 43q-27 20-4 40t-1 50M131 110q-5 26 13 32t-4 27M96 154q30-10 28 22t28 18M89 213q11 16 36 11t31 29M110 260q13-19 36-2M186 278q18 8 27-16M211 102q-24 8-14 28t17 17M209 176q-27 10-11 32t10 24M280 80q17 23-2 45t10 43q27 20 4 40t1 50M329 110q5 26-13 32t4 27M364 154q-30-10-28 22t-28 18M371 213q-11 16-36 11t-31 29M350 260q-13-19-36-2M274 278q-18 8-27-16M249 102q24 8 14 28t-17 17M251 176q27 10 11 32t-10 24"/></g>
+              <g class="neural-nodes"><circle cx="172" cy="168" r="4"/><circle cx="209" cy="176" r="4"/><circle cx="125" cy="224" r="3"/><circle cx="288" cy="168" r="4"/><circle cx="251" cy="176" r="4"/><circle cx="335" cy="224" r="3"/></g>
+            </g>
+          </svg>
+          <div class="stage-coordinate coordinate-left">B / 001</div><div class="stage-coordinate coordinate-right">PERSONAL SPACE</div>
+        </div>
+
+        <div class="mode-control">
+          <div class="mode-label"><span>VISUAL MODE</span><span>Appearance only for now</span></div>
+          <div class="mode-buttons" role="group" aria-label="Visual mode">
+            <button type="button" data-mode="normal" aria-pressed="false">Normal</button>
+            <button type="button" data-mode="professional" aria-pressed="true">Professional</button>
+            <button type="button" data-mode="hardcore" aria-pressed="false">Hardcore</button>
+          </div>
+          <p class="mode-caption" id="mode-caption">A point-cloud presence. Your future connections, held in view.</p>
+        </div>
+
+        <section class="connections" aria-labelledby="connections-heading">
+          <div class="connections-title"><h2 id="connections-heading">Your connections</h2><span>0 CONNECTED</span></div>
+          <div class="connection-list">
+            <div class="connection-item"><span class="service-icon"><svg><use href="#icon-mail"/></svg></span><span>Email</span><span class="connection-state">Coming later</span></div>
+            <div class="connection-item"><span class="service-icon"><svg><use href="#icon-globe"/></svg></span><span>Browser &amp; apps</span><span class="connection-state">Coming later</span></div>
+            <div class="connection-item"><span class="service-icon"><svg><use href="#icon-camera"/></svg></span><span>Camera &amp; voice</span><span class="connection-state">Coming later</span></div>
+          </div>
+          <p class="connection-note">No account, camera, or computer-control connections are active.</p>
+        </section>
+      </section>
+
+      <section class="conversation-panel" aria-labelledby="conversation-heading">
+        <div class="conversation-header"><div><span class="eyebrow">02 / CONVERSATION</span><h2 id="conversation-heading">Let’s start with a thought.</h2></div><button class="clear-button" id="clear-chat" type="button" title="Clear this conversation"><svg aria-hidden="true"><use href="#icon-plus"/></svg><span>New chat</span></button></div>
+        <div class="connection-banner" id="connection-banner" role="status"><span class="status-dot checking" id="connection-dot"></span><span id="connection-detail">Checking your local Codex installation…</span><button id="check-connection" type="button">Check again</button></div>
+
+        <div class="messages" id="messages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="Conversation with Bacy">
+          <div class="welcome" id="welcome">
+            <div class="welcome-emblem" aria-hidden="true"><svg><use href="#icon-chat"/></svg></div>
+            <span class="eyebrow">A CONVERSATION, NOT A SCRIPT</span>
+            <h3>What’s on your mind?</h3>
+            <p>Ask a question, explore an idea, or learn something new. Bacy uses your signed-in Codex to answer.</p>
+            <div class="suggestions"><button type="button" data-prompt="Explain what an AI agent is in simple terms, with a practical example."><span>Understand AI agents</span><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button><button type="button" data-prompt="Help me plan my day. First ask me what I need to get done."><span>Make a plan for today</span><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button><button type="button" data-prompt="I'm new to JavaScript. Teach me one useful concept, slowly, with a small example."><span>Learn something new</span><svg aria-hidden="true"><use href="#icon-chevron"/></svg></button></div>
+          </div>
+        </div>
+
+        <div class="request-status" id="request-status" role="status" hidden><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span id="request-status-text">Bacy is working on your response…</span><button type="button" id="cancel-request">Stop</button></div>
+        <div class="error-notice" id="error-notice" role="alert" hidden><p id="error-text"></p><button type="button" id="retry-request">Try again</button></div>
+
+        <div class="composer-area">
+          <form id="chat-form" class="composer">
+            <label class="sr-only" for="message-input">Message Bacy</label>
+            <textarea id="message-input" name="message" rows="2" maxlength="8000" placeholder="Ask Bacy anything…" required></textarea>
+            <div class="composer-bottom"><span>Enter to send <span class="keyboard-hint">· Shift + Enter for a new line</span></span><button class="send-button" id="send-button" type="submit" aria-label="Send message" disabled><svg aria-hidden="true"><use href="#icon-arrow"/></svg></button></div>
+          </form>
+          <div class="capabilities"><span class="capability-caption">NEXT FOR BACY</span><button type="button" disabled aria-describedby="upcoming-note"><svg aria-hidden="true"><use href="#icon-mic"/></svg>Voice</button><button type="button" disabled aria-describedby="upcoming-note">Wake phrase</button><button type="button" disabled aria-describedby="upcoming-note"><svg aria-hidden="true"><use href="#icon-link"/></svg>App connections</button><span class="later-label">Coming later</span></div>
+          <p class="privacy-note" id="upcoming-note">This release is real AI chat. Voice and laptop control come later. Messages are sent online through Codex; chat stays in this tab until you clear or close it.</p>
+        </div>
+      </section>
+    </main>
+    <footer class="app-footer"><span>BUILT FOR YOUR NEXT IDEA.</span><span id="runtime-label">LOCAL INTERFACE / CODEX BRIDGE</span><span class="footer-accent">BACY / V.01</span></footer>
+  </div>
+</body>
+</html>

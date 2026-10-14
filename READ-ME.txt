@@ -1,0 +1,60 @@
+BACY - FIRST REAL AI CHAT RELEASE
+
+Requirements: Windows, Node.js, Codex CLI signed in with your ChatGPT account.
+No Express, npm install, or separate API key is needed for this app.
+AI replies use your Codex plan and remain subject to its usage limits.
+
+START ON WINDOWS
+1. Extract all files into Documents\Bacy. Keep server.cjs and public together.
+   Existing index.js and package.json from your learning steps can stay as they are.
+2. Double-click START-BACY.cmd. Keep its window open.
+3. Open your browser and type localhost:3000 in its address bar.
+4. Send a message. A complete AI reply appears after Codex finishes.
+Press Ctrl+C in the server window to stop Bacy.
+Alternative: run node server.cjs in PowerShell inside the Bacy folder.
+
+PROXY
+Keep your required Windows proxy connected. Bacy uses HTTPS_PROXY from the
+PowerShell session when present. Otherwise, it reads the manual Windows proxy
+host and port from Internet Settings. It never disables TLS verification.
+PAC setup scripts and authenticated proxies require separate configuration.
+npm proxy settings only configure npm, not Codex's online requests.
+
+WHAT WORKS
+Real AI chat through your installed Codex CLI, conversation context, new chat,
+request cancellation, error messages, and three visual modes.
+Normal: friendly robot. Professional: point-cloud humanoid.
+Hardcore: connected-brain illustration. Modes change appearance only for now.
+The design is the first version of your brief, not the complete final design.
+
+NEXT FEATURES
+Voice, microphone, wake phrase, camera, Gmail, social connections, and desktop
+control are not enabled in this release. Each needs its own integration and test.
+Connection graphics are illustrative; the interface lists 0 connected services.
+No youthful voice is provided yet. Future voice quality depends on its provider.
+
+PRIVACY
+Messages are sent online through Codex. Chat history is held in your browser tab,
+not saved by this app. Refreshing, closing, or clearing the tab resets it.
+Recent conversation context is sent with each request. Long chats may need reset.
+The local server listens only on 127.0.0.1, not the public network.
+Do not paste passwords or API keys into chat. The app does not log messages.
+This chat release disables Codex shell tools and uses its read-only sandbox.
+It ignores custom Codex configuration and does not import connected accounts.
+It creates an empty .bacy-session folder for isolated CLI requests.
+
+TROUBLESHOOTING
+If Codex is unavailable, check codex.cmd --version in PowerShell.
+If sign-in is required, run codex.cmd login, then restart Bacy.
+If your plan limit is reached, wait for the reset shown in your account.
+If the online connection fails, check the required proxy is still connected.
+If port 3000 is busy, stop the previous Bacy server before starting this one.
+If interface files are missing, extract the whole download, including public.
+Requests time out after three minutes. Stop cancels the process Bacy started.
+
+DEVELOPMENT
+Node.js is the only app dependency. Run node --test test/server.test.cjs for
+request handling, CLI protocol, timeout, cancellation, and concurrency tests.
+Tests use a fixture CLI; they do not claim a live account connection.
+Use the existing checkout in cloud tasks, which are already isolated.
+Do not create a Git worktree unless specifically requested.

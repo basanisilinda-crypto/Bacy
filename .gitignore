@@ -1,0 +1,3 @@
+.bacy-session/
+node_modules/
+*.log
