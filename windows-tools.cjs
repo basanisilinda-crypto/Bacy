@@ -81,6 +81,13 @@ function createWindowsTools({ run = powershell, open = launch, platform = proces
       await open('explorer.exe', ['https://www.bing.com/search?q=' + encodeURIComponent(query)]);
       return { message: 'Windows received the request to open a web search for ' + query + '.' };
     },
+    async useDocuments() {
+      requireWindows();
+      const folder=await run("[Console]::OutputEncoding=[Text.Encoding]::UTF8;[Environment]::GetFolderPath('MyDocuments')");
+      if(!folder)throw new Error('Windows could not locate Documents. Choose a folder instead.');
+      permittedRoot=await fs.realpath(folder);
+      return {selected:true,name:path.basename(permittedRoot)||permittedRoot};
+    },
     async chooseFolder() {
       requireWindows();
       const selected = await run("Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description='Choose the folder Bacy may browse'; $d.ShowNewFolderButton=$false; if($d.ShowDialog() -eq 'OK'){[Console]::OutputEncoding=[Text.Encoding]::UTF8; $d.SelectedPath}; $d.Dispose()", 120000);

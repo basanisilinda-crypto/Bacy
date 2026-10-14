@@ -134,4 +134,4 @@ function createGemini({ env = process.env, transport = curlRequest, store = defa
     }
   };
 }
-module.exports = { createGemini, curlRequest, validKey, validModel };
+module.exports = { createGemini, curlRequest, validKey, validModel, cryptWindows };

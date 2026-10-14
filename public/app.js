@@ -28,6 +28,8 @@
   let localBusy = false;
   let lastLocalAction = null;
   let aiProvider = 'codex';
+  let preferences = {name:'Basani',honorific:'boss',theme:'dark',speak:true,handsfree:false};
+  let wakeUntil=0;
 
   function updateSend() {
     sendButton.disabled = busy || localBusy || !input.value.trim();
@@ -312,12 +314,17 @@
       setMode(mapping[modeMatch[1]]);
       return localReply(message, 'Switched to ' + modeCaptions[mode] + ' mode.');
     }
+    const theme=command.match(/^(?:switch|change|go)(?: to)? (dark|light|white|midnight|aurora)(?: theme| mode)?$/);
+    if(theme){setTheme(theme[1]==='white'?'light':theme[1]);return localReply(message,'Theme changed, '+(preferences.honorific||preferences.name||'')+'.');}
+    if(/^(?:open|show)(?: my)? (?:connections|connectors)$/.test(command)){await window.bacyConnections.show();return localReply(message,'Your connections are here.');}
+    if(/^(?:read|show|open)(?: my| the)? (?:emails|email|inbox|gmail)$/.test(command))return performLocal(message,async()=>{await window.bacyConnections.inbox();return 'Your Gmail inbox is open.';});
+    if(/^(?:show|open|read)(?: my| the)? (?:calendar|events|schedule)$/.test(command))return performLocal(message,async()=>{await window.bacyConnections.calendar();return 'Here are your upcoming calendar events.';});
     const mood = command.match(/^(?:look|be|feel|show)(?: (?:a|your) face)? (angry|happy|funny|playful|serious|neutral)$/);
     if (mood) {
       document.body.dataset.mood = mood[1] === 'funny' ? 'playful' : mood[1];
       return localReply(message, 'Expression changed to ' + mood[1] + '.');
     }
-    if (/^(?:show|open)(?: my)? files$/.test(command)) return performLocal(message, async () => { showFilesPanel(); return 'Choose a folder and I’ll show its files here.'; });
+    if (/^(?:show|open)(?: my)? files$/.test(command)) return performLocal(message, async () => { await openFiles(); return 'Your files are open.'; });
     if (/^(?:show|open|list)(?: my)? apps$/.test(command)) return performLocal(message, async () => { await showApps(); return 'Here are the installed apps Windows reported.'; });
     if (/^(?:open|show|start)(?: my| the)? camera$/.test(command)) return performLocal(message, async () => { await startCamera(); return 'Your camera preview stays on this page.'; });
     if (/^(?:close|stop)(?: my| the)? camera$/.test(command)) { stopCamera(); return localReply(message, 'Camera stopped.'); }
@@ -359,6 +366,11 @@
       const detail = document.createElement('p'); detail.textContent = item.detail;
       card.append(number, heading, detail); container.append(card);
     }
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('preview-diagram');svg.setAttribute('role','img');svg.setAttribute('aria-label',preview.title||'Explanation diagram');
+    const items=preview.items.slice(0,6),height=items.length*72;svg.setAttribute('viewBox','0 0 330 '+height);
+    const element=(name,attributes,text)=>{const node=document.createElementNS(svg.namespaceURI,name);for(const[k,v]of Object.entries(attributes))node.setAttribute(k,v);if(text)node.textContent=text;svg.append(node);return node;};
+    items.forEach((item,i)=>{const y=i*72+5;if(i)element('path',{d:'M165 '+(y-18)+'v14m-4-4 4 4 4-4'});element('rect',{x:24,y,width:282,height:48,rx:9});element('circle',{cx:44,cy:y+24,r:3});element('text',{x:57,y:y+28},String(item.label).slice(0,32));});
+    container.prepend(svg);
     byId('preview-panel').hidden = false;
   }
   byId('close-preview').addEventListener('click', () => { byId('preview-panel').hidden = true; });
@@ -406,7 +418,14 @@
   byId('folder-up').addEventListener('click', () => listFiles(filePath.split(/[\\/]/).slice(0, -1).join('/')).catch(toolError));
   byId('open-browser').addEventListener('click', () => performLocal('Open browser', async () => (await api('/api/apps/open', { id: 'browser' })).message));
   byId('open-apps').addEventListener('click', () => showApps().catch(toolError));
-  byId('open-files').addEventListener('click', showFilesPanel);
+  async function openFiles(){
+    showFilesPanel();
+    try{await listFiles(filePath);}catch(error){
+      if(/Choose a folder/.test(error.message)){await api('/api/files/documents');await listFiles();}
+      else throw error;
+    }
+  }
+  byId('open-files').addEventListener('click',()=>openFiles().catch(toolError));
   byId('close-tools').addEventListener('click', () => { byId('tools-panel').hidden = true; });
   byId('open-system').addEventListener('click', () => {
     showTools('Computer', 'These commands run locally on Windows.');
@@ -459,15 +478,25 @@
     byId('connection-banner').hidden = !byId('connection-banner').hidden;
     byId('details-button').setAttribute('aria-expanded', String(!byId('connection-banner').hidden));
   });
-  byId('theme-button').addEventListener('click', () => {
-    document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
-    updateThemeLabel();
-  });
-  function updateThemeLabel() {
-    const light = document.body.dataset.theme === 'light';
-    byId('theme-button').textContent = light ? 'Dark' : 'Light';
-    byId('theme-button').setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  function setTheme(theme){if(!['dark','light','midnight','aurora'].includes(theme))return;document.body.dataset.theme=theme;preferences.theme=theme;updateThemeLabel();api('/api/preferences',{theme}).catch(()=>{});}
+  byId('theme-select').addEventListener('change',()=>setTheme(byId('theme-select').value));
+  function updateThemeLabel(){byId('theme-select').value=document.body.dataset.theme;}
+  byId('profile-button').addEventListener('click',()=>{byId('profile-panel').hidden=!byId('profile-panel').hidden;});
+  byId('close-profile').addEventListener('click',()=>{byId('profile-panel').hidden=true;});
+  async function loadPreferences(){
+    try{const response=await fetch('/api/preferences',{cache:'no-store'});if(response.ok)preferences=await response.json();}catch{}
+    byId('profile-name').value=preferences.name||'';byId('profile-honorific').value=preferences.honorific||'';
+    byId('profile-speak').checked=preferences.speak;byId('profile-handsfree').checked=preferences.handsfree;
+    byId('read-replies').checked=preferences.speak;byId('handsfree-button').setAttribute('aria-pressed',String(preferences.handsfree));
+    document.body.dataset.theme=preferences.theme;updateThemeLabel();
+    byId('identity-title').textContent='Hello, '+(preferences.name||preferences.honorific||'there')+'.\nWhat’s next?';
+    byId('welcome').textContent='I’m here, '+(preferences.honorific||preferences.name||'')+'. What would you like to do?';
   }
+  byId('save-profile').addEventListener('click',async()=>{
+    try{preferences=await api('/api/preferences',{name:byId('profile-name').value,honorific:byId('profile-honorific').value,speak:byId('profile-speak').checked,handsfree:byId('profile-handsfree').checked});
+      await loadPreferences();byId('profile-feedback').textContent='Saved on this laptop.';
+    }catch(error){byId('profile-feedback').textContent=error.message;}
+  });
   let microphone = null;
   let audioContext = null;
   let microphonePending = false;
@@ -499,7 +528,7 @@
     byId('voice-panel').hidden = !byId('voice-panel').hidden;
     byId('voice-button').setAttribute('aria-expanded', String(!byId('voice-panel').hidden));
   });
-  byId('read-replies').addEventListener('change', () => { if (!byId('read-replies').checked) { synthesizer?.cancel(); speaking=false;document.body.classList.remove('is-speaking');restartRecognition(); } });
+  byId('read-replies').addEventListener('change', () => { preferences.speak=byId('read-replies').checked;api('/api/preferences',{speak:preferences.speak}).catch(()=>{}); if (!byId('read-replies').checked) { synthesizer?.cancel(); speaking=false;document.body.classList.remove('is-speaking');restartRecognition(); } });
   byId('stop-voice').addEventListener('click', () => { synthesizer?.cancel(); speaking = false; document.body.classList.remove('is-speaking'); restartRecognition(); });
   function speak(text) {
     if (!byId('read-replies').checked || !voices.length || !synthesizer) return;
@@ -526,8 +555,10 @@
     recognitionFailed = false;
     recognition = new Recognition(); recognition.lang = 'en-US'; recognition.continuous = true; recognition.interimResults = true;
     recognition.onresult = event => {
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) if (event.results[i].isFinal) final += event.results[i][0].transcript;
+      let final = '',interim='';
+      for (let i = event.resultIndex; i < event.results.length; i++) {if (event.results[i].isFinal) final += event.results[i][0].transcript;else interim+=event.results[i][0].transcript;}
+      byId('live-transcript').textContent=interim||final||'Listening…';
+      if(preferences.handsfree&&final.trim()){const wake=final.trim().match(/^(?:hey|hi|okay|ok)\s+bacy[,! .]*(.*)$/i);if(wake){wakeUntil=Date.now()+10000;final=wake[1];if(!final.trim()){byId('live-transcript').textContent='I’m listening, '+(preferences.honorific||preferences.name||'')+'.';return;}}else if(Date.now()>wakeUntil)return;wakeUntil=0;}
       const interrupt = /^(?:hey bacy[, ]+)?(?:pause|stop|stop speaking|be quiet)[.!]?$/i.test(final.trim());
       if (final.trim() && !speaking && ((!busy && !localBusy) || interrupt)) { input.value = final.trim(); updateSend(); handleInput(final.trim()); }
     };
@@ -551,11 +582,13 @@
     audioContext = null;
     window.bacyAudioLevel = 0;
     document.body.classList.remove('is-listening', 'voice-active');
-    document.body.dataset.theme = previousTheme;
+    // Preserve the theme selected by the owner.
     updateThemeLabel();
     byId('microphone-button').setAttribute('aria-pressed', 'false');
     byId('microphone-button').setAttribute('aria-label', 'Start microphone');
     byId('microphone-note').hidden = true;
+    byId('live-transcript').textContent='Your voice, your assistant.';
+    byId('handsfree-state').textContent='Click the mic to talk. Keep this page open for voice commands.';
   }
   byId('microphone-button').addEventListener('click', async () => {
     if (microphonePending) return;
@@ -565,7 +598,7 @@
     previousTheme = document.body.dataset.theme;
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('Microphone access is unavailable in this browser. Chat still works.');
-      microphone = await navigator.mediaDevices.getUserMedia({ audio: true });
+      microphone = await navigator.mediaDevices.getUserMedia({ audio: {echoCancellation:true,noiseSuppression:true} });
       audioContext = new AudioContext();
       await audioContext.resume();
       const analyser = audioContext.createAnalyser();
@@ -586,6 +619,7 @@
       byId('microphone-note').hidden = false;
       byId('microphone-button').setAttribute('aria-pressed', 'true');
       byId('microphone-button').setAttribute('aria-label', 'Stop microphone');
+      byId('handsfree-state').textContent=preferences.handsfree?'Listening for Hey Bacy. Keep this page open.':'Listening to your commands. Click the mic to stop.';
       startRecognition();
       microphone.getTracks().forEach(track => track.addEventListener('ended', stopMicrophone, { once: true }));
     } catch (error) {
@@ -598,6 +632,19 @@
       byId('microphone-button').disabled = false;
     }
   });
+  byId('handsfree-button').addEventListener('click',async()=>{
+    preferences.handsfree=!preferences.handsfree;
+    byId('handsfree-button').setAttribute('aria-pressed',String(preferences.handsfree));byId('profile-handsfree').checked=preferences.handsfree;
+    api('/api/preferences',{handsfree:preferences.handsfree}).catch(()=>{});
+    if(preferences.handsfree&&!microphone&&!microphonePending)byId('microphone-button').click();
+    byId('handsfree-state').textContent=preferences.handsfree?'Listening for Hey Bacy while this page is open.':'Every spoken command is accepted while the mic is on.';
+  });
+  byId('quick-stop-voice').addEventListener('click',()=>byId('stop-voice').click());
+  const audioCanvas=byId('audio-strip'),audioPen=audioCanvas.getContext('2d');let audioLast=0;
+  const wave=now=>{requestAnimationFrame(wave);if(document.hidden||now-audioLast<40)return;audioLast=now;const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;audioPen.clearRect(0,0,300,35);audioPen.fillStyle=getComputedStyle(document.body).getPropertyValue('--cyan');
+    for(let i=0;i<47;i++){const active=microphone||speaking;const motion=reduced?0:Math.abs(Math.sin(now/170+i*.6)*Math.cos(now/220+i*.4));const level=speaking?.6:window.bacyAudioLevel||0;const h=active?3+motion*level*27:2;audioPen.globalAlpha=active?.8:.27;audioPen.fillRect(9+i*6,17-h/2,2,h);}
+  };requestAnimationFrame(wave);
+  loadPreferences();byId('conversation-button').setAttribute('aria-expanded','true');
   window.addEventListener('pagehide', () => { stopCamera(); stopMicrophone(); synthesizer?.cancel(); });
   checkConnection();
 })();

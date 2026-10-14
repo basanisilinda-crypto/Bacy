@@ -84,8 +84,9 @@ Stop voice remains available in the Voice panel during playback.
 WINDOWS CONTROLS
 Browser opens a web page in the default browser; search opens Bing results.
 Apps reads the Start menu's installed-app list. Click a listed app to launch it.
-Files asks you to choose a folder using a native Windows dialog. No folder is
-accessible until you choose one. Browsing stays within that folder, including
+Open files or the Files control opens Documents on your explicit request.
+Choose folder uses a native Windows dialog to change that scope. Browsing stays
+within the active folder, including
 symlink checks. Click a document or media file to open it in its Windows app.
 Executable files cannot be opened through the file browser.
 File listings and local-action receipts are not added to the online AI context.
@@ -100,7 +101,7 @@ steps, flow cards, or comparisons. Close it when you want the central scene back
 Preview fields are bounded text; generated HTML and code are not executed.
 
 LIMITATIONS
-Email sending, social-account integrations, AI camera vision, arbitrary desktop clicking,
+Direct email sending, other social-account integrations, AI camera vision, arbitrary desktop clicking,
 file editing/deletion, and automatic analysis of large files are not implemented.
 Crystal can discuss and structure data you supply; it does not inspect all files.
 Long chats may need New chat. Your browser tab stores history only for the session.
@@ -135,3 +136,47 @@ you close the panel or page, and is never submitted to Gemini or Codex.
 This version supports explicit app launches, desktop/sound commands, web search,
 and chosen-folder browsing. Arbitrary desktop clicking, account integrations,
 and editing/deleting files require additional work.
+
+VOICE STUDIO UPDATE
+The large mic button shows activity and live recognized words. Hey Bacy enables
+wake-phrase filtering after you grant microphone permission. Say Hey Bacy plus
+a command, or Hey Bacy then a command within ten seconds. Browser recognition
+needs this page active and may require internet. This is not an OS-wide always-on
+wake service. Stop voice interrupts playback. Speaking pauses recognition to
+reduce echoes; use Stop voice to interrupt a reply. Browser voice quality varies.
+Replies are spoken automatically when voices are available. Profile lets you set
+your full preferred name (for example your name and surname) and an honorific.
+Preferences are saved locally; the preferred name is included in AI chat.
+Four independent color themes: Dark, Light, Midnight and Aurora.
+Diagram requests ask the model for nodes and draw a diagram automatically.
+"Open files" opens your local Documents folder after the explicit command;
+Choose folder changes the scope. Names are never automatically added to AI chat.
+
+GOOGLE ACCOUNT CONNECTIONS
+Gmail and Google Calendar use Google OAuth, not the Gemini API key and not your
+ChatGPT subscription. No account is connected until you sign in on your laptop.
+1. Open Google Cloud Console and choose/create your Bacy project.
+2. Enable Gmail API and Google Calendar API in APIs & Services.
+3. Configure Google Auth Platform consent for an External app in Testing mode.
+   Add your own Google email as a test user and configure requested scopes:
+   openid, email, gmail.modify, calendar.events. For public distribution Google
+   may require verification; testing grants can expire and require reconnecting.
+4. Create an OAuth client of type Desktop app. Copy its client ID and client
+   secret into Bacy's Connections > Set up Google sign-in, privately on the laptop.
+5. Save Google setup, then Sign in with Google and approve the requested access.
+   Return to Bacy and Refresh, then open Inbox or Calendar.
+No service account, app password, or Gemini key can replace desktop OAuth here.
+The loopback callback is http://127.0.0.1:3000/oauth/google (the actual port is
+used), protected by one-use OAuth state and PKCE. If your proxy handles localhost,
+exclude localhost and 127.0.0.1 so the sign-in callback can reach Bacy.
+Windows encrypted Remember stores OAuth setup and tokens in LocalAppData\Bacy.
+Otherwise sign-in lives only in server memory. Secrets are not returned to the
+page, put in command arguments, or included in the downloadable ZIP.
+Inbox supports read, mark read, star and archive. Email drafts are saved in Gmail
+for you to review and send. Calendar creation requires entering and confirming
+an event in the app. Inbox/event data is displayed locally and is not silently
+sent to the AI model. Disconnect forgets credentials locally; revoke grants in
+Google Account permissions when desired. Other social platforms and arbitrary
+MCP servers require additional integrations and are not advertised as connected.
+Live Google authorization and real Windows behavior must be verified on your PC;
+development tests use simulated Google responses and Windows adapters.

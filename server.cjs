@@ -5,6 +5,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawn, spawnSync } = require('node:child_process');
 const { createWindowsTools } = require('./windows-tools.cjs');
+const { createConnections } = require('./connections.cjs');
+const { createPreferences } = require('./preferences.cjs');
 const { createGemini } = require('./gemini.cjs');
 const ROOT = __dirname;
 const MAX_BODY = 65536;
@@ -53,7 +55,7 @@ function safeError(detail) {
   return 'Codex did not complete this request. Check that your direct Codex test still works in PowerShell.';
 }
 
-function buildPrompt(messages, mode = 'professional') {
+function buildPrompt(messages, mode = 'professional', profile = {}) {
   const style = {
     normal: 'Warm, relaxed, lightly playful. Use ordinary conversational language, varied phrasing, and occasional appropriate humor.',
     professional: 'Calm, thoughtful and practical. Give considered recommendations and useful opinions, clearly distinguishing them from facts.',
@@ -63,7 +65,9 @@ function buildPrompt(messages, mode = 'professional') {
   return [
     'You are Bacy, a respectful personal AI assistant. Speak naturally, with personality and useful opinions. Avoid canned ChatGPT phrasing, repetitive greetings, or excessive flattery. Say indeed only when it fits. Do not pretend to be a human or to have human feelings.',
     style,
-    'The app handles mode changes, basic Windows app opening, web searches, and browsing a folder chosen by the user through separate local commands. You cannot directly invoke those actions. Email, camera, social accounts and arbitrary desktop automation are not connected.',
+    'The app handles mode, theme, Windows apps, sound, folder browsing, camera preview, Gmail and Google Calendar through explicit local commands and authorized Google sign-in. You cannot directly invoke these actions from this chat reply. Do not claim to have changed or connected anything. Other social accounts and arbitrary desktop clicking are not connected.',
+    'Personal preferences: '+JSON.stringify({name:profile.name||'',honorific:profile.honorific||''})+'. Address the owner naturally by this name, occasionally using the preferred honorific. Do not begin replies with repetitive AI disclaimers or claim to be human.',
+    /\b(explain|diagram|how .*works?|steps|visual)\b/i.test(messages.at(-1)?.content||'') ? 'This request needs a visual explanation. Return a useful preview with kind flow, steps or comparison and 3 to 6 short nodes that actually explain the topic. Do not return kind none.' : '',
     'Never claim to have opened apps, sent messages, accessed accounts or completed actions outside this conversation.',
     'Do not use tools, inspect files or run commands. Provide conversational help and explain unavailable capabilities honestly.',
     'Reply using the supplied JSON schema. Pick a matching visual mood; use angry only if requested. For an explanation or comparison, provide a short visual preview with up to 6 items: label under 90 characters and detail under 400 characters. Otherwise use preview kind none with an empty items array. Never put HTML or executable code in preview fields.',
@@ -148,12 +152,14 @@ function parseAnswer(answer) {
   return { reply: data.reply, mood, preview: clean };
 }
 
-function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cwd = path.join(ROOT, '.bacy-session'), statusProvider, windowsTools = createWindowsTools(), gemini, defaultProvider = 'codex' } = {}) {
+function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cwd = path.join(ROOT, '.bacy-session'), statusProvider, windowsTools = createWindowsTools(), gemini, connections, preferences, defaultProvider = 'codex' } = {}) {
   fs.mkdirSync(cwd, { recursive: true });
   fs.copyFileSync(path.join(ROOT, 'response-schema.json'), path.join(cwd, 'response-schema.json'));
   const token = crypto.randomBytes(32).toString('hex');
   let busy = false, activeAbort;
   const google = gemini || createGemini({ env });
+  const accounts = connections || createConnections({env});
+  const prefs = preferences || createPreferences(process.platform === 'win32' && process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA,'Bacy') : cwd);
   let provider = defaultProvider === 'gemini' ? 'gemini' : 'codex';
   const headers = {
     'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
@@ -180,6 +186,13 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     }
     if (!hosts.includes(req.headers.host)) return send(403, { error: 'Invalid local host.' });
     if (req.headers.origin && !hosts.map(host => 'http://' + host).includes(req.headers.origin)) return send(403, { error: 'Open Bacy on this laptop to send messages.' });
+    const address = new URL(req.url,'http://'+req.headers.host);
+    if (req.method === 'GET' && address.pathname === '/oauth/google') {
+      try { await accounts.callback(address.searchParams); res.writeHead(200,{...headers,'Content-Type':'text/html; charset=utf-8'});return res.end('<!doctype html><html><body><h1>Google connected</h1><p>Return to Bacy and click Refresh in Connections.</p><a href="/">Return to Bacy</a></body></html>'); }
+      catch(error){ return send(400,{error:error.message}); }
+    }
+    if (req.method === 'GET' && req.url === '/api/preferences') return send(200,prefs.get());
+    if (req.method === 'GET' && req.url === '/api/connections') return send(200,await accounts.status());
     if (req.method === 'GET' && req.url === '/api/status') {
       if (provider === 'gemini') {
         const state = await google.status();
@@ -189,7 +202,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
       return send(200, { available: Boolean(version), provider, version, platform: process.platform, windowsTools: windowsTools.available, proxyConfigured: Boolean(env.HTTPS_PROXY || env.https_proxy), detail: version ? 'Codex detected. Your first message checks sign-in and the online connection.' : 'Codex is unavailable. Check codex.cmd --version in PowerShell, then check again.' });
     }
     if (req.method === 'GET') {
-      const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/scene.js': ['scene.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/favicon.svg': ['favicon.svg', 'image/svg+xml'], '/vendor/three.module.min.js': ['vendor/three.module.min.js', 'text/javascript'], '/vendor/three.core.min.js': ['vendor/three.core.min.js', 'text/javascript'] };
+      const files = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/accounts.js': ['accounts.js', 'text/javascript'], '/scene.js': ['scene.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'], '/favicon.svg': ['favicon.svg', 'image/svg+xml'], '/vendor/three.module.min.js': ['vendor/three.module.min.js', 'text/javascript'], '/vendor/three.core.min.js': ['vendor/three.core.min.js', 'text/javascript'] };
       if (req.url === '/portraits.png') files['/portraits.png'] = ['portraits.png', 'image/png'];
       const file = files[req.url];
       if (!file) return send(404, { error: 'Not found.' });
@@ -200,7 +213,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
         return res.end(content);
       } catch { return send(500, { error: 'Interface files are missing. Extract all Bacy files together.' }); }
     }
-    const routes = ['/api/chat', '/api/ai/configure', '/api/ai/test', '/api/apps', '/api/apps/open', '/api/computer', '/api/search', '/api/files/choose', '/api/files/list', '/api/files/open'];
+    const routes = ['/api/chat', '/api/preferences', '/api/connections/configure', '/api/connections/signin', '/api/connections/disconnect', '/api/mail', '/api/mail/read', '/api/mail/modify', '/api/mail/draft', '/api/calendar', '/api/calendar/create', '/api/files/documents', '/api/ai/configure', '/api/ai/test', '/api/apps', '/api/apps/open', '/api/computer', '/api/search', '/api/files/choose', '/api/files/list', '/api/files/open'];
     if (req.method !== 'POST' || !routes.includes(req.url)) return send(404, { error: 'Not found.' });
     if (req.headers['x-bacy-token'] !== token) return send(403, { error: 'Refresh the Bacy page, then try again.' });
     if (!/^application\/json(?:;|$)/i.test(req.headers['content-type'] || '')) return send(415, { error: 'A JSON message is required.' });
@@ -216,6 +229,12 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     let body;
     try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { return send(400, { error: 'Invalid message format.' }); }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return send(400, { error: 'Invalid request.' });
+    if (req.url === '/api/preferences') return send(200,prefs.save(body));
+    const connectedActions = {
+      '/api/connections/configure':()=>accounts.configure(body),'/api/connections/signin':()=>accounts.begin(server.address().port),'/api/connections/disconnect':()=>accounts.disconnect(),
+      '/api/mail':()=>accounts.inbox(),'/api/mail/read':()=>accounts.message(body.id),'/api/mail/modify':()=>accounts.modifyMessage(body),'/api/mail/draft':()=>accounts.draft(body),'/api/calendar':()=>accounts.calendar(),'/api/calendar/create':()=>accounts.event(body)
+    };
+    if (Object.hasOwn(connectedActions,req.url)) { try{return send(200,await connectedActions[req.url]());}catch(error){return send(400,{error:error.message});} }
     if (req.url === '/api/ai/configure') {
       if (busy) return send(409, { error: 'Stop the current AI request before changing providers.' });
       if (!['gemini', 'codex'].includes(body.provider)) return send(400, { error: 'Choose Gemini or Codex.' });
@@ -234,7 +253,7 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
         const actions = {
           '/api/apps': () => windowsTools.apps(), '/api/apps/open': () => windowsTools.openApp(body.id),
           '/api/computer': () => windowsTools.computer(body.action), '/api/search': () => windowsTools.search(body.query), '/api/files/choose': () => windowsTools.chooseFolder(),
-          '/api/files/list': () => windowsTools.list(body.path || ''), '/api/files/open': () => windowsTools.openFile(body.path)
+          '/api/files/documents': () => windowsTools.useDocuments(), '/api/files/list': () => windowsTools.list(body.path || ''), '/api/files/open': () => windowsTools.openFile(body.path)
         };
         return send(200, await actions[req.url]());
       } catch (error) { return send(400, { error: error.message }); }
@@ -247,8 +266,12 @@ function createBacyServer({ runner = runCodex, env = configuredEnvironment(), cw
     const disconnect = () => { if (!res.writableEnded) abort.abort(); };
     res.on('close', disconnect);
     try {
-      const prompt = buildPrompt(body.messages, body.mode);
+      const prompt = buildPrompt(body.messages, body.mode, prefs.get());
       const result = provider === 'gemini' ? parseAnswer(await google.generate(prompt, { signal: abort.signal })) : await runner(prompt, { signal: abort.signal, env, cwd });
+      if(!result.preview && /\b(explain|diagram|how .*works?|visual)\b/i.test(body.messages.at(-1).content)){
+        const points=String(result.reply||'').split(/\n+|(?<=[.!?])\s+/).filter(text=>text.trim()).slice(0,6);
+        result.preview={kind:'steps',title:'Explanation',items:points.map((detail,index)=>({label:'Step '+(index+1),detail:detail.slice(0,400)}))};
+      }
       send(200, { ...result, provider });
     }
     catch (error) { send(502, { error: error.message }); }
