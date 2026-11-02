@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "database_path": "C:\\XMUltraAI\\data\\trader.db",
+  "bridge_dir": "C:\\Users\\YOUR_WINDOWS_USER\\AppData\\Roaming\\MetaQuotes\\Terminal\\Common\\Files\\XMUltraAI",
+  "password_hash_file": "C:\\XMUltraAI\\data\\password.hash",
+  "host": "127.0.0.1",
+  "port": 8765,
+  "allowed_hosts": ["localhost", "127.0.0.1", "::1"],
+  "allowed_origins": [],
+  "network_access_confirmed": false,
+  "tls_cert": null,
+  "tls_key": null
+}

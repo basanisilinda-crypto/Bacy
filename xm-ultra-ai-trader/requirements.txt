@@ -1,0 +1,3 @@
+# Install from this source directory. Optional research: pip install -e '.[research]'
+-e .
+

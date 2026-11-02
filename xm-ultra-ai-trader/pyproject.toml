@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xm-ultra-ai-trader"
+version = "0.1.0"
+description = "Demo-first MT5 trading research, execution safeguards, and local monitoring"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.30,<1",
+  "numpy>=1.26,<3",
+]
+
+[project.optional-dependencies]
+research = ["scikit-learn>=1.5,<2"]
+dev = ["pytest>=8,<10", "httpx>=0.27,<1", "playwright>=1.49,<2", "ruff>=0.9,<1"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["xmtrader*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
