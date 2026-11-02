@@ -2,6 +2,8 @@
 
 # Windows demo quickstart
 
+**Easier setup:** Extract the project ZIP and double-click `Start Here.cmd`. Read `READ ME FIRST.txt` first. The guided launcher runs local setup, attempts to install/compile the EA, and opens the dashboard. It never enters an XM password, attaches a chart, or starts trading. The manual instructions below remain available if a step needs diagnosis. Windows launcher execution has not been verified in this cloud workspace.
+
 This release is a **demo-only research and execution system**. It defaults to demo; live operation requires local account pairing described in LIVE_MODE.md. It does not have a proven profitable strategy. The Python service does not hold your XM password; sign in to XM only inside MetaTrader 5.
 
 The package contains source code, not a precompiled Windows trading program. MQL5 compilation and XM demo acceptance tests must be completed on Windows before unattended use. A successful dashboard login is not a successful trading test.

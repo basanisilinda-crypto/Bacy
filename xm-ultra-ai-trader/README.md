@@ -4,6 +4,8 @@
 
 Independent, demo-default MT5 automation source for Windows, with a lightweight Python service, SQLite history, offline research tools, and an Android-compatible browser dashboard. Not affiliated with XM or MetaQuotes. No broker is connected in this workspace and no orders have been placed.
 
+**No-command Windows setup:** Extract the ZIP and double-click `Start Here.cmd`. Read `READ ME FIRST.txt`. It handles local setup and startup, attempts MetaEditor compilation, and never starts trades automatically. Windows launcher execution remains unverified in this cloud environment.
+
 **Start here: [Windows setup guide](docs/QUICKSTART.md).** This is a source release requiring MetaEditor compilation and broker-demo acceptance testing. It is not a certified, proven-profitable, or production-ready trading product. Live-account source support is available through explicit local account pairing; it is disabled by default and unverified in MT5.
 
 ## Included

@@ -1,0 +1,37 @@
+XM ULTRA - START WITHOUT TYPING COMMANDS
+
+1. Download the ZIP onto your Windows laptop.
+2. Right-click the ZIP, choose Extract All, then Extract.
+3. Open the extracted project folder.
+4. Double-click Start Here.cmd. Do not run it from inside the ZIP.
+5. Read the setup messages. On first setup, create a NEW dashboard password
+   of at least 12 characters and repeat it. This is NOT your XM password.
+6. The launcher prepares the Python environment and private connection files.
+   If Python is missing, it offers an official Windows Package Manager install
+   or opens Python's official download page. A restart of the launcher may be
+   needed after installation. Existing Windows policy can block scripts.
+7. It discovers the usual MT5 data folder. If several exist, choose the data
+   folder from the intended XM terminal (File > Open Data Folder).
+8. It copies the robot source and attempts compilation using an available
+   MetaEditor. Compilation errors are shown as a stop, not as trading success.
+   Updated installed source is backed up after you explicitly confirm an update.
+9. MT5 login, chart attachment and demo validation still happen inside MT5.
+   The launcher never enters your broker password or enables live trading.
+10. The launcher starts the local service and opens the dashboard when ready.
+    Keep the service window open. Sign in with your dashboard password.
+11. Keep your DEMO account selected. Verify actual MT5 connection and account
+    figures. Starting a service does NOT start trading. Start in the dashboard
+    is a separate deliberate operation after compilation and validation.
+
+PHONE PREVIEW (design only; no trading):
+https://xm-trader-folio-preview.poeticprawn128.chatgpt.site
+
+The actual phone controller needs your running Windows service and trusted
+HTTPS/private connectivity. The preview cannot control your laptop.
+
+If setup stops, leave trading disabled. Share only the error text, never
+passwords, bridge.secret, control.csv, private keys or full private logs.
+
+Windows launcher and MetaEditor automation were not executed in the Linux
+build environment. Hardware and broker acceptance still need Windows tests.
+No profits, uninterrupted operation or automatic order timing are guaranteed.
