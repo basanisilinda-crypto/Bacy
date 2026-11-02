@@ -150,3 +150,30 @@ def test_live_requires_exact_local_account_pairing_and_live_confirmation(client)
     assert result.status_code == 200
     assert result.json()['state'] == 'pending'
     assert client.get('/api/status').json()['robot_state'] == 'paused'
+
+
+def test_workspace_selection_does_not_switch_or_start_broker_account(client):
+    headers = login(client)
+    fixture_account(client)
+    result = client.post('/api/workspace', json={'mode': 'live'}, headers=headers)
+    assert result.status_code == 200
+    state = client.get('/api/workspace').json()
+    assert state['selected_mode'] == 'live' and state['actual_mode'] == 'demo'
+    assert not state['ready']
+    assert client.post('/api/control', json={'action':'start','request_id':'workspace-mismatch','confirmation':'START DEMO'},headers=headers).status_code == 409
+    assert client.get('/api/status').json()['robot_state'] == 'paused'
+
+
+def test_workspace_requires_auth_and_csrf(client):
+    assert client.get('/api/workspace').status_code == 401
+    login(client)
+    assert client.post('/api/workspace',json={'mode':'live'}).status_code == 403
+
+
+def test_history_download_is_authenticated_and_never_invents_executions(client):
+    assert client.get('/api/history.csv').status_code == 401
+    login(client)
+    result=client.get('/api/history.csv')
+    assert result.status_code == 200
+    assert result.headers['cache-control']=='no-store'
+    assert len(result.text.strip().splitlines())==1

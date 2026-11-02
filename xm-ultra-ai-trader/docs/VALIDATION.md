@@ -4,7 +4,7 @@
 
 ## Completed in the development workspace
 
-- 99 pytest tests passed, plus 16 risk subtests.
+- 102 pytest tests passed, plus 16 risk subtests.
 - Python lint passed for application, scripts and tests.
 - JavaScript syntax check passed.
 - Chromium acceptance against a real disposable local FastAPI server: login, authenticated navigation, unavailable account values, disabled entry control, grounded typed assistant, desktop/mobile rendering and no JavaScript errors.

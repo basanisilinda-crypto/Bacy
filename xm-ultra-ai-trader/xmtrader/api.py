@@ -270,6 +270,51 @@ def create_app(settings: Settings | None = None):
                 "by_symbol": grouped_performance(closed, key="symbol"), "equity_curve": equity,
                 "notice": "Recorded historical results do not establish future profitability."}
 
+    class WorkspaceMode(StrictModel):
+        mode: Literal["demo", "live"]
+
+    @app.get("/api/workspace")
+    def workspace(value=Depends(session)):
+        state = bridge.status()
+        selected = storage.get_config("dashboard_mode", "demo")
+        checks = [
+            {"name": "Dashboard authentication", "passed": auth.configured},
+            {"name": "Fresh MT5 telemetry", "passed": state["connected"]},
+            {"name": "Selected account matches MT5", "passed": state["connected"] and state["mode"] == selected},
+            {"name": "Live account locally paired", "passed": selected == "demo" or state["capabilities"]["live_trading"]},
+        ]
+        return {"selected_mode": selected, "actual_mode": state["mode"], "checks": checks,
+                "ready": all(c["passed"] for c in checks),
+                "note": "Readiness checks do not certify EA compilation, news availability, broker compatibility or execution. Start still requires MT5 risk approval."}
+
+    @app.post("/api/workspace")
+    def select_workspace(body: WorkspaceMode, value=Depends(session)):
+        with bridge.lock:
+            require_paused()
+            storage.set_config("dashboard_mode", body.mode)
+            storage.event("workspace_selected", "Dashboard account workspace changed; the MT5 login is unchanged.", payload={"mode": body.mode})
+            return {"selected_mode": body.mode, "message": "Sign into the matching account in Windows MT5. No broker login was changed."}
+
+    @app.get("/api/history.csv")
+    def export_history(value=Depends(session)):
+        import csv
+        import io
+        account = bridge.status()["account_id"]
+        rows = storage.trades(account) if account else []
+        fields = ["time", "kind", "symbol", "side", "volume", "price", "profit", "commission", "swap", "strategy", "message"]
+        stream = io.StringIO(newline="")
+        writer = csv.writer(stream)
+        writer.writerow(fields)
+        for row in rows:
+            cells = []
+            for key in fields:
+                cell = row.get(key, "")
+                if isinstance(cell, str) and cell.lstrip().startswith(("=", "+", "-", "@")):
+                    cell = "'" + cell
+                cells.append(cell)
+            writer.writerow(cells)
+        return Response(stream.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=mt5-history.csv"})
+
     @app.get("/api/diagnostics")
     def diagnostics(value=Depends(session)):
         state = bridge.status()

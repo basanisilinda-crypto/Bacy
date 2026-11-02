@@ -21,6 +21,7 @@ Independent, demo-default MT5 automation source for Windows, with a lightweight 
 - [Feature status and limitations](docs/FEATURES.md)
 - [Validation and remaining acceptance tests](docs/VALIDATION.md)
 - [Android access and security](docs/SECURITY.md)
+- [Account workspaces and connection features](docs/WORKSPACE.md)
 - [Research usage](docs/RESEARCH.md)
 - [Costs](docs/COSTS.md)
 - [MT5 engine details](mt5/README.md)

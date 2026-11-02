@@ -337,6 +337,9 @@ class Bridge:
                 status = self.status()
                 if not status["connected"] or (status["mode"] != "demo" and not (status["mode"] == "live" and self.settings.live_account_id and status["account_id"] == self.settings.live_account_id)):
                     raise BridgeError("A connected, current demo account is required, or the exact live account must be authorized locally")
+                selected_mode = self.storage.get_config("dashboard_mode")
+                if selected_mode and status["mode"] != selected_mode:
+                    raise BridgeError("The selected workspace does not match the account logged into MT5")
                 if action in {"start", "resume"} and not self.storage.get_config("strategy", "ema_cross"):
                     raise BridgeError("Enable one demo strategy before starting")
                 if action == "start" and status["robot_state"] == "emergency":
