@@ -110,9 +110,9 @@ public final class MainActivity extends Activity {
     private void refreshOwner(){
         if(ownerSummary==null)return;
         String message="Device: "+Build.MANUFACTURER+" "+Build.MODEL+
-            "\\nAndroid: "+Build.VERSION.RELEASE+
-            "\\nDevice Owner: "+(isOwner()?"Enrolled":"Not enrolled")+
-            "\\nFinance restriction: Not enabled in this pilot";
+            "\nAndroid: "+Build.VERSION.RELEASE+
+            "\nDevice Owner: "+(isOwner()?"Enrolled":"Not enrolled")+
+            "\nFinance restriction: Not enabled in this pilot";
         ownerSummary.setText(message);
     }
 
@@ -207,11 +207,11 @@ public final class MainActivity extends Activity {
         long balance=account.optLong("balance_cents",0);
         String due=account.isNull("next_due_date")?"Paid in full":account.optString("next_due_date","Not assigned");
         planSummary.setText("Customer: "+account.optString("customer_name","")+
-            "\\nStatus: "+state.toUpperCase(Locale.ROOT)+
-            "\\nMonthly instalment: R "+money(instalment)+
-            "\\nOutstanding balance: R "+money(balance)+
-            "\\nNext payment: "+due+
-            (cached?"\\nLast saved information (offline)":""));
+            "\nStatus: "+state.toUpperCase(Locale.ROOT)+
+            "\nMonthly instalment: R "+money(instalment)+
+            "\nOutstanding balance: R "+money(balance)+
+            "\nNext payment: "+due+
+            (cached?"\nLast saved information (offline)":""));
         if(!cached && "active".equals(state)){
             eftAmount.setText(money(Math.min(instalment,balance)));
             if(eftReference.getText().length()==0){
@@ -221,10 +221,10 @@ public final class MainActivity extends Activity {
         JSONObject bank=response.optJSONObject("bank");
         bankReady=bank!=null;
         bankSummary.setText(bankReady
-            ?bank.optString("bank_name")+"\\nAccount holder: "+bank.optString("account_holder")+
-                "\\nAccount number: "+bank.optString("account_number")+
-                "\\nBranch: "+bank.optString("branch_code","")+
-                "\\n"+bank.optString("instructions","")
+            ?bank.optString("bank_name")+"\nAccount holder: "+bank.optString("account_holder")+
+                "\nAccount number: "+bank.optString("account_number")+
+                "\nBranch: "+bank.optString("branch_code","")+
+                "\n"+bank.optString("instructions","")
             :"The administrator has not yet published verified EFT banking details.");
         JSONArray claims=account.optJSONArray("claims");
         if(claims==null || claims.length()==0){
@@ -234,10 +234,10 @@ public final class MainActivity extends Activity {
             for(int i=0;i<Math.min(claims.length(),20);i++){
                 JSONObject claim=claims.optJSONObject(i);
                 if(claim==null)continue;
-                if(lines.length()>0)lines.append("\\n\\n");
+                if(lines.length()>0)lines.append("\n\n");
                 lines.append("R ").append(money(claim.optLong("amount_cents")))
                   .append("  ·  ").append(claim.optString("status","pending").toUpperCase(Locale.ROOT))
-                  .append("\\nReference: ").append(claim.optString("reference",""));
+                  .append("\nReference: ").append(claim.optString("reference",""));
             }
             history.setText(lines.toString());
         }
