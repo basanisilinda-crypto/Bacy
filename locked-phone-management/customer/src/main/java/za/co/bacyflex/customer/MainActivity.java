@@ -82,6 +82,13 @@ public final class MainActivity extends Activity {
         ownerSummary=Screen.label(this,"Checking Android management status...",14,false);
         device.addView(ownerSummary);
         Screen.button(this,device,"Refresh device information",v->refreshOwner());
+        Screen.action(this,device,"Review Android permissions",
+            "See Device Owner status and the permission explanation",v->{
+                Intent setup = new Intent(this, WelcomeSetupActivity.class);
+                setup.putExtra("from_main", true);
+                setup.putExtra("review_setup", true);
+                startActivity(setup);
+            });
 
         LinearLayout help=Screen.card(this,root,"HERE TO HELP");
         support=Screen.label(this,
