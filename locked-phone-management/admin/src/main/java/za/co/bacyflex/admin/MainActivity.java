@@ -29,50 +29,50 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle bundle){
         super.onCreate(bundle);
-        LinearLayout root=Screen.start(this,"Administrator","Device finance · Secure management");
+        LinearLayout root=Screen.start(this,"Today","Payments, customers and phone agreements");
         notice=Screen.label(this,"Sign in to load your actual business records.",14,false);
         root.addView(notice);
 
-        LinearLayout signIn=Screen.card(this,root,"Administrator sign in");
+        LinearLayout signIn=Screen.card(this,root,"YOUR ACCESS");
         email=Screen.field(this,signIn,"Administrator email",false);
         password=Screen.field(this,signIn,"Password",true);
-        Screen.button(this,signIn,"Secure sign in",v->signIn());
-        Screen.button(this,signIn,"Create administrator login",v->registerAdminLogin());
+        Screen.button(this,signIn,"Unlock your workspace",v->signIn());
+        Screen.action(this,signIn,"Need administrator access?","Request a verified account",v->registerAdminLogin());
         signIn.addView(Screen.label(this,
             "Only accounts explicitly assigned as MBMF administrators can view customer records or approve EFT payments.",12,false));
 
-        LinearLayout overview=Screen.card(this,root,"Business overview");
+        LinearLayout overview=Screen.card(this,root,"BUSINESS RECORDS");
         LinearLayout top=new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         overview.addView(top);
-        customersCount=Screen.metric(this,top,"Recent customers");
+        customersCount=Screen.metric(this,top,"Customers");
         activeCount=Screen.metric(this,top,"Active finance");
         LinearLayout bottom=new LinearLayout(this);
         bottom.setOrientation(LinearLayout.HORIZONTAL);
         overview.addView(bottom);
         pendingCount=Screen.metric(this,bottom,"EFT to verify");
         settledCount=Screen.metric(this,bottom,"Paid in full");
-        Screen.button(this,overview,"Refresh live overview",v->refresh());
+        Screen.action(this,overview,"Update numbers","Refresh live records from the server",v->refresh());
 
-        LinearLayout devices=Screen.card(this,root,"Recently registered financed phones");
+        LinearLayout devices=Screen.card(this,root,"FINANCED PHONES");
         devicesList=new LinearLayout(this);
         devicesList.setOrientation(LinearLayout.VERTICAL);
         devices.addView(devicesList);
         devicesList.addView(Screen.label(this,"Sign in to load devices.",14,false));
 
-        LinearLayout customers=Screen.card(this,root,"Customers");
+        LinearLayout customers=Screen.card(this,root,"CUSTOMERS");
         customersList=new LinearLayout(this);
         customersList.setOrientation(LinearLayout.VERTICAL);
         customers.addView(customersList);
         customersList.addView(Screen.label(this,"Sign in to see registered customers.",14,false));
-        Screen.button(this,customers,"Refresh customers",v->refresh());
+        Screen.action(this,customers,"Reload customers","Retrieve current customer and device records",v->refresh());
 
-        LinearLayout finance=Screen.card(this,root,"Register a customer and phone");
+        LinearLayout finance=Screen.card(this,root,"NEW PHONE AGREEMENT");
         finance.addView(Screen.label(this,
             "You enter the customer's information. Customers do not create accounts or passwords.",13,false));
         customerName=Screen.field(this,finance,"Customer full name",false);
         customerPhone=Screen.field(this,finance,"Customer cellphone number",false);
-        deviceModel=Screen.field(this,finance,"Phone make and model (e.g. Samsung A06)",false);
+        deviceModel=Screen.field(this,finance,"Phone make and model",false);
         price=Screen.field(this,finance,"Total phone price in rand (e.g. 1700.00)",false);
         deposit=Screen.field(this,finance,"Deposit already paid in rand (e.g. 0.00)",false);
         monthly=Screen.field(this,finance,"Monthly instalment in rand (e.g. 300.00)",false);
@@ -82,25 +82,25 @@ public final class MainActivity extends Activity {
             "A one-use setup token is created by the server and expires after 24 hours. " +
             "The phone is activated only after Android's Device Owner consent flow.",12,false));
 
-        LinearLayout enroll=Screen.card(this,root,"Android startup QR");
+        LinearLayout enroll=Screen.card(this,root,"PHONE SETUP");
         qrHelp=Screen.label(this,
             "First register the customer's finance contract. Then show the personalised QR on your admin phone and scan it with the new phone during Android setup.",14,false);
         enroll.addView(qrHelp);
         Screen.button(this,enroll,"Show customer's Android setup QR",v->showQr());
-        Screen.button(this,enroll,"Copy one-time activation code",v->copyCode());
+        Screen.action(this,enroll,"Copy private setup code","For authorised manual recovery only",v->copyCode());
         enroll.addView(Screen.label(this,
             "Test phone only for now. Back up before any reset. Device Owner controls require informed consent. The APK remains a debug-signed pilot.",12,false));
 
-        LinearLayout payments=Screen.card(this,root,"EFT payments awaiting bank verification");
+        LinearLayout payments=Screen.card(this,root,"PAYMENTS TO REVIEW");
         payments.addView(Screen.label(this,
             "Check the exact EFT amount and reference in your bank account before approving. A screenshot is not proof of payment.",13,false));
-        Screen.button(this,payments,"Refresh pending EFT claims",v->refresh());
+        Screen.action(this,payments,"Refresh payments","Check for new bank transfer claims",v->refresh());
         pendingList=new LinearLayout(this);
         pendingList.setOrientation(LinearLayout.VERTICAL);
         payments.addView(pendingList);
         pendingList.addView(Screen.label(this,"No payment claims loaded.",14,false));
 
-        LinearLayout settings=Screen.card(this,root,"Customer EFT bank details");
+        LinearLayout settings=Screen.card(this,root,"PAYMENT DETAILS FOR CUSTOMERS");
         settings.addView(Screen.label(this,
             "Customers see these details only after secure device activation. Confirm the account details with your bank first.",13,false));
         bankName=Screen.field(this,settings,"Bank name",false);
@@ -110,13 +110,13 @@ public final class MainActivity extends Activity {
         bankInstructions=Screen.field(this,settings,"Payment instructions",false);
         Screen.button(this,settings,"Publish verified EFT details",v->publishBank());
 
-        Screen.tabs(this,root,new String[]{"Home","Clients","Finance","Payments","Setup"},
+        Screen.tabs(this,root,new String[]{"Today","People","New","Phones","Settings"},
             new LinearLayout[][]{
-                {signIn,overview,devices},
-                {customers},
+                {signIn,payments},
+                {customers,overview},
                 {finance},
-                {payments},
-                {enroll,settings}
+                {devices,enroll},
+                {settings}
             });
     }
 
