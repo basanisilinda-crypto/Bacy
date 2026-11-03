@@ -62,6 +62,38 @@ public final class MainActivity extends Activity {
         });
         Screen.button(this,eft,"I paid — submit EFT reference for verification",v->submitClaim());
         eft.addView(Screen.label(this,"Submitting a reference does not unlock the device. Your administrator must verify the money in the bank and approve it.",13,false));
+        
+        LinearLayout device=Screen.card(this,root,"Device management");
+        device.addView(Screen.label(this,"Management requires explicit consent during Android enrolment. Installing this APK by itself does not make it Device Owner.",13,false));
+        android.app.admin.DevicePolicyManager manager=(android.app.admin.DevicePolicyManager)getSystemService(DEVICE_POLICY_SERVICE);
+        android.content.ComponentName receiver=new android.content.ComponentName(this,FinanceAdminReceiver.class);
+        TextView managementStatus=Screen.label(this,"Checking management status...",14,false);
+        device.addView(managementStatus);
+        Runnable refreshDevice=()->managementStatus.setText(
+            "Device Owner: "+(manager!=null&&manager.isDeviceOwnerApp(getPackageName())?"Active":"Not enrolled")
+            +"\\nScreen-lock test permission: "+(manager!=null&&manager.isAdminActive(receiver)?"Enabled":"Off")
+            +"\\nAutomatic finance locking: Not enabled");
+        refreshDevice.run();
+        Screen.button(this,device,"Refresh device status",view->refreshDevice.run());
+        Screen.button(this,device,"Allow manual screen-lock test",view->{
+            Intent intent=new Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+            intent.putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN,receiver);
+            intent.putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                "This permission is for a voluntary, manual lock test only. It does not activate finance restrictions.");
+            startActivity(intent);
+        });
+        Screen.button(this,device,"Test lock this screen",view->{
+            if(manager==null || !manager.isAdminActive(receiver)){
+                status.setText("Enable screen-lock test permission before using this button.");
+                return;
+            }
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("Lock this phone now?")
+                .setMessage("This is a local test initiated by you. You can unlock normally using your PIN or fingerprint. Automatic missed-payment locking is not active.")
+                .setNegativeButton("Cancel",null)
+                .setPositiveButton("Lock now",(dialog,which)->manager.lockNow())
+                .show();
+        });
     }
 
     private void work(Job job) {
