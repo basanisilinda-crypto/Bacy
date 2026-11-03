@@ -1,5 +1,10 @@
 name: MBMF Native Android PR Validation
 on:
+  push:
+    branches: [mbmf-native-kotlin-compose-finance-20261103]
+    paths:
+      - 'locked-phone-management/**'
+      - '.github/workflows/mbmf-pr-check.yml'
   pull_request:
     paths:
       - 'locked-phone-management/**'
