@@ -8,9 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -21,34 +19,46 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 
-/** Native Compose header shared by both APKs; no fictional business values. */
+/**
+ * MBMF Ledger masthead. Original editorial financial identity rather than an
+ * illustration, phone orbit, luminous dashboard or AI-inspired effect.
+ */
 object MbmfComposeHeader {
-    @JvmStatic
-    fun attach(target: ComposeView, title: String, subtitle: String) {
-        target.setContent { BrandHeader(title, subtitle) }
+    @JvmStatic fun attach(target: ComposeView, title: String, subtitle: String) {
+        target.setContent { LedgerMasthead(title, subtitle) }
     }
 }
+
 @Composable
-private fun BrandHeader(title: String, subtitle: String) {
-    MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF176AD5))) {
-        Surface(modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp), color = Color(0xFF10243F)) {
-            Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(13.dp)) {
-                Box(modifier = Modifier.size(44.dp)
-                    .background(Color(0xFF2B82E5), RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center) {
-                    Text("M", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 25.sp)
+private fun LedgerMasthead(title: String, subtitle: String) {
+    val ink = Color(0xFF1D2521)
+    val green = Color(0xFF244E3C)
+    val muted = Color(0xFF666D66)
+    MaterialTheme(colorScheme = lightColorScheme(primary = green)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+                Box(modifier = Modifier.size(width = 5.dp, height = 29.dp).background(green))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("MBMF", color = ink, fontSize = 17.sp,
+                        letterSpacing = 2.4.sp, fontWeight = FontWeight.Black)
+                    Text("MOBILE BUSINESS  /  FINANCE", color = muted, fontSize = 8.sp,
+                        letterSpacing = 1.2.sp, fontWeight = FontWeight.Medium)
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("MBMF", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-                    Text(title, color = Color(0xFFBFE0FF), fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold)
-                    Text(subtitle, color = Color(0xFFD0D9E6), fontSize = 12.sp)
-                }
+                Text("SA  ·  ZAR", color = green, fontSize = 10.sp,
+                    letterSpacing = 1.sp, fontWeight = FontWeight.Bold)
             }
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(title, color = ink, fontSize = 29.sp,
+                    fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp)
+                Text(subtitle, color = muted, fontSize = 13.sp,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Box(modifier = Modifier.fillMaxWidth().size(height = 1.dp, width = 1.dp)
+                .background(Color(0xFFDCD8CF)))
         }
     }
 }

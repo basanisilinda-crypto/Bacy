@@ -2,23 +2,15 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="72dp" android:height="72dp"
     android:viewportWidth="72" android:viewportHeight="72">
-    <!-- Blue phone body and orbital line, derived from the user's MBMF references. -->
-    <path android:fillColor="#1478E9"
-          android:pathData="M23,5 L46,5 C50,5 53,9 53,13 L53,60 C53,64 50,68 46,68 L23,68 C19,68 16,64 16,60 L16,13 C16,9 19,5 23,5 Z"/>
-    <path android:fillColor="#0C2342"
-          android:pathData="M21,14 L48,14 L48,56 L21,56 Z"/>
-    <path android:fillColor="#E7F3FF"
-          android:pathData="M29,9 L40,9 L40,11 L29,11 Z"/>
-    <path android:fillColor="#70D8FF"
-          android:pathData="M33,61 A2.5,2.5 0,1 1,38 61 A2.5,2.5 0,1 1,33 61 Z"/>
-    <path android:fillColor="@android:color/transparent"
-          android:strokeColor="#59C9FD"
-          android:strokeWidth="4"
-          android:strokeLineCap="round"
-          android:pathData="M7,48 C17,63 49,44 64,16"/>
-    <path android:fillColor="@android:color/transparent"
-          android:strokeColor="#2A8BFF"
-          android:strokeWidth="2.2"
-          android:strokeLineCap="round"
-          android:pathData="M11,53 C24,66 55,47 66,26"/>
+    <!-- MBMF Ledger: an abstract monogram made of three unequal ledger columns. -->
+    <path android:fillColor="#1D2521"
+          android:pathData="M0,0 L72,0 L72,72 L0,72 Z"/>
+    <path android:fillColor="#F7F5EF"
+          android:pathData="M13,20 L22,20 L22,53 L13,53 Z"/>
+    <path android:fillColor="#F7F5EF"
+          android:pathData="M28,11 L37,11 L37,53 L28,53 Z"/>
+    <path android:fillColor="#AE5A39"
+          android:pathData="M43,29 L52,29 L52,53 L43,53 Z"/>
+    <path android:fillColor="#F7F5EF"
+          android:pathData="M13,59 L59,59 L59,62 L13,62 Z"/>
 </vector>
