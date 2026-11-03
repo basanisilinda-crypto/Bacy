@@ -190,10 +190,10 @@ public final class MainActivity extends Activity {
                 String model=c.optString("device_model");
                 String state=c.optString("status","pending");
                 customersList.addView(Screen.label(this,
-                    name+"  ·  "+phone+"\\n"+model+"  ·  Due: "+due+"\\nBalance: R "+money(c.optLong("balance_cents")),14,false));
+                    name+"  ·  "+phone+"\n"+model+"  ·  Due: "+due+"\nBalance: R "+money(c.optLong("balance_cents")),14,false));
                 devicesList.addView(Screen.label(this,
                     model+"  ·  "+(c.isNull("enrolled_at")?"Awaiting setup":"App activated")+
-                    "\\nFinance: "+state.toUpperCase(Locale.ROOT),14,false));
+                    "\nFinance: "+state.toUpperCase(Locale.ROOT),14,false));
             }
             if(p==0)pendingList.addView(Screen.label(this,"No pending EFT claims.",14,false));
             for(int i=0;i<claims.length();i++){
@@ -203,8 +203,8 @@ public final class MainActivity extends Activity {
                 final String reference=claim.optString("eft_reference");
                 final String amount=money(claim.optLong("amount_cents"));
                 pendingList.addView(Screen.label(this,
-                    "Reference: "+reference+"\\nAmount claimed: R "+amount+
-                    "\\nSubmitted: "+claim.optString("submitted_at"),14,false));
+                    "Reference: "+reference+"\nAmount claimed: R "+amount+
+                    "\nSubmitted: "+claim.optString("submitted_at"),14,false));
                 Screen.button(this,pendingList,"Approve bank-confirmed EFT",v->decide(id,reference,amount,true));
                 Screen.button(this,pendingList,"Reject this claim",v->decide(id,reference,amount,false));
             }
@@ -237,9 +237,9 @@ public final class MainActivity extends Activity {
             lastEnrollmentCode=contract.getString("enrollment_code");
             runOnUiThread(()->{
                 qrHelp.setText("Registered: "+name+" · "+model+
-                    "\\nContract: "+lastContractId+
-                    "\\nCode expires: "+contract.optString("expires_at")+
-                    "\\nShow the QR on your admin phone and scan it from the customer's Android Welcome screen.");
+                    "\nContract: "+lastContractId+
+                    "\nCode expires: "+contract.optString("expires_at")+
+                    "\nShow the QR on your admin phone and scan it from the customer's Android Welcome screen.");
             });
             loadDashboard();
             runOnUiThread(this::showQr);
