@@ -30,6 +30,16 @@ public final class MainActivity extends ComponentActivity {
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
+        // Never display finance records on a phone that lacks actual Device Owner.
+        DevicePolicyManager manager=(DevicePolicyManager)getSystemService(DEVICE_POLICY_SERVICE);
+        boolean owner=manager!=null&&manager.isDeviceOwnerApp(getPackageName());
+        String active=DeviceSession.read(this,"device_secret");
+        boolean continuing=getIntent().getBooleanExtra("mbmf_continue_activation",false);
+        if(!owner||(active==null&&!continuing)){
+            startActivity(new Intent(this,SetupActivity.class));
+            finish();
+            return;
+        }
         LinearLayout root=Screen.start(this,"My finance","Payments and phone information, in one place");
         LinearLayout account=Screen.spotlight(this,root,"Account balance");
         balanceHero=Screen.spotlightAmount(this,account,"—");
