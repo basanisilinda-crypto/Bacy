@@ -96,6 +96,11 @@ public final class MainActivity extends Activity {
         });
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        if(token!=null && planSummary!=null) load();
+    }
+
     private void work(Job job) {
         status.setText("Connecting securely...");
         new Thread(()->{
