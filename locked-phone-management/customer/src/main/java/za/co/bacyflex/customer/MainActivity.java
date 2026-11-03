@@ -23,7 +23,7 @@ import za.co.bacyflex.core.Screen;
  */
 public final class MainActivity extends Activity {
     private TextView notice, deviceSummary, planSummary, bankSummary, history, ownerSummary, support;
-    private EditText eftReference, eftAmount, adminCode;
+    private EditText eftReference, eftAmount;
     private JSONObject currentAccount;
     private boolean bankReady=false;
     private interface Job { String run() throws Exception; }
@@ -39,7 +39,7 @@ public final class MainActivity extends Activity {
         home.addView(notice);
 
         LinearLayout plan=Screen.card(this,root,"Financing");
-        planSummary=Screen.label(this,"Waiting for device enrolment. Your finance provider registers the details.",15,false);
+        planSummary=Screen.label(this,"Your phone and payment details appear here after setup.",15,false);
         plan.addView(planSummary);
         Screen.button(this,plan,"Refresh account",v->refresh());
 
@@ -59,7 +59,7 @@ public final class MainActivity extends Activity {
             new AlertDialog.Builder(this).setTitle("Customer support").setMessage(support.getText()).setPositiveButton("OK",null).show());
 
         LinearLayout payment=Screen.card(this,root,"Pay by bank transfer (EFT)");
-        bankSummary=Screen.label(this,"EFT beneficiary details appear after your device is securely assigned.",14,false);
+        bankSummary=Screen.label(this,"Payment details are available after phone setup.",14,false);
         payment.addView(bankSummary);
         eftReference=Screen.field(this,payment,"Bank payment reference",false);
         eftAmount=Screen.field(this,payment,"Amount paid (R)",false);
@@ -73,7 +73,7 @@ public final class MainActivity extends Activity {
             "Submitting a reference does not prove an EFT was received. Your finance provider verifies the money and approves it.",12,false));
 
         LinearLayout payments=Screen.card(this,root,"Payment history");
-        history=Screen.label(this,"No payments to display until this device is activated.",14,false);
+        history=Screen.label(this,"No payments recorded.",14,false);
         payments.addView(history);
         Screen.button(this,payments,"Check payment status",v->refresh());
 
@@ -81,14 +81,6 @@ public final class MainActivity extends Activity {
         ownerSummary=Screen.label(this,"Checking Android management status...",14,false);
         device.addView(ownerSummary);
         Screen.button(this,device,"Refresh device information",v->refreshOwner());
-
-        LinearLayout setup=Screen.card(this,root,"Administrator setup");
-        setup.addView(Screen.label(this,
-            "Normally the Android Welcome-screen QR provides your one-use activation code automatically. " +
-            "If the code was not transferred, the administrator can enter it here. " +
-            "This is device activation, not customer sign-up.",13,false));
-        adminCode=Screen.field(this,setup,"Administrator's one-time activation code",false);
-        Screen.button(this,setup,"Activate assigned phone",v->activateManual());
 
         LinearLayout help=Screen.card(this,root,"Support and help");
         support=Screen.label(this,
@@ -102,7 +94,7 @@ public final class MainActivity extends Activity {
             new LinearLayout[][]{
                 {home,plan,actions},
                 {payment,payments},
-                {device,setup},
+                {device},
                 {help}
             });
         refreshOwner();
@@ -123,7 +115,7 @@ public final class MainActivity extends Activity {
         String message="Device: "+Build.MANUFACTURER+" "+Build.MODEL+
             "\nAndroid: "+Build.VERSION.RELEASE+
             "\nDevice Owner: "+(isOwner()?"Enrolled":"Not enrolled")+
-            "\nFinance restriction: Not enabled in this pilot";
+            "\nFinance restriction: Not active";
         ownerSummary.setText(message);
     }
 
@@ -137,26 +129,6 @@ public final class MainActivity extends Activity {
                 runOnUiThread(()->notice.setText("Unable to complete: "+e.getMessage()));
             }
         }).start();
-    }
-
-    private void activateManual(){
-        if(!isOwner()){
-            notice.setText("The phone must first be enrolled as Device Owner during Android initial setup.");
-            return;
-        }
-        String code=adminCode.getText().toString().trim().toLowerCase(Locale.ROOT);
-        if(!code.matches("[0-9a-f]{64}")){
-            notice.setText("Use the valid one-time code from the administrator.");
-            return;
-        }
-        try{
-            DeviceSession.store(this,"pending_enrollment",code);
-            adminCode.setText("");
-        }catch(Exception e){
-            notice.setText("Could not protect the activation code on this phone.");
-            return;
-        }
-        refresh();
     }
 
     private void refresh(){
