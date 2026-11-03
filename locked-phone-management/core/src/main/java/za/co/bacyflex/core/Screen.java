@@ -1,6 +1,7 @@
 package za.co.bacyflex.core;
 
 import android.app.Activity;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -10,168 +11,197 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
 
-/** Shared native finance UI with high-contrast navigation and no web views. */
+/**
+ * MBMF native shared UI. Calm navy headers, crisp white surfaces, cobalt actions.
+ * All finance figures are loaded from the live backend, never hard-coded.
+ */
 public final class Screen {
-    private static final int INK=Color.rgb(28,34,39);
-    private static final int DARK=Color.rgb(30,39,47);
-    private static final int PAPER=Color.rgb(248,247,244);
-    private static final int WHITE=Color.WHITE;
-    private static final int MUTED=Color.rgb(100,109,111);
-    private static final int LINE=Color.rgb(227,225,218);
-    private static final int GOLD=Color.rgb(227,173,73);
+    public static final int NAVY=Color.rgb(15,34,59);
+    public static final int BLUE=Color.rgb(24,103,220);
+    public static final int INK=Color.rgb(29,43,62);
+    public static final int MUTED=Color.rgb(97,112,131);
+    public static final int PAPER=Color.rgb(244,247,251);
+    public static final int LINE=Color.rgb(223,231,242);
+    public static final int GREEN=Color.rgb(19,137,86);
+    public static final int AMBER=Color.rgb(172,108,24);
     private Screen(){}
 
     public static LinearLayout start(Activity a,String title,String subtitle){
-        a.getWindow().setStatusBarColor(PAPER);
+        a.getWindow().setStatusBarColor(NAVY);
         a.getWindow().setNavigationBarColor(PAPER);
-        a.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        a.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+
+        FrameLayout shell=new FrameLayout(a);
+        shell.setBackgroundColor(PAPER);
         ScrollView scroll=new ScrollView(a);
         scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(false);
-        scroll.setBackgroundColor(PAPER);
         LinearLayout root=new LinearLayout(a);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(a,16),dp(a,14),dp(a,16),dp(a,34));
+        root.setPadding(dp(a,17),dp(a,16),dp(a,17),dp(a,105));
         scroll.addView(root);
-        a.setContentView(scroll);
+        shell.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
+        a.setContentView(shell);
 
-        LinearLayout header=new LinearLayout(a);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(a,18),dp(a,19),dp(a,18),dp(a,19));
-        header.setBackground(shape(a,DARK,DARK,22));
-        LinearLayout.LayoutParams hparams=new LinearLayout.LayoutParams(-1,-2);
-        hparams.bottomMargin=dp(a,17);
-        root.addView(header,hparams);
+        LinearLayout head=new LinearLayout(a);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        head.setPadding(dp(a,18),dp(a,17),dp(a,18),dp(a,17));
+        GradientDrawable h=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+          new int[]{NAVY,Color.rgb(22,54,97)});
+        h.setCornerRadius(dp(a,21));
+        head.setBackground(h);
+        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);
+        hp.bottomMargin=dp(a,18);
+        root.addView(head,hp);
 
         ImageView mark=new ImageView(a);
         mark.setImageResource(R.drawable.lpm_mark);
-        mark.setContentDescription("Locked Phone Management logo");
-        header.addView(mark,new LinearLayout.LayoutParams(dp(a,47),dp(a,47)));
-
-        LinearLayout namebox=new LinearLayout(a);
-        namebox.setOrientation(LinearLayout.VERTICAL);
-        namebox.setPadding(dp(a,13),0,0,0);
-        header.addView(namebox,new LinearLayout.LayoutParams(0,-2,1));
-        TextView kicker=label(a,"LOCKED PHONE MANAGEMENT",11,true);
-        kicker.setTextColor(GOLD);
-        kicker.setLetterSpacing(.08f);
-        kicker.setPadding(0,0,0,dp(a,5));
-        namebox.addView(kicker);
-        TextView heading=label(a,title,20,true);
-        heading.setTextColor(WHITE);
-        heading.setPadding(0,0,0,dp(a,6));
-        namebox.addView(heading);
-        TextView sub=label(a,subtitle,11,false);
-        sub.setTextColor(Color.rgb(210,216,211));
-        sub.setPadding(0,0,0,0);
-        namebox.addView(sub);
+        mark.setContentDescription("MBMF brand mark");
+        head.addView(mark,new LinearLayout.LayoutParams(dp(a,49),dp(a,49)));
+        LinearLayout titles=new LinearLayout(a);
+        titles.setOrientation(LinearLayout.VERTICAL);
+        titles.setPadding(dp(a,13),0,0,0);
+        head.addView(titles,new LinearLayout.LayoutParams(0,-2,1f));
+        TextView brand=label(a,"MBMF",22,true);
+        brand.setTextColor(Color.WHITE);
+        brand.setPadding(0,0,0,dp(a,2));
+        titles.addView(brand);
+        TextView line=label(a,title,13,true);
+        line.setTextColor(Color.rgb(202,226,255));
+        line.setPadding(0,0,0,dp(a,3));
+        titles.addView(line);
+        TextView caption=label(a,subtitle,11,false);
+        caption.setTextColor(Color.rgb(193,204,221));
+        caption.setPadding(0,0,0,0);
+        titles.addView(caption);
         return root;
     }
 
-    /** Adds visible, actual native tab navigation between sections of one app. */
+    /** Fixed bottom navigation; tabs change content without opening another page. */
     public static void tabs(Activity a,LinearLayout root,String[] labels,LinearLayout[][] pages){
-        if(labels==null||pages==null||labels.length!=pages.length||labels.length==0) {
-            throw new IllegalArgumentException("Each tab must have a matching section group.");
-        }
+        if(labels==null||pages==null||labels.length!=pages.length||labels.length==0)
+            throw new IllegalArgumentException("Invalid navigation");
+        ScrollView scroll=(ScrollView)root.getParent();
+        FrameLayout shell=(FrameLayout)scroll.getParent();
         LinearLayout nav=new LinearLayout(a);
-        nav.setOrientation(LinearLayout.HORIZONTAL);
-        nav.setPadding(dp(a,4),dp(a,4),dp(a,4),dp(a,4));
-        nav.setBackground(shape(a,Color.rgb(238,236,230),Color.rgb(238,236,230),15));
-        LinearLayout.LayoutParams nparams=new LinearLayout.LayoutParams(-1,dp(a,55));
-        nparams.bottomMargin=dp(a,18);
-        root.addView(nav,1,nparams);
-        TextView[] tabs=new TextView[labels.length];
+        nav.setGravity(Gravity.CENTER_VERTICAL);
+        nav.setPadding(dp(a,6),dp(a,8),dp(a,6),dp(a,8));
+        nav.setBackground(shape(a,Color.WHITE,LINE,18));
+        FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(-1,dp(a,65),Gravity.BOTTOM);
+        p.leftMargin=dp(a,10);p.rightMargin=dp(a,10);p.bottomMargin=dp(a,8);
+        shell.addView(nav,p);
+        TextView[] buttons=new TextView[labels.length];
         for(int i=0;i<labels.length;i++){
             final int index=i;
-            TextView tab=label(a,labels[i],labels.length>3?11:13,true);
+            TextView tab=label(a,labels[i],labels.length>=5?11:13,true);
             tab.setGravity(Gravity.CENTER);
             tab.setPadding(dp(a,3),0,dp(a,3),0);
-            LinearLayout.LayoutParams item=new LinearLayout.LayoutParams(0,-1,1f);
-            nav.addView(tab,item);
-            tabs[i]=tab;
-            tab.setOnClickListener(view->selectTab(a,root,pages,tabs,index));
+            nav.addView(tab,new LinearLayout.LayoutParams(0,-1,1f));
+            buttons[i]=tab;
+            tab.setOnClickListener(v->selectTab(a,scroll,pages,buttons,index));
         }
-        selectTab(a,root,pages,tabs,0);
+        selectTab(a,scroll,pages,buttons,0);
     }
 
-    private static void selectTab(Activity a,LinearLayout root,LinearLayout[][] pages,TextView[] tabs,int selected){
+    private static void selectTab(Activity a,ScrollView scroll,LinearLayout[][] pages,TextView[] buttons,int index){
         for(int i=0;i<pages.length;i++){
-            boolean active=i==selected;
-            tabs[i].setTextColor(active?INK:MUTED);
-            tabs[i].setBackground(active?shape(a,WHITE,WHITE,12):null);
-            for(LinearLayout page:pages[i]){
-                if(page!=null) page.setVisibility(active?View.VISIBLE:View.GONE);
-            }
+            boolean active=(i==index);
+            buttons[i].setTextColor(active?BLUE:MUTED);
+            buttons[i].setBackground(active?shape(a,Color.rgb(231,241,255),Color.rgb(231,241,255),12):null);
+            for(LinearLayout section:pages[i]) if(section!=null)
+                section.setVisibility(active?View.VISIBLE:View.GONE);
         }
-        if(root.getParent() instanceof ScrollView){
-            ((ScrollView)root.getParent()).smoothScrollTo(0,0);
-        }
+        scroll.smoothScrollTo(0,0);
     }
 
-    public static TextView label(Activity a,String value,int size,boolean strong){
+    public static TextView label(Activity a,String text,int size,boolean bold){
         TextView t=new TextView(a);
-        t.setText(value);
-        t.setTextColor(INK);
+        t.setText(text);
         t.setTextSize(size);
-        t.setIncludeFontPadding(false);
-        t.setTypeface(Typeface.create(strong?"sans-serif-medium":"sans-serif",Typeface.NORMAL));
-        t.setPadding(0,dp(a,5),0,dp(a,7));
-        return t;
-    }
-
-    public static EditText field(Activity a,LinearLayout box,String hint,boolean secret){
-        EditText t=new EditText(a);
-        t.setSingleLine(true);
-        t.setTextSize(15);
         t.setTextColor(INK);
-        t.setHintTextColor(MUTED);
-        t.setHint(hint);
-        t.setPadding(dp(a,14),dp(a,12),dp(a,14),dp(a,12));
-        t.setBackground(shape(a,WHITE,LINE,12));
-        t.setInputType(secret?InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD:InputType.TYPE_CLASS_TEXT);
-        LinearLayout.LayoutParams item=new LinearLayout.LayoutParams(-1,dp(a,54));
-        item.bottomMargin=dp(a,11);
-        box.addView(t,item);
+        t.setIncludeFontPadding(false);
+        t.setTypeface(Typeface.create(bold?"sans-serif-medium":"sans-serif",Typeface.NORMAL));
+        t.setPadding(0,dp(a,4),0,dp(a,6));
         return t;
     }
 
-    public static Button button(Activity a,LinearLayout box,String text,View.OnClickListener click){
+    public static EditText field(Activity a,LinearLayout parent,String hint,boolean secret){
+        EditText e=new EditText(a);
+        e.setSingleLine(true);
+        e.setTextSize(15);
+        e.setTextColor(INK);
+        e.setHintTextColor(MUTED);
+        e.setHint(hint);
+        e.setPadding(dp(a,13),dp(a,12),dp(a,13),dp(a,12));
+        e.setBackground(shape(a,Color.WHITE,LINE,12));
+        e.setInputType(secret?InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD:InputType.TYPE_CLASS_TEXT);
+        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,dp(a,54));
+        params.bottomMargin=dp(a,12);
+        parent.addView(e,params);
+        return e;
+    }
+
+    public static Button button(Activity a,LinearLayout parent,String text,View.OnClickListener action){
         Button b=new Button(a);
-        b.setAllCaps(false);
-        b.setText(text);
-        b.setTextSize(14);
-        b.setTextColor(WHITE);
+        b.setText(text);b.setAllCaps(false);
+        b.setTextColor(Color.WHITE);b.setTextSize(14);
         b.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
-        b.setBackground(shape(a,DARK,DARK,13));
-        b.setMinHeight(dp(a,52));
-        LinearLayout.LayoutParams item=new LinearLayout.LayoutParams(-1,dp(a,52));
-        item.bottomMargin=dp(a,10);
-        box.addView(b,item);
-        b.setOnClickListener(click);
+        b.setBackground(shape(a,BLUE,BLUE,12));
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(a,53));
+        p.bottomMargin=dp(a,11);
+        parent.addView(b,p);
+        b.setOnClickListener(action);
         return b;
     }
 
-    public static LinearLayout card(Activity a,LinearLayout root,String heading){
+    public static LinearLayout card(Activity a,LinearLayout parent,String heading){
         LinearLayout c=new LinearLayout(a);
         c.setOrientation(LinearLayout.VERTICAL);
-        c.setPadding(dp(a,18),dp(a,18),dp(a,18),dp(a,20));
-        c.setBackground(shape(a,WHITE,LINE,18));
-        LinearLayout.LayoutParams item=new LinearLayout.LayoutParams(-1,-2);
-        item.bottomMargin=dp(a,15);
-        root.addView(c,item);
-        TextView title=label(a,heading,19,true);
-        title.setPadding(0,0,0,dp(a,15));
-        c.addView(title);
+        c.setPadding(dp(a,17),dp(a,16),dp(a,17),dp(a,18));
+        c.setBackground(shape(a,Color.WHITE,LINE,17));
+        LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);
+        p.bottomMargin=dp(a,16);
+        parent.addView(c,p);
+        if(heading!=null&&!heading.isEmpty()){
+            TextView t=label(a,heading,18,true);
+            t.setPadding(0,0,0,dp(a,13));
+            c.addView(t);
+        }
         return c;
     }
 
-    private static GradientDrawable shape(Activity a,int fill,int stroke,int radius){
-        GradientDrawable bg=new GradientDrawable();
-        bg.setColor(fill);
-        bg.setCornerRadius(dp(a,radius));
-        bg.setStroke(dp(a,1),stroke);
-        return bg;
+    public static TextView metric(Activity a,LinearLayout parent,String title){
+        LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(a,13),dp(a,14),dp(a,12),dp(a,15));
+        box.setBackground(shape(a,Color.rgb(237,244,255),Color.rgb(220,232,249),14));
+        LinearLayout.LayoutParams cell=new LinearLayout.LayoutParams(0,-2,1f);
+        cell.leftMargin=dp(a,3);cell.rightMargin=dp(a,3);
+        parent.addView(box,cell);
+        TextView label=label(a,title,12,false);
+        label.setTextColor(MUTED);box.addView(label);
+        TextView value=label(a,"—",25,true);
+        value.setTextColor(NAVY);box.addView(value);
+        return value;
+    }
+
+    public static void info(Activity a,LinearLayout card,String name,String value){
+        LinearLayout line=new LinearLayout(a);
+        line.setOrientation(LinearLayout.HORIZONTAL);
+        line.setPadding(0,dp(a,7),0,dp(a,8));
+        TextView k=label(a,name,13,false);k.setTextColor(MUTED);
+        line.addView(k,new LinearLayout.LayoutParams(0,-2,1));
+        TextView v=label(a,value,13,true);
+        v.setGravity(Gravity.END);
+        line.addView(v);
+        card.addView(line);
+    }
+
+    private static GradientDrawable shape(Activity a,int fill,int edge,int radius){
+        GradientDrawable d=new GradientDrawable();
+        d.setColor(fill);d.setCornerRadius(dp(a,radius));
+        d.setStroke(dp(a,1),edge);
+        return d;
     }
     private static int dp(Activity a,int n){
         return Math.round(n*a.getResources().getDisplayMetrics().density);
