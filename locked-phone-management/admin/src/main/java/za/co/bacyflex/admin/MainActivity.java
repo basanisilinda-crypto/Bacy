@@ -51,6 +51,11 @@ public final class MainActivity extends Activity {
         Screen.button(this,bank,"Publish verified EFT details",v->saveBank());
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        if(token!=null && pending!=null) refreshClaims();
+    }
+
     private void work(Job job) {
         status.setText("Connecting securely...");
         new Thread(()->{
