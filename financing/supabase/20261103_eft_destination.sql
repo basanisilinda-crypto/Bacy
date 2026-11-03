@@ -13,7 +13,13 @@ alter table public.eft_destinations enable row level security;
 drop policy if exists destination_verified_read on public.eft_destinations;
 create policy destination_verified_read on public.eft_destinations
   for select to authenticated
-  using (verified = true or public.is_finance_manager());
+  using (
+    public.is_finance_manager()
+    or (verified = true and exists (
+      select 1 from public.finance_accounts a
+      where a.customer_user_id = auth.uid()
+    ))
+  );
 revoke all on public.eft_destinations from anon;
 revoke insert, update, delete on public.eft_destinations from authenticated;
 grant select on public.eft_destinations to authenticated;
