@@ -22,7 +22,7 @@ import za.co.bacyflex.core.Screen;
  * the consented Android setup QR, not through an end-user email/password.
  */
 public final class MainActivity extends ComponentActivity {
-    private TextView notice, deviceSummary, planSummary, bankSummary, history, ownerSummary, support;
+    private TextView notice, deviceSummary, planSummary, bankSummary, history, ownerSummary, support, balanceHero, dueHero, statusHero;
     private EditText eftReference, eftAmount;
     private JSONObject currentAccount;
     private boolean bankReady=false;
@@ -30,7 +30,11 @@ public final class MainActivity extends ComponentActivity {
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
-        LinearLayout root=Screen.start(this,"My financed device","Phone finance · Secure customer access");
+        LinearLayout root=Screen.start(this,"My finance","Payments and phone information, in one place");
+        LinearLayout account=Screen.spotlight(this,root,"Account balance");
+        balanceHero=Screen.spotlightAmount(this,account,"—");
+        dueHero=Screen.spotlightDetail(this,account,"Your next due date will appear after setup");
+        statusHero=Screen.spotlightDetail(this,account,"Waiting for verified account information");
 
         LinearLayout home=Screen.card(this,root,"My device");
         deviceSummary=Screen.label(this,Build.MANUFACTURER+" "+Build.MODEL,21,true);
@@ -47,16 +51,14 @@ public final class MainActivity extends ComponentActivity {
         LinearLayout first=new LinearLayout(this);
         first.setOrientation(LinearLayout.HORIZONTAL);
         actions.addView(first);
-        Screen.tile(this,first,"Make payment",za.co.bacyflex.core.R.drawable.mbmf_ic_payment,v->showPaymentHelp());
+        Screen.tile(this,first,"Make payment",za.co.bacyflex.core.R.drawable.mbmf_ic_payment,v->Screen.openTab(this,1));
         Screen.tile(this,first,"My plan",za.co.bacyflex.core.R.drawable.mbmf_ic_document,v->
             new AlertDialog.Builder(this).setTitle("My finance plan").setMessage(planSummary.getText()).setPositiveButton("OK",null).show());
         LinearLayout second=new LinearLayout(this);
         second.setOrientation(LinearLayout.HORIZONTAL);
         actions.addView(second);
-        Screen.tile(this,second,"Device info",za.co.bacyflex.core.R.drawable.mbmf_ic_phone,v->
-            new AlertDialog.Builder(this).setTitle("This phone").setMessage(ownerSummary.getText()).setPositiveButton("OK",null).show());
-        Screen.tile(this,second,"Support",za.co.bacyflex.core.R.drawable.mbmf_ic_support,v->
-            new AlertDialog.Builder(this).setTitle("Customer support").setMessage(support.getText()).setPositiveButton("OK",null).show());
+        Screen.tile(this,second,"Device info",za.co.bacyflex.core.R.drawable.mbmf_ic_phone,v->Screen.openTab(this,2));
+        Screen.tile(this,second,"Support",za.co.bacyflex.core.R.drawable.mbmf_ic_support,v->Screen.openTab(this,3));
 
         LinearLayout payment=Screen.card(this,root,"Pay by bank transfer (EFT)");
         bankSummary=Screen.label(this,"Payment details are available after phone setup.",14,false);
@@ -90,7 +92,7 @@ public final class MainActivity extends ComponentActivity {
         Screen.button(this,help,"Check my plan",v->refresh());
 
         Screen.tabs(this,root,
-            new String[]{"Home","Payments","Device","Help"},
+            new String[]{"Home","Payments","Device","Support"},
             new LinearLayout[][]{
                 {home,plan,actions},
                 {payment,payments},
@@ -155,6 +157,9 @@ public final class MainActivity extends ComponentActivity {
             notice.setText(isOwner()
                 ?"Device Owner is active. Waiting for the administrator's one-time activation code."
                 :"Not yet enrolled. The administrator must scan the MBMF QR during Android setup.");
+            balanceHero.setText("—");
+            dueHero.setText("No payment date assigned");
+            statusHero.setText("Phone not linked to an active finance agreement");
             planSummary.setText("No finance plan assigned to this phone yet.");
             bankSummary.setText("EFT instructions are available after secure activation.");
             history.setText("No account history available.");
@@ -191,6 +196,9 @@ public final class MainActivity extends ComponentActivity {
         long instalment=account.optLong("installment_cents",0);
         long balance=account.optLong("balance_cents",0);
         String due=account.isNull("next_due_date")?"Paid in full":account.optString("next_due_date","Not assigned");
+        balanceHero.setText("R "+money(balance));
+        dueHero.setText("Next payment · "+due);
+        statusHero.setText("Account · "+state.toUpperCase(Locale.ROOT)+(cached?" · OFFLINE COPY":" · VERIFIED SNAPSHOT"));
         planSummary.setText("Customer: "+account.optString("customer_name","")+
             "\nStatus: "+state.toUpperCase(Locale.ROOT)+
             "\nMonthly instalment: R "+money(instalment)+

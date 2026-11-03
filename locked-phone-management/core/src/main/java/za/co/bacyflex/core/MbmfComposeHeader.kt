@@ -53,7 +53,7 @@ private fun LedgerMasthead(title: String, subtitle: String) {
             }
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(title, color = ink, fontSize = 29.sp,
-                    fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8).sp)
+                    fontWeight = FontWeight.SemiBold, letterSpacing = (-0.8f).sp)
                 Text(subtitle, color = muted, fontSize = 13.sp,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
             }

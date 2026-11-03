@@ -21,7 +21,7 @@ import za.co.bacyflex.core.Screen;
 public final class MainActivity extends ComponentActivity {
     private String accessToken,lastEnrollmentCode,lastContractId;
     private TextView notice,customersCount,activeCount,pendingCount,settledCount;
-    private TextView qrHelp;
+    private TextView qrHelp, spotlightValue, spotlightNote;
     private LinearLayout customersList,devicesList,pendingList;
     private EditText email,password,customerName,customerPhone,deviceModel,price,deposit,monthly,firstDue;
     private EditText bankName,bankHolder,bankAccount,bankBranch,bankInstructions;
@@ -29,7 +29,10 @@ public final class MainActivity extends ComponentActivity {
 
     @Override public void onCreate(Bundle bundle){
         super.onCreate(bundle);
-        LinearLayout root=Screen.start(this,"Administrator","Device finance · Secure management");
+        LinearLayout root=Screen.start(this,"Business overview","Your finance records and device operations");
+        LinearLayout portfolio=Screen.spotlight(this,root,"Portfolio · Live data only");
+        spotlightValue=Screen.spotlightAmount(this,portfolio,"—");
+        spotlightNote=Screen.spotlightDetail(this,portfolio,"Pending EFT verifications · Sign in to load totals");
         notice=Screen.label(this,"Sign in to load your actual business records.",14,false);
         root.addView(notice);
 
@@ -45,13 +48,13 @@ public final class MainActivity extends ComponentActivity {
         LinearLayout top=new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         overview.addView(top);
-        customersCount=Screen.metric(this,top,"Recent customers");
-        activeCount=Screen.metric(this,top,"Active finance");
+        customersCount=Screen.metric(this,top,"Customers");
+        activeCount=Screen.metric(this,top,"Active contracts");
         LinearLayout bottom=new LinearLayout(this);
         bottom.setOrientation(LinearLayout.HORIZONTAL);
         overview.addView(bottom);
-        pendingCount=Screen.metric(this,bottom,"EFT to verify");
-        settledCount=Screen.metric(this,bottom,"Paid in full");
+        pendingCount=Screen.metric(this,bottom,"Pending EFT");
+        settledCount=Screen.metric(this,bottom,"Settled");
         Screen.button(this,overview,"Refresh live overview",v->refresh());
 
         LinearLayout devices=Screen.card(this,root,"Recently registered financed phones");
@@ -183,6 +186,8 @@ public final class MainActivity extends ComponentActivity {
             activeCount.setText(String.valueOf(counts.optLong("active")));
             settledCount.setText(String.valueOf(counts.optLong("settled")));
             pendingCount.setText(String.valueOf(counts.optLong("pending_eft")));
+            spotlightValue.setText(String.valueOf(counts.optLong("pending_eft")));
+            spotlightNote.setText("EFT claims awaiting independent bank verification");
             customersList.removeAllViews();
             devicesList.removeAllViews();
             pendingList.removeAllViews();

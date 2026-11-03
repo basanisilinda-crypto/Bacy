@@ -26,6 +26,7 @@ public final class Screen {
     public static final int GREEN=Color.rgb(36,110,77);
     public static final int AMBER=Color.rgb(149,100,52);
     private Screen() {}
+    private static final java.util.WeakHashMap<Activity,Runnable[]> ROUTES=new java.util.WeakHashMap<>();
 
     public static LinearLayout start(Activity a,String title,String subtitle) {
         a.getWindow().setStatusBarColor(INK);
@@ -77,7 +78,18 @@ public final class Screen {
             tab.setContentDescription(labels[i]+" screen");
             tabs[i]=tab;
         }
+        Runnable[] actions=new Runnable[labels.length];
+        for(int i=0;i<actions.length;i++) {
+            final int chosen=i;
+            actions[i]=()->selectTab(scroll,pages,tabs,chosen);
+        }
+        ROUTES.put(a,actions);
         selectTab(scroll,pages,tabs,0);
+    }
+
+    public static void openTab(Activity activity,int index) {
+        Runnable[] actions=ROUTES.get(activity);
+        if(actions!=null && index>=0 && index<actions.length)actions[index].run();
     }
 
     private static void selectTab(ScrollView scroll,LinearLayout[][] pages,TextView[] tabs,int selected) {
