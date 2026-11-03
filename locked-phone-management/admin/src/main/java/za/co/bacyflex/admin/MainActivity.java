@@ -49,6 +49,14 @@ public final class MainActivity extends Activity {
         bankBranch=Screen.field(this,bank,"Branch code",false);
         bankInstructions=Screen.field(this,bank,"Payment instructions (optional)",false);
         Screen.button(this,bank,"Publish verified EFT details",v->saveBank());
+        Screen.tabs(this,root,
+            new String[]{"Sign in","Payments","Phones","EFT bank"},
+            new LinearLayout[][]{
+                {login},
+                {claims},
+                {plans},
+                {bank}
+            });
     }
 
     @Override protected void onResume() {
