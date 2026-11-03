@@ -121,6 +121,19 @@ public final class CloudEftActivity extends Activity {
             });
         });
         gap(8);
+        button("Create customer login",()->{
+            String e=email.getText().toString().trim(),p=password.getText().toString();
+            if(!e.contains("@")||p.length()<8){
+                toast("Check your details","Enter a valid email and a password of at least 8 characters.");return;
+            }
+            task(()->{
+                CloudApi.request("POST","/auth/v1/signup",null,
+                    new JSONObject().put("email",e).put("password",p));
+                runOnUiThread(()->toast("Check your email",
+                    "If this address can be registered, Supabase will send a verification email. Verify it and sign in. The finance manager must then link your signed agreement."));
+            });
+        });
+        gap(8);
         card("Private and verified","Your payment is not confirmed when you submit a reference. Only the finance manager can approve it after checking the bank. Passwords are never saved by this app.");
     }
     private void showLoading(){
