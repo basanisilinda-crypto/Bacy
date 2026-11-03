@@ -1,12 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="android.permission.INTERNET" />
   <application android:label="MBMF Client" android:icon="@drawable/lpm_mark" android:allowBackup="false" android:usesCleartextTraffic="false" android:theme="@android:style/Theme.Material.Light.NoActionBar">
-    <activity android:name=".MainActivity" android:exported="true">
+    <activity android:name=".WelcomeSetupActivity" android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <activity android:name=".MainActivity" android:exported="false" />
       <receiver android:name=".FinanceAdminReceiver" android:permission="android.permission.BIND_DEVICE_ADMIN" android:exported="true">
       <meta-data android:name="android.app.device_admin" android:resource="@xml/finance_device_admin" />
       <intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED" /></intent-filter>
