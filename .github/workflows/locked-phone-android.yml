@@ -1,36 +1,85 @@
-name: Locked Phone Android APKs
+name: Locked Phone Android APKs and QR Pilot
 on:
   push:
+    branches: [main]
     paths:
       - 'locked-phone-management/**'
       - '.github/workflows/locked-phone-android.yml'
   workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: locked-phone-pilot-${{ github.sha }}
+  cancel-in-progress: false
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: locked-phone-management
+  build-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install Android SDK platform
+      - name: Install Android SDK 35
+        shell: bash
         run: |
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' | head -1)
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -path '*/bin/sdkmanager' | head -1)"
           test -n "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: gradle :customer:assembleDebug :admin:assembleDebug --no-daemon --stacktrace
+      - name: Compile customer and admin debug APKs
+        working-directory: locked-phone-management
+        run: gradle :customer:assembleDebug :admin:assembleDebug --no-daemon --stacktrace
+      - name: Generate pilot QR and APK checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="phone-enrolment-pilot-${GITHUB_SHA:0:12}"
+          DIST="locked-phone-management/pilot-dist"
+          mkdir -p "$DIST"
+          cp locked-phone-management/customer/build/outputs/apk/debug/customer-debug.apk "$DIST/locked-phone-customer.apk"
+          cp locked-phone-management/admin/build/outputs/apk/debug/admin-debug.apk "$DIST/locked-phone-admin.apk"
+          python -m pip install --disable-pip-version-check 'qrcode[pil]==8.2'
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/locked-phone-customer.apk"
+          python locked-phone-management/tools/make_enrollment_qr.py \
+            --apk "$DIST/locked-phone-customer.apk" --url "$URL" --output "$DIST"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "RELEASE_URL=https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}" >> "$GITHUB_ENV"
+          cat > "$DIST/READ-ME-FIRST.txt" <<'EOF'
+          LOCKED PHONE MANAGEMENT - QR PILOT / TEST DEVICE ONLY
+          This APK is debug-signed. It is NOT a production device-financing MDM.
+          1. Use a spare, compatible Android phone with informed user consent.
+          2. Back up first. Setup-time QR enrolment may require a factory reset.
+          3. On the Android initial Welcome screen, tap six times to launch QR provisioning
+             (availability depends on device/OEM); connect to Wi-Fi and scan enrollment-qr.png.
+          4. Android downloads the exact APK whose checksum is in enrollment-qr.json.
+          5. Read and accept the Android management disclosures and in-app enrolment consent.
+          6. Check Device Owner in the app; test screen locking only when you choose.
+          Automatic payment-triggered restriction and remote unlocking are NOT enabled.
+          Admin approval and customer finance records require accounts and verified EFT details.
+          Emergency calling must stay available.
+          The debug signing key may change on the next build and cannot be trusted for updates.
+          Do not use on customer phones until production signing, security, consent and QA are complete.
+          EOF
+          ls -lh "$DIST"
       - uses: actions/upload-artifact@v4
         with:
-          name: locked-phone-debug-apks
-          path: |
-            locked-phone-management/customer/build/outputs/apk/debug/*.apk
-            locked-phone-management/admin/build/outputs/apk/debug/*.apk
+          name: locked-phone-apks-and-setup-qr
+          path: locked-phone-management/pilot-dist/*
           if-no-files-found: error
+          retention-days: 30
+      - name: Publish immutable QR pilot prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" locked-phone-management/pilot-dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Phone enrolment QR pilot (${GITHUB_SHA:0:7})" \
+            --notes "TEST DEVICES ONLY. Two debug-signed Android APKs, sha256 checksum, QR code for managed setup, and read-me. Not a production financier lock system. Signing credentials are not persistent across builds."
+          echo "Release: $RELEASE_URL"
