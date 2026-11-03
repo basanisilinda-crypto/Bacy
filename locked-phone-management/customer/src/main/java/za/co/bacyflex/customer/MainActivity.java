@@ -44,8 +44,19 @@ public final class MainActivity extends Activity {
         Screen.button(this,plan,"Refresh account",v->refresh());
 
         LinearLayout actions=Screen.card(this,root,"Quick access");
-        Screen.button(this,actions,"Make an EFT payment",v->showPaymentHelp());
-        actions.addView(Screen.label(this,"You never need to create a customer account or sign in.",13,false));
+        LinearLayout first=new LinearLayout(this);
+        first.setOrientation(LinearLayout.HORIZONTAL);
+        actions.addView(first);
+        Screen.tile(this,first,"Make payment",za.co.bacyflex.core.R.drawable.mbmf_ic_payment,v->showPaymentHelp());
+        Screen.tile(this,first,"My plan",za.co.bacyflex.core.R.drawable.mbmf_ic_document,v->
+            new AlertDialog.Builder(this).setTitle("My finance plan").setMessage(planSummary.getText()).setPositiveButton("OK",null).show());
+        LinearLayout second=new LinearLayout(this);
+        second.setOrientation(LinearLayout.HORIZONTAL);
+        actions.addView(second);
+        Screen.tile(this,second,"Device info",za.co.bacyflex.core.R.drawable.mbmf_ic_phone,v->
+            new AlertDialog.Builder(this).setTitle("This phone").setMessage(ownerSummary.getText()).setPositiveButton("OK",null).show());
+        Screen.tile(this,second,"Support",za.co.bacyflex.core.R.drawable.mbmf_ic_support,v->
+            new AlertDialog.Builder(this).setTitle("Customer support").setMessage(support.getText()).setPositiveButton("OK",null).show());
 
         LinearLayout payment=Screen.card(this,root,"Pay by bank transfer (EFT)");
         bankSummary=Screen.label(this,"EFT beneficiary details appear after your device is securely assigned.",14,false);
