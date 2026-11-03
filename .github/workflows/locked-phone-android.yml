@@ -34,6 +34,16 @@ jobs:
       - name: Compile customer and admin debug APKs
         working-directory: locked-phone-management
         run: gradle :customer:assembleDebug :admin:assembleDebug --no-daemon --stacktrace
+      - name: Verify APK package ID and Android signature before QR generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="locked-phone-management/customer/build/outputs/apk/debug/customer-debug.apk"
+          APK_SIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$APK_SIGNER" verify --verbose "$APK"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='za.co.bacyflex.customer'"
+          unzip -t "$APK" >/dev/null
       - name: Generate pilot QR and APK checksums
         shell: bash
         run: |
@@ -83,3 +93,14 @@ jobs:
             --title "Phone enrolment QR pilot (${GITHUB_SHA:0:7})" \
             --notes "TEST DEVICES ONLY. Two debug-signed Android APKs, sha256 checksum, QR code for managed setup, and read-me. Not a production financier lock system. Signing credentials are not persistent across builds."
           echo "Release: $RELEASE_URL"
+      - name: Verify published customer APK is publicly downloadable and checksum-identical
+        shell: bash
+        run: |
+          set -euo pipefail
+          DOWNLOAD="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/locked-phone-customer.apk"
+          curl -fsSL --retry 8 --retry-delay 4 --retry-all-errors --connect-timeout 15 --max-time 150 \
+            "$DOWNLOAD" -o /tmp/locked-phone-customer-download.apk
+          cmp locked-phone-management/pilot-dist/locked-phone-customer.apk \
+            /tmp/locked-phone-customer-download.apk
+          echo "Public release APK downloaded successfully and byte-for-byte matches the QR source."
+
