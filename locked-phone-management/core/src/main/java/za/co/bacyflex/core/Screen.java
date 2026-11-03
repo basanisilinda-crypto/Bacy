@@ -43,38 +43,11 @@ public final class Screen {
         shell.addView(scroll,new FrameLayout.LayoutParams(-1,-1));
         a.setContentView(shell);
 
-        LinearLayout head=new LinearLayout(a);
-        head.setOrientation(LinearLayout.HORIZONTAL);
-        head.setGravity(Gravity.CENTER_VERTICAL);
-        head.setPadding(dp(a,18),dp(a,17),dp(a,18),dp(a,17));
-        GradientDrawable h=new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-          new int[]{NAVY,Color.rgb(22,54,97)});
-        h.setCornerRadius(dp(a,21));
-        head.setBackground(h);
-        LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);
-        hp.bottomMargin=dp(a,18);
-        root.addView(head,hp);
-
-        ImageView mark=new ImageView(a);
-        mark.setImageResource(R.drawable.lpm_mark);
-        mark.setContentDescription("MBMF brand mark");
-        head.addView(mark,new LinearLayout.LayoutParams(dp(a,49),dp(a,49)));
-        LinearLayout titles=new LinearLayout(a);
-        titles.setOrientation(LinearLayout.VERTICAL);
-        titles.setPadding(dp(a,13),0,0,0);
-        head.addView(titles,new LinearLayout.LayoutParams(0,-2,1f));
-        TextView brand=label(a,"MBMF",22,true);
-        brand.setTextColor(Color.WHITE);
-        brand.setPadding(0,0,0,dp(a,2));
-        titles.addView(brand);
-        TextView line=label(a,title,13,true);
-        line.setTextColor(Color.rgb(202,226,255));
-        line.setPadding(0,0,0,dp(a,3));
-        titles.addView(line);
-        TextView caption=label(a,subtitle,11,false);
-        caption.setTextColor(Color.rgb(193,204,221));
-        caption.setPadding(0,0,0,0);
-        titles.addView(caption);
+        androidx.compose.ui.platform.ComposeView brandHeader=new androidx.compose.ui.platform.ComposeView(a);
+        MbmfComposeHeader.attach(brandHeader,title,subtitle);
+        LinearLayout.LayoutParams headerParams=new LinearLayout.LayoutParams(-1,-2);
+        headerParams.bottomMargin=dp(a,18);
+        root.addView(brandHeader,headerParams);
         return root;
     }
 

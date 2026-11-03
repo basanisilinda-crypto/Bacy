@@ -1,6 +1,6 @@
 package za.co.bacyflex.admin;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.graphics.Bitmap;
@@ -18,7 +18,7 @@ import za.co.bacyflex.core.Screen;
  * MBMF administrator app, backed by real Supabase contracts and EFT claims.
  * Only the administrator signs in; customers are enrolled by an admin-generated QR.
  */
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
     private String accessToken,lastEnrollmentCode,lastContractId;
     private TextView notice,customersCount,activeCount,pendingCount,settledCount;
     private TextView qrHelp;
