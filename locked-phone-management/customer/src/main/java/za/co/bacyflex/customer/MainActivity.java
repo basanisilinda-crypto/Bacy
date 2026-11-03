@@ -99,6 +99,9 @@ public final class MainActivity extends ComponentActivity {
             });
         refreshOwner();
         DeviceSyncScheduler.start(this);
+        if (!getSharedPreferences("mbmf_setup",MODE_PRIVATE).getBoolean("finished",false)) {
+            startActivity(new Intent(this,SetupWizardActivity.class));
+        }
     }
 
     @Override protected void onResume(){

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mbmf_admin_label">MBMF phone-finance administrator</string>
+    <string name="mbmf_admin_description">MBMF may use supported device-management capabilities with your informed agreement. The Android permission screen shows the exact access requested. Device administrator is not the same as Device Owner, and you can decline optional administrator access.</string>
+</resources>
