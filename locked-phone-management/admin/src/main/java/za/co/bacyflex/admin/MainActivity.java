@@ -89,21 +89,23 @@ public final class MainActivity extends Activity {
                 JSONObject claim=claims.optJSONObject(i);
                 if(claim==null) continue;
                 final String claimId=claim.optString("id");
+                final String claimRef=claim.optString("eft_reference");
+                final String claimAmount=BigDecimal.valueOf(claim.optLong("amount_cents"),2).toPlainString();
                 String label="Reference: "+claim.optString("eft_reference")+"\nAmount claimed: R"+
                     BigDecimal.valueOf(claim.optLong("amount_cents"),2).toPlainString()+
                     "\nSubmitted: "+claim.optString("submitted_at");
                 pending.addView(Screen.label(this,label,14,false));
-                Screen.button(this,pending,"Approve only after checking bank",v->confirm(claimId,true));
-                Screen.button(this,pending,"Reject claim",v->confirm(claimId,false));
+                Screen.button(this,pending,"Approve only after checking bank",v->confirm(claimId,claimRef,claimAmount,true));
+                Screen.button(this,pending,"Reject claim",v->confirm(claimId,claimRef,claimAmount,false));
             }
         });
     }
 
-    private void confirm(String id,boolean approve) {
+    private void confirm(String id,String eftRef,String amountRand,boolean approve) {
         if(token==null)return;
         String prompt=approve
-            ?"Have you personally confirmed that this exact EFT amount and reference were received in your banking account?"
-            :"Reject this customer's unverified EFT claim?";
+            ?"Have you confirmed a received EFT of R "+amountRand+" with the exact reference '"+eftRef+"' inside your bank account? Do not rely on screenshots."
+            :"Reject EFT claim for R "+amountRand+" with reference '"+eftRef+"'?";
         new AlertDialog.Builder(this).setTitle(approve?"Verify real bank receipt":"Reject EFT claim")
             .setMessage(prompt).setNegativeButton("Cancel",null)
             .setPositiveButton(approve?"Confirmed: approve":"Reject",(dialog,which)->{
