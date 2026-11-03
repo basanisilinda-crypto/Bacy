@@ -34,3 +34,10 @@ Project: basanisilinda-crypto/Bacy/locked-phone-management
 - South African credit law and POPIA review.
 
 Never deploy to paying customers solely on the strength of build/test artifacts.
+
+## Background account synchronisation (pilot)
+- The Client app now schedules six-hour WorkManager refreshes after successful device activation.
+- Refreshes require connectivity; WorkManager may defer them for battery and OS constraints.
+- A successful response replaces only the encrypted locally cached snapshot; failed attempts keep the previous verified snapshot.
+- This worker does NOT lock devices, approve payments, or change the financial ledger.
+- Boot recovery, timing, battery behavior and encrypted credential access need tests on actual LOOP hardware.

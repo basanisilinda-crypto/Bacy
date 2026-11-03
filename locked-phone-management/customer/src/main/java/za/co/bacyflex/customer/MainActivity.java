@@ -98,6 +98,7 @@ public final class MainActivity extends ComponentActivity {
                 {help}
             });
         refreshOwner();
+        DeviceSyncScheduler.start(this);
     }
 
     @Override protected void onResume(){
@@ -141,6 +142,7 @@ public final class MainActivity extends ComponentActivity {
                 String newSecret=DeviceFinanceApi.newSecret();
                 DeviceFinanceApi.activate(activation,newSecret);
                 DeviceSession.store(this,"device_secret",newSecret);
+                DeviceSyncScheduler.start(this);
                 DeviceSession.clear(this,"pending_enrollment");
                 return loadSnapshot(newSecret);
             });
