@@ -47,18 +47,16 @@ public final class MainActivity extends ComponentActivity {
         plan.addView(planSummary);
         Screen.button(this,plan,"Refresh account",v->refresh());
 
-        LinearLayout actions=Screen.card(this,root,"Quick access");
-        LinearLayout first=new LinearLayout(this);
-        first.setOrientation(LinearLayout.HORIZONTAL);
-        actions.addView(first);
-        Screen.tile(this,first,"Make payment",za.co.bacyflex.core.R.drawable.mbmf_ic_payment,v->Screen.openTab(this,1));
-        Screen.tile(this,first,"My plan",za.co.bacyflex.core.R.drawable.mbmf_ic_document,v->
-            new AlertDialog.Builder(this).setTitle("My finance plan").setMessage(planSummary.getText()).setPositiveButton("OK",null).show());
-        LinearLayout second=new LinearLayout(this);
-        second.setOrientation(LinearLayout.HORIZONTAL);
-        actions.addView(second);
-        Screen.tile(this,second,"Device info",za.co.bacyflex.core.R.drawable.mbmf_ic_phone,v->Screen.openTab(this,2));
-        Screen.tile(this,second,"Support",za.co.bacyflex.core.R.drawable.mbmf_ic_support,v->Screen.openTab(this,3));
+        LinearLayout actions=Screen.card(this,root,"Your options");
+        Screen.actionRow(this,actions,"01","Make payment","Bank transfer and EFT reference",
+            v->Screen.openTab(this,1));
+        Screen.actionRow(this,actions,"02","My finance plan","Instalments, remaining balance and dates",
+            v->new AlertDialog.Builder(this).setTitle("My finance plan")
+                .setMessage(planSummary.getText()).setPositiveButton("Close",null).show());
+        Screen.actionRow(this,actions,"03","Device details","Your phone and enrolment status",
+            v->Screen.openTab(this,2));
+        Screen.actionRow(this,actions,"04","Contact support","Ask for help with your account",
+            v->Screen.openTab(this,3));
 
         LinearLayout payment=Screen.card(this,root,"Pay by bank transfer (EFT)");
         bankSummary=Screen.label(this,"Payment details are available after phone setup.",14,false);

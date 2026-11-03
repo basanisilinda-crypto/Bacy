@@ -260,6 +260,43 @@ public final class Screen {
         link.setContentDescription(caption);
     }
 
+
+    /** Flat navigation rows: no icon grid, gradients, gaming tiles or fake buttons. */
+    public static void actionRow(Activity a,LinearLayout parent,String index,
+                                 String heading,String description,View.OnClickListener click){
+        LinearLayout row=new LinearLayout(a);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(0,dp(a,14),0,dp(a,14));
+        TextView number=label(a,index,12,true);
+        number.setLetterSpacing(0.1f);
+        number.setTextColor(CLAY);
+        number.setGravity(Gravity.TOP);
+        row.addView(number,new LinearLayout.LayoutParams(dp(a,42),-2));
+        LinearLayout copy=new LinearLayout(a);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        row.addView(copy,new LinearLayout.LayoutParams(0,-2,1f));
+        TextView main=label(a,heading,17,true);
+        main.setPadding(0,0,0,dp(a,2));
+        copy.addView(main);
+        TextView sub=label(a,description,12,false);
+        sub.setTextColor(MUTED);
+        sub.setPadding(0,0,0,0);
+        copy.addView(sub);
+        TextView arrow=label(a,"\u2192",21,false);
+        arrow.setTextColor(FOREST);
+        arrow.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
+        row.addView(arrow,new LinearLayout.LayoutParams(dp(a,31),-2));
+        parent.addView(row,new LinearLayout.LayoutParams(-1,-2));
+        View rule=new View(a);
+        rule.setBackgroundColor(LINE);
+        parent.addView(rule,new LinearLayout.LayoutParams(-1,dp(a,1)));
+        row.setClickable(true);
+        row.setFocusable(true);
+        row.setOnClickListener(click);
+        row.setContentDescription(heading+", "+description);
+    }
+
     public static void info(Activity a,LinearLayout parent,String key,String value) {
         LinearLayout row=new LinearLayout(a);
         row.setOrientation(LinearLayout.HORIZONTAL);
