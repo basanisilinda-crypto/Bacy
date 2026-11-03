@@ -22,7 +22,8 @@ import za.co.bacyflex.core.Screen;
  * the consented Android setup QR, not through an end-user email/password.
  */
 public final class MainActivity extends Activity {
-    private TextView notice, deviceSummary, planSummary, bankSummary, history, ownerSummary, support;
+    private TextView notice, deviceSummary, planSummary, bankSummary, history, ownerSummary, support, balanceHero, dueHero;
+    private LinearLayout mainRoot;
     private EditText eftReference, eftAmount;
     private JSONObject currentAccount;
     private boolean bankReady=false;
@@ -30,35 +31,35 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
-        LinearLayout root=Screen.start(this,"My financed device","Phone finance · Secure customer access");
+        LinearLayout root=Screen.start(this,"Your phone","A simpler way to follow your instalments");
+        mainRoot=root;
 
-        LinearLayout home=Screen.card(this,root,"My device");
-        deviceSummary=Screen.label(this,Build.MANUFACTURER+" "+Build.MODEL,21,true);
+        LinearLayout home=Screen.card(this,root,"BALANCE REMAINING");
+        balanceHero=Screen.label(this,"—",46,true);
+        balanceHero.setTextColor(Screen.WINE);
+        balanceHero.setPadding(0,0,0,5);
+        home.addView(balanceHero);
+        dueHero=Screen.label(this,"Next payment date appears here",16,false);
+        dueHero.setTextColor(Screen.CLAY);
+        home.addView(dueHero);
+        deviceSummary=Screen.label(this,Build.MANUFACTURER+" "+Build.MODEL,15,true);
         home.addView(deviceSummary);
-        notice=Screen.label(this,"Checking your assigned device...",14,false);
+        notice=Screen.label(this,"Loading your phone agreement...",13,false);
         home.addView(notice);
 
-        LinearLayout plan=Screen.card(this,root,"Financing");
+        LinearLayout plan=Screen.card(this,root,"YOUR AGREEMENT");
         planSummary=Screen.label(this,"Your phone and payment details appear here after setup.",15,false);
         plan.addView(planSummary);
         Screen.button(this,plan,"Refresh account",v->refresh());
 
-        LinearLayout actions=Screen.card(this,root,"Quick access");
-        LinearLayout first=new LinearLayout(this);
-        first.setOrientation(LinearLayout.HORIZONTAL);
-        actions.addView(first);
-        Screen.tile(this,first,"Make payment",za.co.bacyflex.core.R.drawable.mbmf_ic_payment,v->showPaymentHelp());
-        Screen.tile(this,first,"My plan",za.co.bacyflex.core.R.drawable.mbmf_ic_document,v->
-            new AlertDialog.Builder(this).setTitle("My finance plan").setMessage(planSummary.getText()).setPositiveButton("OK",null).show());
-        LinearLayout second=new LinearLayout(this);
-        second.setOrientation(LinearLayout.HORIZONTAL);
-        actions.addView(second);
-        Screen.tile(this,second,"Device info",za.co.bacyflex.core.R.drawable.mbmf_ic_phone,v->
-            new AlertDialog.Builder(this).setTitle("This phone").setMessage(ownerSummary.getText()).setPositiveButton("OK",null).show());
-        Screen.tile(this,second,"Support",za.co.bacyflex.core.R.drawable.mbmf_ic_support,v->
-            new AlertDialog.Builder(this).setTitle("Customer support").setMessage(support.getText()).setPositiveButton("OK",null).show());
+        LinearLayout actions=Screen.card(this,root,"WHAT WOULD YOU LIKE TO DO?");
+        Screen.action(this,actions,"Pay an instalment","Bank transfer details and payment confirmation",v->Screen.showTab(mainRoot,1));
+        Screen.action(this,actions,"Read your agreement","See instalments, next date and remaining balance",v->
+            new AlertDialog.Builder(this).setTitle("Your agreement").setMessage(planSummary.getText()).setPositiveButton("Close",null).show());
+        Screen.action(this,actions,"About this phone","View your enrolled device information",v->Screen.showTab(mainRoot,2));
+        Screen.action(this,actions,"Speak to support","Help with a payment or a finance question",v->Screen.showTab(mainRoot,3));
 
-        LinearLayout payment=Screen.card(this,root,"Pay by bank transfer (EFT)");
+        LinearLayout payment=Screen.card(this,root,"BANK TRANSFER");
         bankSummary=Screen.label(this,"Payment details are available after phone setup.",14,false);
         payment.addView(bankSummary);
         eftReference=Screen.field(this,payment,"Bank payment reference",false);
@@ -72,17 +73,17 @@ public final class MainActivity extends Activity {
         payment.addView(Screen.label(this,
             "Submitting a reference does not prove an EFT was received. Your finance provider verifies the money and approves it.",12,false));
 
-        LinearLayout payments=Screen.card(this,root,"Payment history");
+        LinearLayout payments=Screen.card(this,root,"PAYMENT RECORD");
         history=Screen.label(this,"No payments recorded.",14,false);
         payments.addView(history);
         Screen.button(this,payments,"Check payment status",v->refresh());
 
-        LinearLayout device=Screen.card(this,root,"Device information");
+        LinearLayout device=Screen.card(this,root,"PHONE DETAILS");
         ownerSummary=Screen.label(this,"Checking Android management status...",14,false);
         device.addView(ownerSummary);
         Screen.button(this,device,"Refresh device information",v->refreshOwner());
 
-        LinearLayout help=Screen.card(this,root,"Support and help");
+        LinearLayout help=Screen.card(this,root,"HERE TO HELP");
         support=Screen.label(this,
             "For payment questions, contact your finance provider using the phone number or email on your agreement. " +
             "This app does not restrict emergency calling.",14,false);
@@ -90,7 +91,7 @@ public final class MainActivity extends Activity {
         Screen.button(this,help,"Check my plan",v->refresh());
 
         Screen.tabs(this,root,
-            new String[]{"Home","Payments","Device","Help"},
+            new String[]{"Balance","Pay","Phone","Help"},
             new LinearLayout[][]{
                 {home,plan,actions},
                 {payment,payments},
@@ -153,7 +154,9 @@ public final class MainActivity extends Activity {
             notice.setText(isOwner()
                 ?"Device Owner is active. Waiting for the administrator's one-time activation code."
                 :"Not yet enrolled. The administrator must scan the MBMF QR during Android setup.");
-            planSummary.setText("No finance plan assigned to this phone yet.");
+            balanceHero.setText("—");
+            dueHero.setText("No payment date assigned");
+            planSummary.setText("No agreement assigned to this phone.");
             bankSummary.setText("EFT instructions are available after secure activation.");
             history.setText("No account history available.");
             refreshOwner();
@@ -189,6 +192,8 @@ public final class MainActivity extends Activity {
         long instalment=account.optLong("installment_cents",0);
         long balance=account.optLong("balance_cents",0);
         String due=account.isNull("next_due_date")?"Paid in full":account.optString("next_due_date","Not assigned");
+        balanceHero.setText("R "+money(balance));
+        dueHero.setText("Next payment  •  "+due);
         planSummary.setText("Customer: "+account.optString("customer_name","")+
             "\nStatus: "+state.toUpperCase(Locale.ROOT)+
             "\nMonthly instalment: R "+money(instalment)+
@@ -227,15 +232,7 @@ public final class MainActivity extends Activity {
         refreshOwner();
     }
 
-    private void showPaymentHelp(){
-        if(currentAccount==null){
-            notice.setText("This phone must be assigned to a finance contract before making payments.");
-        }else{
-            new AlertDialog.Builder(this).setTitle("Pay by EFT")
-                .setMessage("Open the Payments tab for the verified bank account, your payment reference and the EFT confirmation form.")
-                .setPositiveButton("OK",null).show();
-        }
-    }
+    private void showPaymentHelp(){Screen.showTab(mainRoot,1);}
 
     private void copyReference(){
         String value=eftReference.getText().toString().trim();
