@@ -14,7 +14,7 @@ import za.co.bacyflex.core.Cloud;
 import za.co.bacyflex.core.Screen;
 
 public final class MainActivity extends Activity {
-    private String token, userId, planId;
+    private String token, userId, planId, planStatus;
     private boolean bankConfigured=false;
     private EditText email,password,reference,amount;
     private TextView status,planSummary,bankSummary,paymentHistory;
@@ -46,6 +46,15 @@ public final class MainActivity extends Activity {
         eft.addView(bankSummary);
         reference=Screen.field(this,eft,"Your EFT payment reference",false);
         amount=Screen.field(this,eft,"Amount paid in rand (e.g. 300.00)",false);
+        Screen.button(this,eft,"Copy EFT reference",v->{
+            String value=reference.getText().toString().trim();
+            if(value.isEmpty()){status.setText("No payment reference is available yet.");return;}
+            android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+            if(clipboard!=null) {
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("EFT payment reference",value));
+                status.setText("Payment reference copied. Paste it into your bank's EFT reference field.");
+            }
+        });
         Screen.button(this,eft,"Go to home screen to open your banking app",v->{
             Intent i=new Intent(Intent.ACTION_MAIN);
             i.addCategory(Intent.CATEGORY_HOME);
@@ -107,11 +116,13 @@ public final class MainActivity extends Activity {
         final String displayBank=bankText;
         if(records.length()==0) {
             planId=null;
+            planStatus=null;
             runOnUiThread(()->{planSummary.setText("No finance plan is assigned to this account yet. Your account ID is: "+userId); bankSummary.setText(displayBank); paymentHistory.setText(historyText);});
             return "Signed in. Awaiting administrator enrolment.";
         }
         JSONObject plan=records.getJSONObject(0);
         planId=plan.getString("id");
+        planStatus=plan.getString("status");
         long installment=plan.getLong("installment_cents"),balance=plan.getLong("balance_cents");
         String due=plan.isNull("next_due_date")?"Paid in full":plan.optString("next_due_date");
         String summary="Status: "+plan.getString("status")+"\nInstalment: R"+money(installment)
@@ -121,12 +132,13 @@ public final class MainActivity extends Activity {
             +UUID.randomUUID().toString().substring(0,4).toUpperCase(Locale.ROOT);
         runOnUiThread(()->{
             planSummary.setText(summary);bankSummary.setText(displayBank);paymentHistory.setText(historyText);
-            amount.setText(money(installment));reference.setText(newReference);
+            amount.setText(money(Math.min(installment,balance)));reference.setText(newReference);
         });
         return "Account synchronised with the live server.";
     }
 
     private void submitClaim() {
+        if("settled".equals(planStatus)) {status.setText("Your finance plan is settled. No further payments are due.");return;}
         if(token==null||planId==null||!bankConfigured) {
             status.setText("You need an active plan and verified bank details before submitting an EFT claim.");return;
         }
