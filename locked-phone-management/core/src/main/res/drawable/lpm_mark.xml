@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="64dp" android:height="64dp"
-    android:viewportWidth="64" android:viewportHeight="64">
-  <path android:fillColor="#E4B04C"
-        android:pathData="M16,4 L48,4 Q55,4 55,11 L55,53 Q55,60 48,60 L16,60 Q9,60 9,53 L9,11 Q9,4 16,4 Z"/>
-  <path android:fillColor="#202830"
-        android:pathData="M17,12 L47,12 L47,46 L17,46 Z"/>
-  <path android:fillColor="#FFFFFF"
-        android:pathData="M24,29 L29,34 L41,20 L44,23 L29,41 L21,32 Z"/>
-  <path android:fillColor="#202830"
-        android:pathData="M29,51 A3,3 0,1 1,35 51 A3,3 0,1 1,29 51 Z"/>
+    android:width="72dp" android:height="72dp"
+    android:viewportWidth="72" android:viewportHeight="72">
+    <!-- Blue phone body and orbital line, derived from the user's MBMF references. -->
+    <path android:fillColor="#1478E9"
+          android:pathData="M23,5 L46,5 C50,5 53,9 53,13 L53,60 C53,64 50,68 46,68 L23,68 C19,68 16,64 16,60 L16,13 C16,9 19,5 23,5 Z"/>
+    <path android:fillColor="#0C2342"
+          android:pathData="M21,14 L48,14 L48,56 L21,56 Z"/>
+    <path android:fillColor="#E7F3FF"
+          android:pathData="M29,9 L40,9 L40,11 L29,11 Z"/>
+    <path android:fillColor="#70D8FF"
+          android:pathData="M33,61 A2.5,2.5 0,1 1,38 61 A2.5,2.5 0,1 1,33 61 Z"/>
+    <path android:fillColor="@android:color/transparent"
+          android:strokeColor="#59C9FD"
+          android:strokeWidth="4"
+          android:strokeLineCap="round"
+          android:pathData="M7,48 C17,63 49,44 64,16"/>
+    <path android:fillColor="@android:color/transparent"
+          android:strokeColor="#2A8BFF"
+          android:strokeWidth="2.2"
+          android:strokeLineCap="round"
+          android:pathData="M11,53 C24,66 55,47 66,26"/>
 </vector>
