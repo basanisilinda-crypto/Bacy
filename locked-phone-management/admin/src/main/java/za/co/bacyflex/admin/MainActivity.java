@@ -44,7 +44,7 @@ public final class MainActivity extends Activity {
         LinearLayout top=new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         overview.addView(top);
-        customersCount=Screen.metric(this,top,"Customers");
+        customersCount=Screen.metric(this,top,"Recent customers");
         activeCount=Screen.metric(this,top,"Active finance");
         LinearLayout bottom=new LinearLayout(this);
         bottom.setOrientation(LinearLayout.HORIZONTAL);
@@ -53,7 +53,7 @@ public final class MainActivity extends Activity {
         settledCount=Screen.metric(this,bottom,"Paid in full");
         Screen.button(this,overview,"Refresh live overview",v->refresh());
 
-        LinearLayout devices=Screen.card(this,root,"Registered financed phones");
+        LinearLayout devices=Screen.card(this,root,"Recently registered financed phones");
         devicesList=new LinearLayout(this);
         devicesList.setOrientation(LinearLayout.VERTICAL);
         devices.addView(devicesList);
@@ -162,18 +162,13 @@ public final class MainActivity extends Activity {
             "finance_contracts?select=id,customer_name,customer_phone,device_model,installment_cents,balance_cents,next_due_date,status,enrolled_at&order=created_at.desc&limit=250",accessToken);
         JSONArray claims=Cloud.rows(
             "finance_contract_claims?select=id,contract_id,eft_reference,amount_cents,submitted_at&status=eq.pending&order=submitted_at.asc&limit=150",accessToken);
-        int active=0,settled=0;
-        for(int i=0;i<contracts.length();i++){
-            JSONObject c=contracts.optJSONObject(i);
-            if(c!=null&&"active".equals(c.optString("status")))active++;
-            if(c!=null&&"settled".equals(c.optString("status")))settled++;
-        }
-        final int total=contracts.length(),a=active,s=settled,p=claims.length();
+        JSONObject counts=Cloud.rpc("finance_admin_dashboard",new JSONObject(),accessToken);
+        final int total=contracts.length(),p=claims.length();
         runOnUiThread(()->{
-            customersCount.setText(String.valueOf(total));
-            activeCount.setText(String.valueOf(a));
-            settledCount.setText(String.valueOf(s));
-            pendingCount.setText(String.valueOf(p));
+            customersCount.setText(String.valueOf(counts.optLong("customers")));
+            activeCount.setText(String.valueOf(counts.optLong("active")));
+            settledCount.setText(String.valueOf(counts.optLong("settled")));
+            pendingCount.setText(String.valueOf(counts.optLong("pending_eft")));
             customersList.removeAllViews();
             devicesList.removeAllViews();
             pendingList.removeAllViews();
