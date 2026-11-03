@@ -29,7 +29,10 @@ jobs:
       - name: Install Android SDK 35 using preinstalled command line tools
         run: |
           echo "ANDROID_HOME=${ANDROID_HOME}"
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER="$(find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+          test -n "$SDKMANAGER"
+          echo "Using $SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
