@@ -26,3 +26,6 @@ No neon, cobalt, glassmorphism, glowing edges, animated robots, orbital-phone lo
 - Emergency calling and help must remain available during any future legally permitted restriction.
 - Verify at least 360dp width, system large text, screen readers, real LOOP hardware and Android QR enrolment.
 - This design change does not imply remote policy enforcement, commercial signing or settlement release is complete.
+
+## Client interaction pattern
+The old two-column icon-tile grid has been removed entirely. Home actions are now four numbered, full-width rows with clear supporting labels. The payment, device and support rows navigate to their actual native screens.
