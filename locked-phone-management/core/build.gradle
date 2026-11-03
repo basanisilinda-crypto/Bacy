@@ -1,0 +1,5 @@
+plugins { id 'com.android.library' }
+android { namespace 'za.co.bacyflex.core'; compileSdk 35
+    defaultConfig { minSdk 26 }
+}
+
