@@ -94,6 +94,13 @@ public final class MainActivity extends Activity {
                 .setPositiveButton("Lock now",(dialog,which)->manager.lockNow())
                 .show();
         });
+        Screen.tabs(this,root,
+            new String[]{"Account","Payments","Device"},
+            new LinearLayout[][]{
+                {access,summary},
+                {eft,history},
+                {device}
+            });
     }
 
     @Override protected void onResume() {
