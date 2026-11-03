@@ -185,6 +185,30 @@ public final class Screen {
         return value;
     }
 
+    /** Compact, tappable dashboard tile with custom vector artwork. */
+    public static void tile(Activity a,LinearLayout row,String caption,int iconRes,View.OnClickListener click){
+        LinearLayout tile=new LinearLayout(a);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setPadding(dp(a,9),dp(a,13),dp(a,9),dp(a,12));
+        tile.setBackground(shape(a,Color.WHITE,LINE,15));
+        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,dp(a,118),1f);
+        params.leftMargin=dp(a,4);params.rightMargin=dp(a,4);
+        params.bottomMargin=dp(a,9);
+        row.addView(tile,params);
+        ImageView icon=new ImageView(a);
+        icon.setImageResource(iconRes);
+        icon.setContentDescription(caption);
+        tile.addView(icon,new LinearLayout.LayoutParams(dp(a,39),dp(a,39)));
+        TextView title=label(a,caption,14,true);
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0,dp(a,12),0,0);
+        tile.addView(title);
+        tile.setOnClickListener(click);
+        tile.setFocusable(true);
+        tile.setContentDescription(caption);
+    }
+
     public static void info(Activity a,LinearLayout card,String name,String value){
         LinearLayout line=new LinearLayout(a);
         line.setOrientation(LinearLayout.HORIZONTAL);
