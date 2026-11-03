@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = 'MDM-Test-Android'
-include ':app'
+rootProject.name = 'BACY-Flex-Android'
+include ':app', ':admin'
