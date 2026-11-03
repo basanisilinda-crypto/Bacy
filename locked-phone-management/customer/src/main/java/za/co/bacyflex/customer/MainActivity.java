@@ -17,7 +17,7 @@ public final class MainActivity extends Activity {
     private String token, userId, planId;
     private boolean bankConfigured=false;
     private EditText email,password,reference,amount;
-    private TextView status,planSummary,bankSummary;
+    private TextView status,planSummary,bankSummary,paymentHistory;
     private interface Job { String call() throws Exception; }
 
     @Override public void onCreate(Bundle state) {
@@ -35,6 +35,11 @@ public final class MainActivity extends Activity {
         planSummary=Screen.label(this,"No account loaded.",15,false);
         summary.addView(planSummary);
         Screen.button(this,summary,"Refresh from server",v->load());
+
+        LinearLayout history=Screen.card(this,root,"Payment history");
+        paymentHistory=Screen.label(this,"Sign in to view EFT claims and their approval status.",14,false);
+        history.addView(paymentHistory);
+        Screen.button(this,history,"Refresh payment status",v->load());
 
         LinearLayout eft=Screen.card(this,root,"Pay by EFT");
         bankSummary=Screen.label(this,"Bank details will appear after signing in, once verified by the administrator.",15,false);
@@ -89,6 +94,8 @@ public final class MainActivity extends Activity {
         JSONArray records=Cloud.rows("finance_plans?select=id,installment_cents,balance_cents,next_due_date,status&limit=1",token);
         JSONArray banks=Cloud.rows("finance_payment_settings?select=bank_name,account_holder,account_number,branch_code,instructions&is_active=eq.true&limit=1",token);
         bankConfigured=banks.length()>0;
+        JSONArray claims=Cloud.rows("finance_payment_claims?select=eft_reference,amount_cents,status,submitted_at,decided_at&order=submitted_at.desc&limit=20",token);
+        final String historyText=formatHistory(claims);
         String bankText="The administrator has not published verified EFT beneficiary details.";
         if(bankConfigured) {
             JSONObject bank=banks.getJSONObject(0);
@@ -100,7 +107,7 @@ public final class MainActivity extends Activity {
         final String displayBank=bankText;
         if(records.length()==0) {
             planId=null;
-            runOnUiThread(()->{planSummary.setText("No finance plan is assigned to this account yet. Your account ID is: "+userId); bankSummary.setText(displayBank);});
+            runOnUiThread(()->{planSummary.setText("No finance plan is assigned to this account yet. Your account ID is: "+userId); bankSummary.setText(displayBank); paymentHistory.setText(historyText);});
             return "Signed in. Awaiting administrator enrolment.";
         }
         JSONObject plan=records.getJSONObject(0);
@@ -113,7 +120,7 @@ public final class MainActivity extends Activity {
             +new SimpleDateFormat("yyMMdd",Locale.US).format(new Date())+"-"
             +UUID.randomUUID().toString().substring(0,4).toUpperCase(Locale.ROOT);
         runOnUiThread(()->{
-            planSummary.setText(summary);bankSummary.setText(displayBank);
+            planSummary.setText(summary);bankSummary.setText(displayBank);paymentHistory.setText(historyText);
             amount.setText(money(installment));reference.setText(newReference);
         });
         return "Account synchronised with the live server.";
@@ -135,10 +142,26 @@ public final class MainActivity extends Activity {
             JSONObject claim=new JSONObject().put("plan_id",thisPlan).put("customer_id",customer)
                 .put("eft_reference",ref).put("amount_cents",cents);
             Cloud.submit("finance_payment_claims",claim,auth);
+            fetchPlan();
             return "EFT claim received. Status: pending administrator bank verification.";
         });
     }
 
+    private static String formatHistory(JSONArray claims) {
+        if(claims.length()==0)return "No EFT submissions yet.";
+        StringBuilder out=new StringBuilder();
+        for(int i=0;i<claims.length();i++) {
+            JSONObject p=claims.optJSONObject(i);
+            if(p==null)continue;
+            if(out.length()>0)out.append("\n\n");
+            String status=p.optString("status","pending");
+            out.append("R ").append(money(p.optLong("amount_cents")))
+               .append("  •  ").append(status.toUpperCase(Locale.ROOT))
+               .append("\nReference: ").append(p.optString("eft_reference","—"));
+            if(!p.isNull("decided_at"))out.append("\nReviewed: ").append(p.optString("decided_at",""));
+        }
+        return out.toString();
+    }
     private static String money(long cents) {return BigDecimal.valueOf(cents,2).toPlainString();}
 }
 
