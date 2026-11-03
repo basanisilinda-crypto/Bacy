@@ -1,8 +1,8 @@
-name: Build MDM Test APK
+name: Build BACY FLEX Android apps
 on:
   push:
     branches:
-      - mdm-test-android-20261103
+      - bacy-flex-native-redesign-20261103
     paths:
       - 'mdm-test-android/**'
       - '.github/workflows/mdm-test-build.yml'
@@ -14,35 +14,43 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: mdm-test-android
+    env:
+      BACY_SUPABASE_URL: ${{ secrets.BACY_SUPABASE_URL }}
+      BACY_SUPABASE_ANON_KEY: ${{ secrets.BACY_SUPABASE_ANON_KEY }}
     steps:
-      - name: Check out test branch
+      - name: Check out Android source
         uses: actions/checkout@v4
       - name: Install Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install Android SDK 35 using preinstalled command line tools
+      - name: Install Android SDK 35
         run: |
-          echo "ANDROID_HOME=${ANDROID_HOME}"
           SDKMANAGER="$(find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | head -n 1)"
           test -n "$SDKMANAGER"
-          echo "Using $SDKMANAGER"
           "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Compile Android debug APK
-        run: gradle --no-daemon --stacktrace assembleDebug
-      - name: Publish APK to build artifacts
+      - name: Compile native customer and admin APKs
+        run: gradle --no-daemon --stacktrace :app:assembleDebug :admin:assembleDebug
+      - name: Upload customer APK
         uses: actions/upload-artifact@v4
         with:
-          name: MDM-Test-Android-APK
+          name: BACY-FLEX-Customer-APK
           path: mdm-test-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload administrator APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BACY-FLEX-Admin-APK
+          path: mdm-test-android/admin/build/outputs/apk/debug/admin-debug.apk
           if-no-files-found: error
           retention-days: 7
