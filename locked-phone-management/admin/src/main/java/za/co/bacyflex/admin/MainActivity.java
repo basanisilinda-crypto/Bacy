@@ -37,6 +37,7 @@ public final class MainActivity extends Activity {
         email=Screen.field(this,signIn,"Administrator email",false);
         password=Screen.field(this,signIn,"Password",true);
         Screen.button(this,signIn,"Secure sign in",v->signIn());
+        Screen.button(this,signIn,"Create administrator login",v->registerAdminLogin());
         signIn.addView(Screen.label(this,
             "Only accounts explicitly assigned as MBMF administrators can view customer records or approve EFT payments.",12,false));
 
@@ -134,6 +135,19 @@ public final class MainActivity extends Activity {
                 runOnUiThread(()->notice.setText("Unable to complete: "+error.getMessage()));
             }
         }).start();
+    }
+
+    private void registerAdminLogin(){
+        String user=email.getText().toString().trim();
+        String pass=password.getText().toString();
+        if(!user.contains("@")||pass.length()<10){
+            notice.setText("Enter a valid admin email and password of at least 10 characters.");
+            return;
+        }
+        work(()->{
+            Cloud.signUp(user,pass);
+            return "Administrator login requested. Confirm your email. An existing trusted operator must grant admin rights before you can manage customer phones.";
+        });
     }
 
     private void signIn(){
