@@ -1,0 +1,46 @@
+name: Build MDM Test APK
+on:
+  push:
+    branches:
+      - mdm-test-android-20261103
+    paths:
+      - 'mdm-test-android/**'
+      - '.github/workflows/mdm-test-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mdm-test-android
+    steps:
+      - name: Check out test branch
+        uses: actions/checkout@v4
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK tools
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK 35
+        run: |
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile Android debug APK
+        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Publish APK to build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MDM-Test-Android-APK
+          path: mdm-test-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
