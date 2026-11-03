@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android system widgets, keyboard and dialogs follow the new MBMF Ledger identity. -->
+    <style name="Theme.MbmfLedger" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#244E3C</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#1D2521</item>
+        <item name="android:navigationBarColor">#1D2521</item>
+        <item name="android:windowBackground">#F7F5EF</item>
+    </style>
+</resources>

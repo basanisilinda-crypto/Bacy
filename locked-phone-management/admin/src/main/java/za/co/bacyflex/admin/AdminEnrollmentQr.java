@@ -81,7 +81,7 @@ public final class AdminEnrollmentQr{
         Bitmap bmp=Bitmap.createBitmap(matrix.getWidth(),matrix.getHeight(),Bitmap.Config.ARGB_8888);
         for(int y=0;y<matrix.getHeight();y++)
             for(int x=0;x<matrix.getWidth();x++)
-                bmp.setPixel(x,y,matrix.get(x,y)?0xff15283f:0xffffffff);
+                bmp.setPixel(x,y,matrix.get(x,y)?0xff1d2521:0xffffffff);
         return bmp;
     }
 }
