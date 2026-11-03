@@ -1,6 +1,6 @@
 package za.co.bacyflex.customer;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
 import android.app.AlertDialog;
 import android.app.admin.DevicePolicyManager;
 import android.content.ClipData;
@@ -21,7 +21,7 @@ import za.co.bacyflex.core.Screen;
  * A customer is registered by the finance administrator and paired once through
  * the consented Android setup QR, not through an end-user email/password.
  */
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
     private TextView notice, deviceSummary, planSummary, bankSummary, history, ownerSummary, support;
     private EditText eftReference, eftAmount;
     private JSONObject currentAccount;
@@ -98,6 +98,7 @@ public final class MainActivity extends Activity {
                 {help}
             });
         refreshOwner();
+        DeviceSyncScheduler.start(this);
     }
 
     @Override protected void onResume(){
@@ -141,6 +142,7 @@ public final class MainActivity extends Activity {
                 String newSecret=DeviceFinanceApi.newSecret();
                 DeviceFinanceApi.activate(activation,newSecret);
                 DeviceSession.store(this,"device_secret",newSecret);
+                DeviceSyncScheduler.start(this);
                 DeviceSession.clear(this,"pending_enrollment");
                 return loadSnapshot(newSecret);
             });
