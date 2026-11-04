@@ -6,6 +6,8 @@
 #property description "Demo-only, fail-closed MT5 execution. No profitability claim."
 
 input string InpSymbols="";                 // Empty = this chart; comma-separated exact broker names.
+input bool InpScanMarketWatch=true;         // Scan selected Market Watch instruments when InpSymbols is empty.
+input int InpMaxScanSymbols=8;               // Bounded workload for low-memory Windows hardware.
 input ENUM_TIMEFRAMES InpTimeframe=PERIOD_M15;
 input ENUM_TIMEFRAMES InpConfirmationTimeframe=PERIOD_H1;
 input long InpMagic=70125001;
@@ -39,7 +41,7 @@ struct MarketContext
 {
    string symbol;
    int fast_handle,slow_handle,atr_handle,rsi_handle,adx_handle,higher_fast,higher_slow;
-   datetime last_bar,attempted_bar,last_tick_time;
+   datetime last_bar,attempted_bar,last_tick_time,last_evaluation;
    double fast1,fast2,slow1,slow2,atr,rsi,adx,high,low,close1,close2,open1;
    double higher_fast1,higher_slow1;
    bool valid,news_known,news_blocked;
@@ -505,20 +507,21 @@ bool Submit(MqlTradeRequest &request,const string operation)
 }
 void Evaluate(MarketContext &m)
 {
-   datetime bar=iTime(m.symbol,InpTimeframe,0); if(bar==0||bar==m.last_bar) return;
-   m.last_bar=bar;
+   datetime bar=iTime(m.symbol,InpTimeframe,0); if(bar==0||m.last_evaluation==UtcNow()) return;
+   m.last_evaluation=UtcNow();
+   bool refresh=(bar!=m.last_bar||!m.valid); m.last_bar=bar;
    ulong before=GetMicrosecondCount();
-   if(!RefreshIndicators(m)) { g_reason="Waiting for complete indicator history"; return; }
+   if(refresh&&!RefreshIndicators(m)) { g_reason="Waiting for complete indicator history"; return; }
    string why; int direction=Signal(m,g_strategy,why); m.explanation=why;
    g_decision_us=GetMicrosecondCount()-before;
    if(direction==0||m.attempted_bar==bar) return;
-   // Do not retry an entry within the same candle, including after a rejection.
+   // Re-evaluate conditions without retrying an order already submitted this candle.
+   MqlTradeRequest request;
+   if(!ApprovedRequest(m,direction,request,why)) { if(g_reason!=why) QueueEvent("risk_rejected",why,m.symbol); g_reason=why; return; }
+   if(!g_running_requested||g_emergency||(!g_tester&&UtcNow()>=g_lease)) return;
    m.attempted_bar=bar;
    QueueEvent("strategy_signal",why,m.symbol,0,direction==1?"buy":"sell");
-   MqlTradeRequest request;
-   if(!ApprovedRequest(m,direction,request,why)) { g_reason=why; QueueEvent("risk_rejected",why,m.symbol); return; }
-   if(!g_running_requested||g_emergency||(!g_tester&&UtcNow()>=g_lease)) return;
-   Submit(request,"Protected demo entry");
+   Submit(request,"Protected account-authorized entry");
 }
 bool ModifyStop(const ulong ticket,const string symbol,const bool buy,const double sl,const double tp)
 {
@@ -791,6 +794,21 @@ void WriteSymbols()
    }
    CommitSnapshot("symbols.csv",file);
 }
+void WriteScanner()
+{
+   int file; if(!OpenSnapshot("scanner.csv",file)) return;
+   FileWrite(file,"account_id","timestamp","symbol","bid","ask");
+   if(TerminalInfoInteger(TERMINAL_CONNECTED))
+      for(int i=0;i<ArraySize(g_markets);i++)
+      {
+         MqlTick tick; string symbol=g_markets[i].symbol;
+         if(!SymbolInfoTick(symbol,tick)||!Finite(tick.bid)||!Finite(tick.ask)||tick.bid<=0||tick.ask<tick.bid) continue;
+         long age=(long)TimeTradeServer()-(long)tick.time;
+         if(age< -5||age>InpMaxTickAgeSeconds) continue;
+         FileWrite(file,AccountIdentity(),L((long)UtcNow()-(long)MathMax(0,age)),symbol,N(tick.bid),N(tick.ask));
+      }
+   CommitSnapshot("scanner.csv",file);
+}
 void RecordDeal(const ulong deal,const bool update_risk)
 {
    if(!HistoryDealSelect(deal)) return;
@@ -885,7 +903,18 @@ int OnInit()
    }
    if(!LoadAnchors()) { Print("Risk state is missing or damaged; initialization refused."); return INIT_FAILED; }
    string symbols[]; int count=StringSplit(InpSymbols,',',symbols);
-   if(InpSymbols=="") { count=1; ArrayResize(symbols,1); symbols[0]=_Symbol; }
+   if(InpMaxScanSymbols<1||InpMaxScanSymbols>12) return INIT_PARAMETERS_INCORRECT;
+   if(InpSymbols=="")
+   {
+      count=1; ArrayResize(symbols,1); symbols[0]=_Symbol;
+      if(InpScanMarketWatch&&!g_tester)
+         for(int n=0;n<SymbolsTotal(true)&&count<InpMaxScanSymbols;n++)
+         {
+            string selected=SymbolName(n,true);
+            if(selected==""||selected==_Symbol||SymbolInfoInteger(selected,SYMBOL_TRADE_MODE)==SYMBOL_TRADE_MODE_DISABLED) continue;
+            ArrayResize(symbols,count+1); symbols[count++]=selected;
+         }
+   }
    if(count<1||count>12) return INIT_PARAMETERS_INCORRECT;
    ArrayResize(g_markets,count);
    for(int i=0;i<count;i++)
@@ -933,7 +962,7 @@ void OnTimer()
    if(cycle%10==1) ReconcileHistory();
    if(!g_tester)
    {
-      WriteAccount(); WritePositions(); FlushEvents();
+      WriteAccount(); WritePositions(); WriteScanner(); FlushEvents();
       if(cycle%60==1) WriteSymbols();
       Persist();
    }

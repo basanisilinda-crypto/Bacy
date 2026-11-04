@@ -1,6 +1,6 @@
 > Update: account-bound live-mode source support was added after the original demo baseline. See [live-mode notes](docs/LIVE_MODE.md). Defaults remain demo; no live broker validation has been performed. Older demo-specific procedures remain the recommended validation path.
 
-# XM ULTRA AI TRADER
+# BC SILINDA FX / BACY05TEN
 
 Independent, demo-default MT5 automation source for Windows, with a lightweight Python service, SQLite history, offline research tools, and an Android-compatible browser dashboard. Not affiliated with XM or MetaQuotes. No broker is connected in this workspace and no orders have been placed.
 
@@ -37,3 +37,5 @@ Start the configured Windows service through the supplied scripts; direct `uvico
 ## License
 
 Project source is MIT licensed. MT5 and broker software retain their proprietary licenses. Browser speech services vary by device and provider. Existing electricity, connectivity, hardware, trading costs, and account eligibility are not free services supplied by this project.
+
+Latest dashboard matches the supplied BC SILINDA FX layout. See docs/SCANNER.md for bounded multi-market scanning, one-second signal reevaluation, and remaining execution-validation limits.

@@ -177,3 +177,24 @@ def test_history_download_is_authenticated_and_never_invents_executions(client):
     assert result.status_code == 200
     assert result.headers['cache-control']=='no-store'
     assert len(result.text.strip().splitlines())==1
+
+
+def test_scanner_rejects_wrong_accounts_and_stale_quotes(client):
+    assert client.get('/api/scanner').status_code == 401
+    login(client)
+    fixture_account(client)
+    path = client.app.state.settings.bridge_dir / 'scanner.csv'
+    with path.open('w',newline='') as stream:
+        writer=csv.writer(stream)
+        writer.writerow(['account_id','timestamp','symbol','bid','ask'])
+        writer.writerow(['other-account',time.time(),'TEST',1,1.1])
+        writer.writerow(['12345',time.time()-60,'OLD',1,1.1])
+        writer.writerow(['12345',time.time(),'VALID',1,1.1])
+    result=client.get('/api/scanner').json()
+    assert [row['symbol'] for row in result['items']] == ['VALID']
+
+
+def test_missing_scanner_is_unavailable_not_simulated(client):
+    login(client)
+    fixture_account(client)
+    assert client.get('/api/scanner').json()['items'] == []

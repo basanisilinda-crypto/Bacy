@@ -273,6 +273,26 @@ def create_app(settings: Settings | None = None):
     class WorkspaceMode(StrictModel):
         mode: Literal["demo", "live"]
 
+    @app.get("/api/scanner")
+    def scanner(value=Depends(session)):
+        import csv
+        import time
+        from .bridge import read_csv, finite
+        state = bridge.status()
+        if not state["connected"]:
+            return {"items": [], "status": "unavailable", "source": "mt5"}
+        try:
+            rows = read_csv(settings.bridge_dir / "scanner.csv", ["account_id", "timestamp", "symbol", "bid", "ask"], max_rows=12, max_bytes=32768)
+            items = []
+            for row in rows:
+                stamp, bid, ask = (finite(row[k]) for k in ("timestamp", "bid", "ask"))
+                if row["account_id"] != state["account_id"] or not -5 <= time.time() - stamp <= 15 or bid <= 0 or ask < bid:
+                    continue
+                items.append({"symbol": row["symbol"], "bid": bid, "ask": ask, "timestamp": stamp})
+            return {"items": items, "status": "available" if items else "unavailable", "source": "mt5"}
+        except (OSError, ValueError, UnicodeError, csv.Error):
+            return {"items": [], "status": "unavailable", "source": "mt5"}
+
     @app.get("/api/workspace")
     def workspace(value=Depends(session)):
         state = bridge.status()

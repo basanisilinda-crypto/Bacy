@@ -45,11 +45,13 @@ def test_dashboard_login_navigation_and_grounded_chat(tmp_path):
             playwright.expect(page.locator("#connection-text")).to_have_text("MT5 unavailable")
             assert page.locator('#metric-equity').inner_text() == '—'
             assert page.locator('#overview-start').is_disabled()
+            page.locator('#menu-button').click()
             page.locator('a[data-page="intelligence"]').first.click()
             page.locator('#chat-input').fill('How much profit did we make today?')
             page.locator('#chat-submit').click()
             playwright.expect(page.locator(".chat-message.assistant")).to_have_count(2)
             assert 'unavailable' in page.locator('.chat-message.assistant').last.inner_text()
+            page.locator('#menu-button').click()
             page.locator('a[data-page="controls"]').first.click()
             playwright.expect(page.locator('#page-controls')).to_be_visible()
             assert not errors, errors
