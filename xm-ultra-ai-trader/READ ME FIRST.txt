@@ -24,7 +24,7 @@ XM ULTRA - START WITHOUT TYPING COMMANDS
     is a separate deliberate operation after compilation and validation.
 
 PHONE PREVIEW (design only; no trading):
-https://xm-trader-folio-preview.poeticprawn128.chatgpt.site
+https://xm-trader-folio-preview.bacanyclinda.chatgpt.site
 
 The actual phone controller needs your running Windows service and trusted
 HTTPS/private connectivity. The preview cannot control your laptop.
