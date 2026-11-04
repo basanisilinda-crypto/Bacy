@@ -1,5 +1,8 @@
 name: MBMF Native Android PR Validation
 on:
+  push:
+    branches:
+      - mbmf-complete-visual-overhaul-20261103
   pull_request:
     paths:
       - 'locked-phone-management/**'
