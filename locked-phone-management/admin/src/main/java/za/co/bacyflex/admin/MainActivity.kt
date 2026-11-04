@@ -42,9 +42,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState:Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor=android.graphics.Color.rgb(32,40,35)
-        window.navigationBarColor=android.graphics.Color.rgb(255,254,252)
-        window.decorView.systemUiVisibility=android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        window.statusBarColor=android.graphics.Color.rgb(248,248,247)
+        window.navigationBarColor=android.graphics.Color.rgb(255,255,255)
+        window.decorView.systemUiVisibility=android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         setContent { MbAppTheme { App() } }
     }
 
@@ -225,7 +225,7 @@ class MainActivity : ComponentActivity() {
                 MbNotice(message)
                 if(working) LinearProgressIndicator(
                     modifier=Modifier.fillMaxWidth().padding(top=8.dp),
-                    color=MbPalette.Green,trackColor=MbPalette.Line)
+                    color=MbPalette.Accent,trackColor=MbPalette.Line)
             }
         }
         decision?.let { item ->

@@ -19,21 +19,21 @@ import androidx.compose.ui.unit.sp
 
 /** MBMF Ledger: quiet, editorial finance UI. No simulated data or visual effects. */
 object MbPalette {
-    val Canvas = Color(0xFFF8F7F2)
-    val White = Color(0xFFFFFEFC)
-    val Ink = Color(0xFF202823)
-    val Green = Color(0xFF355E4C)
-    val Subtle = Color(0xFF65736A)
-    val Line = Color(0xFFE4E6DF)
-    val Warm = Color(0xFFBE744F)
-    val Light = Color(0xFFEEF2EB)
+    val Canvas = Color(0xFFF4F5F4)
+    val White = Color(0xFFFFFFFF)
+    val Ink = Color(0xFF171A1A)
+    val Accent = Color(0xFFC95035)
+    val Subtle = Color(0xFF737879)
+    val Line = Color(0xFFE4E7E5)
+    val Warm = Color(0xFFE4976D)
+    val Light = Color(0xFFFFF0EA)
 }
 
 @Composable
 fun MbAppTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = lightColorScheme(
-            primary=MbPalette.Green, onPrimary=Color.White,
+            primary=MbPalette.Accent, onPrimary=Color.White,
             background=MbPalette.Canvas, onBackground=MbPalette.Ink,
             surface=MbPalette.White, onSurface=MbPalette.Ink,
             outline=MbPalette.Line, secondary=MbPalette.Warm
@@ -46,9 +46,9 @@ fun MbAppTheme(content: @Composable () -> Unit) {
 fun MbBrand(area: String) {
     Column(modifier=Modifier.fillMaxWidth().padding(top=12.dp,bottom=18.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically) {
-            Box(modifier=Modifier.width(4.dp).height(26.dp).background(MbPalette.Green))
+            Box(modifier=Modifier.size(29.dp).background(MbPalette.Accent, RoundedCornerShape(8.dp))) { Text("M",color=Color.White,fontSize=17.sp,fontWeight=FontWeight.Bold,modifier=Modifier.align(Alignment.Center)) }
             Spacer(Modifier.width(12.dp))
-            Text("MBMF",fontSize=20.sp,fontWeight=FontWeight.ExtraBold,
+            Text("MBMF",fontSize=19.sp,fontWeight=FontWeight.SemiBold,
                 color=MbPalette.Ink,letterSpacing=1.8.sp)
             Spacer(Modifier.weight(1f))
             Text(area.uppercase(),fontSize=10.sp,color=MbPalette.Subtle,letterSpacing=1.0.sp)
@@ -72,24 +72,29 @@ fun MbTitle(title:String, description:String) {
 fun MbCard(modifier:Modifier=Modifier, content:@Composable ColumnScope.() -> Unit) {
     Surface(modifier=modifier.fillMaxWidth(),color=MbPalette.White,
         border=BorderStroke(1.dp,MbPalette.Line),
-        shape=RoundedCornerShape(14.dp)) {
+        shape=RoundedCornerShape(20.dp)) {
         Column(modifier=Modifier.padding(18.dp),content=content)
     }
 }
 
 @Composable
 fun MbMoneyCard(label:String, amount:String, bottom:String) {
-    Surface(modifier=Modifier.fillMaxWidth(),color=MbPalette.Ink,
-        shape=RoundedCornerShape(16.dp)) {
-        Column(modifier=Modifier.padding(horizontal=22.dp,vertical=23.dp)) {
-            Text(label.uppercase(),fontSize=10.sp,letterSpacing=1.4.sp,
-                color=Color(0xFFD3DCD3))
-            Spacer(Modifier.height(12.dp))
-            Text(amount,color=MbPalette.White,fontSize=37.sp,fontWeight=FontWeight.Medium)
+    Surface(modifier=Modifier.fillMaxWidth(),color=MbPalette.Light,
+        shape=RoundedCornerShape(24.dp)) {
+        Column(modifier=Modifier.padding(horizontal=23.dp,vertical=24.dp)) {
+            Row(verticalAlignment=Alignment.CenterVertically) {
+                Box(modifier=Modifier.size(8.dp)
+                    .background(MbPalette.Accent, RoundedCornerShape(50)))
+                Spacer(Modifier.width(8.dp))
+                Text(label.uppercase(),fontSize=10.sp,letterSpacing=1.25.sp,
+                    color=MbPalette.Accent,fontWeight=FontWeight.Bold)
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(amount,color=MbPalette.Ink,fontSize=38.sp,fontWeight=FontWeight.SemiBold)
+            Spacer(Modifier.height(17.dp))
+            HorizontalDivider(color=Color(0xFFE9CFC5))
             Spacer(Modifier.height(14.dp))
-            HorizontalDivider(color=Color(0xFF4A534B))
-            Spacer(Modifier.height(12.dp))
-            Text(bottom,color=Color(0xFFE1E9E2),fontSize=12.sp)
+            Text(bottom,color=MbPalette.Ink,fontSize=13.sp,lineHeight=19.sp)
         }
     }
 }
@@ -132,7 +137,7 @@ fun MbButton(title:String, enabled:Boolean=true, secondary:Boolean=false, onClic
     }
     else Button(onClick=onClick,enabled=enabled,
         shape=RoundedCornerShape(8.dp),modifier=Modifier.fillMaxWidth().height(49.dp),
-        colors=ButtonDefaults.buttonColors(containerColor=MbPalette.Green)) {
+        colors=ButtonDefaults.buttonColors(containerColor=MbPalette.Accent)) {
         Text(title,fontWeight=FontWeight.SemiBold,fontSize=14.sp)
     }
 }
@@ -144,7 +149,7 @@ fun MbField(value:String, onChange:(String)->Unit, label:String, password:Boolea
         shape=RoundedCornerShape(8.dp),
         visualTransformation=if(password) PasswordVisualTransformation() else VisualTransformation.None,
         colors=OutlinedTextFieldDefaults.colors(
-            focusedBorderColor=MbPalette.Green,unfocusedBorderColor=MbPalette.Line,
+            focusedBorderColor=MbPalette.Accent,unfocusedBorderColor=MbPalette.Line,
             focusedContainerColor=MbPalette.White,unfocusedContainerColor=MbPalette.White
         ))
 }
@@ -154,7 +159,7 @@ fun MbNotice(text:String) {
     if(text.isNotEmpty()) {
         Surface(color=MbPalette.Light,shape=RoundedCornerShape(9.dp),
             modifier=Modifier.fillMaxWidth()) {
-            Text(text,color=MbPalette.Green,fontSize=12.sp,lineHeight=17.sp,
+            Text(text,color=MbPalette.Accent,fontSize=12.sp,lineHeight=17.sp,
                 modifier=Modifier.padding(12.dp))
         }
     }
@@ -172,7 +177,7 @@ fun MbLink(title:String, detail:String="", onClick:()->Unit) {
                     Text(detail,color=MbPalette.Subtle,fontSize=12.sp)
                 }
             }
-            Text("›",color=MbPalette.Green,fontSize=22.sp)
+            Text("›",color=MbPalette.Accent,fontSize=22.sp)
         }
         Spacer(Modifier.height(14.dp))
         HorizontalDivider(color=MbPalette.Line)
@@ -181,18 +186,20 @@ fun MbLink(title:String, detail:String="", onClick:()->Unit) {
 
 @Composable
 fun MbBottomNav(options:List<String>, selected:String, choose:(String)->Unit) {
-    Surface(color=MbPalette.White,shadowElevation=3.dp) {
+    Surface(color=MbPalette.White,shadowElevation=1.dp) {
         Row(modifier=Modifier.fillMaxWidth().navigationBarsPadding()
-            .padding(horizontal=10.dp,vertical=8.dp)) {
+            .padding(horizontal=10.dp,vertical=9.dp)) {
             options.forEach { label ->
                 val active=selected==label
                 Column(modifier=Modifier.weight(1f).clickable{choose(label)}
-                    .padding(vertical=6.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-                    Box(Modifier.width(20.dp).height(3.dp)
-                        .background(if(active) MbPalette.Green else Color.Transparent))
+                    .padding(vertical=5.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+                    Text(label,fontSize=12.sp,
+                        fontWeight=if(active)FontWeight.Bold else FontWeight.Medium,
+                        color=if(active)MbPalette.Accent else MbPalette.Subtle)
                     Spacer(Modifier.height(7.dp))
-                    Text(label,fontSize=11.sp, fontWeight=if(active)FontWeight.Bold else FontWeight.Normal,
-                        color=if(active)MbPalette.Ink else MbPalette.Subtle)
+                    Box(Modifier.width(if(active)26.dp else 5.dp).height(3.dp)
+                        .background(if(active)MbPalette.Accent else Color.Transparent,
+                            RoundedCornerShape(12.dp)))
                 }
             }
         }
