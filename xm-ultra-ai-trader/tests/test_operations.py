@@ -36,7 +36,7 @@ def make_database(path, value="original"):
 def test_remote_listening_rejected_without_tls_and_opt_in(operations, tmp_path):
     runtime, _ = operations
     config = config_for(tmp_path)
-    config.update(host="0.0.0.0", network_access_confirmed=True)
+    config.update(host="0.0.0.0", network_access_confirmed=True, local_passwordless=False)
     target = tmp_path / "local.json"
     target.write_text(json.dumps(config))
     with pytest.raises(ValueError, match="TLS"):

@@ -32,13 +32,15 @@ def main() -> None:
     parser.add_argument("--bridge-dir", type=Path, required=True)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--change-password", action="store_true")
+    parser.add_argument("--enable-password", action="store_true")
     args = parser.parse_args()
     bridge = args.bridge_dir.resolve()
     data = PROJECT / "data"
     bridge.mkdir(parents=True, exist_ok=True)
     data.mkdir(parents=True, exist_ok=True)
     password_file = data / "password.hash"
-    if not password_file.exists() or args.change_password:
+    password_mode = args.enable_password or args.change_password
+    if password_mode and (not password_file.exists() or args.change_password):
         print("Create a dashboard password (12 or more characters). This is NOT your XM password.")
         password = getpass.getpass("New dashboard password: ")
         confirmation = getpass.getpass("Repeat dashboard password: ")
@@ -58,9 +60,13 @@ def main() -> None:
         existing = json.loads(args.config.read_text(encoding="utf-8"))
         if Path(existing.get("bridge_dir", "")).resolve() != bridge:
             raise ValueError("Existing configuration points to a different bridge. Do not silently switch trading terminals.")
+        if existing.get("host", "127.0.0.1") not in {"127.0.0.1", "localhost", "::1"} and not password_mode:
+            raise ValueError("Network mode cannot use passwordless access. Return to local-only mode first.")
+        existing["local_passwordless"] = not password_mode
+        private_write(args.config, json.dumps(existing, indent=2) + "\n")
         print("Existing configuration and trading history preserved.")
     else:
-        config = {"version": 1, "database_path": str((data / "trader.db").resolve()),
+        config = {"version": 1, "local_passwordless": not password_mode, "database_path": str((data / "trader.db").resolve()),
                   "bridge_dir": str(bridge), "password_hash_file": str(password_file.resolve()),
                   "host": "127.0.0.1", "port": 8765,
                   "allowed_hosts": ["localhost", "127.0.0.1", "::1"], "allowed_origins": [],

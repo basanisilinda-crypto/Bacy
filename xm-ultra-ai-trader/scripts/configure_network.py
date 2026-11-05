@@ -26,6 +26,8 @@ def main() -> None:
         config.update(host="127.0.0.1", allowed_hosts=["localhost", "127.0.0.1", "::1"], allowed_origins=[],
                       network_access_confirmed=False, tls_cert=None, tls_key=None)
     else:
+        if config.get("local_passwordless", True):
+            raise ValueError("Enable password mode locally before configuring phone/network access.")
         if not args.confirm_private_network or not args.address or not args.cert or not args.key:
             raise ValueError("Network mode requires an explicit private address, certificate, key, and confirmation.")
         address = ipaddress.ip_address(args.address)

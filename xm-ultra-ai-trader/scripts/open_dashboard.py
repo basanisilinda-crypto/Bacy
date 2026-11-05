@@ -61,7 +61,7 @@ def main():
     wait_until_ready(url, process_id=args.process_id)
     if not webbrowser.open(url):
         print('Open this dashboard address in your browser: ' + url)
-    print('Dashboard ready. Sign in with your dashboard password. Trading remains paused.')
+    print('Dashboard ready. Local mode opens automatically. Trading remains paused.')
 
 
 if __name__ == '__main__':

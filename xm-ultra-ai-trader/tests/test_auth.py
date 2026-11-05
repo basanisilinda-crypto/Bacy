@@ -43,6 +43,6 @@ def test_auth_attempt_limits():
 
 def test_network_hosts_require_secure_configuration():
     with pytest.raises(ValueError, match="HTTPS"):
-        Settings(allowed_hosts=("192.168.1.5",))
+        Settings(allowed_hosts=("192.168.1.5",), local_passwordless=False)
     with pytest.raises(ValueError, match="Explicit"):
         Settings(allowed_hosts=("*",), secure_cookie=True)

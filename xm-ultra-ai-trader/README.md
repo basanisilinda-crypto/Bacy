@@ -1,3 +1,5 @@
+> Beginner update: double-click Start Here.cmd; local dashboard opens without a password. Main screen shows Start Demo Trading, Pause, Emergency Stop and verified activity/history. Advanced settings are hidden from the main view. Folder protection now writes only access permissions, without audit/ownership metadata. Windows execution remains to be verified.
+
 > Update: account-bound live-mode source support was added after the original demo baseline. See [live-mode notes](docs/LIVE_MODE.md). Defaults remain demo; no live broker validation has been performed. Older demo-specific procedures remain the recommended validation path.
 
 # BC SILINDA FX / BACY05TEN

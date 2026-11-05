@@ -1,3 +1,5 @@
+> Current local mode: no dashboard password is required on the Windows laptop. Extract the ZIP and double-click Start Here.cmd. Password instructions below apply only to optional protected network mode. Enable it with Setup-Windows.ps1 -EnablePassword before configuring Android access.
+
 > Update: account-bound live-mode source support was added after the original demo baseline. See [live-mode notes](LIVE_MODE.md). Defaults remain demo; no live broker validation has been performed. Older demo-specific procedures remain the recommended validation path.
 
 # Windows demo quickstart

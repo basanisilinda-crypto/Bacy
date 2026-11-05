@@ -14,7 +14,7 @@ def client(tmp_path):
     directory = tmp_path / "bridge"
     directory.mkdir()
     (directory / "bridge.secret").write_text("x" * 48)
-    settings = Settings(database_path=tmp_path / "state.db", bridge_dir=directory,
+    settings = Settings(local_passwordless=False,database_path=tmp_path / "state.db", bridge_dir=directory,
                         password_hash_file=tmp_path / "absent", admin_password="a-private-dashboard-password",
                         allowed_hosts=("testserver",), background_poll=False)
     with TestClient(create_app(settings)) as value:

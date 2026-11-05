@@ -5,20 +5,22 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 function Protect-LocalDirectory {
     param([Parameter(Mandatory = $true)][string]$Path)
     New-Item -ItemType Directory -Force -Path $Path | Out-Null
-    $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
-    $systemSid = [System.Security.Principal.SecurityIdentifier]::new('S-1-5-18')
-    $acl = Get-Acl -LiteralPath $Path
-    $acl.SetAccessRuleProtection($true, $false)
-    foreach ($oldRule in @($acl.Access)) { [void]$acl.RemoveAccessRuleAll($oldRule) }
-    foreach ($sid in @($currentSid, $systemSid)) {
-        $rule = [System.Security.AccessControl.FileSystemAccessRule]::new(
-            $sid, [System.Security.AccessControl.FileSystemRights]::FullControl,
-            [System.Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit',
-            [System.Security.AccessControl.PropagationFlags]::None,
-            [System.Security.AccessControl.AccessControlType]::Allow)
-        $acl.AddAccessRule($rule)
+    $directory = Get-Item -LiteralPath $Path -Force
+    if ($directory.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+        throw 'Private application folders cannot be symbolic links or junctions.'
     }
-    Set-Acl -LiteralPath $Path -AclObject $acl
+    $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    # Construct an access-only descriptor. Get-Acl/Set-Acl can carry audit or
+    # owner metadata and request SeSecurityPrivilege on ordinary Windows users.
+    # Only the DACL is marked modified; SACL, owner and group are untouched.
+    $acl = [System.Security.AccessControl.DirectorySecurity]::new()
+    $dacl = 'D:P(A;OICI;FA;;;' + $currentSid + ')(A;OICI;FA;;;S-1-5-18)'
+    $acl.SetSecurityDescriptorSddlForm($dacl, [System.Security.AccessControl.AccessControlSections]::Access)
+    try {
+        [System.IO.Directory]::SetAccessControl($directory.FullName, $acl)
+    } catch {
+        throw ('Cannot secure the private application folder "' + $directory.FullName + '". Keep the extracted project in a folder owned by your Windows user. No passwords were saved by this step. Details: ' + $_.Exception.Message)
+    }
 }
 
 function Get-ProjectPython {

@@ -73,6 +73,10 @@ class Auth:
     def login(self, password: str) -> tuple[str, Session] | None:
         if not self.encoded or not verify_password(password, self.encoded):
             return None
+        return self.issue_session()
+
+    def issue_session(self):
+        """Mint a bounded session after the caller has established authorization."""
         now = time.time()
         with self.lock:
             self.sessions = {k: v for k, v in self.sessions.items() if v.expires_at > now}

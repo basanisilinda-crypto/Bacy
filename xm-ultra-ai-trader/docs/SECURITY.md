@@ -1,3 +1,5 @@
+> Local Windows mode now opens without a password. It is loopback-only and still uses session cookies, CSRF and origin/host validation. To enable protected phone access, first run Setup-Windows.ps1 -EnablePassword locally, then follow the HTTPS steps below. Passwordless access cannot listen on a network interface.
+
 # Android connection and security
 
 The Windows loopback dashboard works on that Windows computer only. Opening localhost on Android addresses the phone itself. The phone does not run the trading engine.

@@ -171,8 +171,22 @@ def create_app(settings: Settings | None = None):
         return {"authenticated": True, "csrf_token": value.csrf_token}
 
     @app.get("/api/auth/session")
-    def auth_session(value=Depends(session)):
-        return {"authenticated": True, "csrf_token": value.csrf_token}
+    def auth_session(request: Request, response: Response):
+        value = auth.get(request.cookies.get(COOKIE))
+        if not value and settings.local_passwordless:
+            peer = request.client.host if request.client else ""
+            try:
+                local = ipaddress.ip_address(peer).is_loopback
+            except ValueError:
+                local = peer == "testclient" and "testserver" in settings.allowed_hosts
+            origin = request.headers.get("origin")
+            if not local or (origin and origin.rstrip("/") != str(request.base_url).rstrip("/")) or request.headers.get("sec-fetch-site") == "cross-site":
+                raise HTTPException(403, "Local access is available only from this Windows computer")
+            token, value = auth.issue_session()
+            response.set_cookie(COOKIE, token, max_age=settings.session_seconds, httponly=True, samesite="strict", secure=settings.secure_cookie, path="/")
+        if not value:
+            raise HTTPException(401, "Sign in to the local dashboard")
+        return {"authenticated": True, "csrf_token": value.csrf_token, "passwordless": settings.local_passwordless}
 
     @app.post("/api/auth/logout")
     def logout(request: Request, response: Response, value=Depends(session)):
@@ -298,7 +312,7 @@ def create_app(settings: Settings | None = None):
         state = bridge.status()
         selected = storage.get_config("dashboard_mode", "demo")
         checks = [
-            {"name": "Dashboard authentication", "passed": auth.configured},
+            {"name": "Dashboard session protection", "passed": auth.configured or settings.local_passwordless},
             {"name": "Fresh MT5 telemetry", "passed": state["connected"]},
             {"name": "Selected account matches MT5", "passed": state["connected"] and state["mode"] == selected},
             {"name": "Live account locally paired", "passed": selected == "demo" or state["capabilities"]["live_trading"]},
@@ -338,7 +352,7 @@ def create_app(settings: Settings | None = None):
     @app.get("/api/diagnostics")
     def diagnostics(value=Depends(session)):
         state = bridge.status()
-        return {"version": __version__, "authentication_configured": auth.configured, "https_configured": settings.secure_cookie,
+        return {"version": __version__, "authentication_configured": auth.configured, "passwordless_local_only": settings.local_passwordless, "https_configured": settings.secure_cookie,
                 "database": "ready", "bridge_connected": state["connected"], "bridge_reason": state["reason"],
                 "demo_only": not bool(settings.live_account_id), "lease_active": bridge.lease_enabled, "pending_command": bridge.pending,
                 "capabilities": state["capabilities"], "validation": {"mt5_compilation": "requires_windows_metaeditor", "broker_demo_test": "not_verified_by_backend"}}

@@ -38,6 +38,7 @@ class Settings:
     requests_per_minute: int = 240
     max_body_bytes: int = 16_384
     background_poll: bool = True
+    local_passwordless: bool = field(default_factory=lambda: os.getenv("XM_LOCAL_PASSWORDLESS", "1") == "1")
     live_account_id: str = field(default_factory=lambda: os.getenv("XM_LIVE_ACCOUNT_ID", ""))
 
     def __post_init__(self):
@@ -52,5 +53,7 @@ class Settings:
         if not self.allowed_hosts or "*" in self.allowed_hosts:
             raise ValueError("Explicit local host names are required")
         remote = any(x not in {"localhost", "127.0.0.1", "::1", "testserver"} for x in self.allowed_hosts)
+        if remote and self.local_passwordless:
+            raise ValueError("Network access requires password-protected mode; passwordless access is loopback-only")
         if remote and not self.secure_cookie:
             raise ValueError("Network access requires HTTPS and secure cookies")

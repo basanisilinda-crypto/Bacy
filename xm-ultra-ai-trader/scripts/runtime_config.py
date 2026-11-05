@@ -24,6 +24,8 @@ def load_config(path: Path = DEFAULT_CONFIG) -> dict:
     if bool(cert) != bool(key):
         raise ValueError("TLS certificate and key must be supplied together")
     remote = host not in {"127.0.0.1", "localhost", "::1"}
+    if remote and config.get("local_passwordless", True):
+        raise ValueError("Network access needs password mode; local passwordless access cannot be shared")
     if remote and not (cert and key and config.get("network_access_confirmed") is True):
         raise ValueError("Network listening requires TLS and explicit local configuration")
     hosts = config.get("allowed_hosts", ["localhost", "127.0.0.1", "::1"])
@@ -42,6 +44,7 @@ def load_config(path: Path = DEFAULT_CONFIG) -> dict:
 
 def apply_environment(config: dict) -> None:
     """Set only this application’s variables; preserve proxy/system environment."""
+    os.environ["XM_LOCAL_PASSWORDLESS"] = "1" if config.get("local_passwordless", True) else "0"
     os.environ["XM_LIVE_ACCOUNT_ID"] = str(config.get("live_account_id", ""))
     os.environ["XM_DATABASE_PATH"] = config["database_path"]
     os.environ["XM_BRIDGE_DIR"] = config["bridge_dir"]

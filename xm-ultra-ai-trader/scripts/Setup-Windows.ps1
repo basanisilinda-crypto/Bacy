@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$BridgeDir = (Join-Path $env:APPDATA 'MetaQuotes\Terminal\Common\Files\XMUltraAI'),
+    [switch]$EnablePassword,
     [switch]$ChangePassword
 )
 . (Join-Path $PSScriptRoot 'Common.ps1')
@@ -18,6 +19,7 @@ $python = Get-ProjectPython
 & $python -m pip install -e .
 if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed. Check your internet connection and supported Python version.' }
 $setupArguments = @((Join-Path $PSScriptRoot 'setup_local.py'), '--bridge-dir', $BridgeDir)
+if ($EnablePassword) { $setupArguments += '--enable-password' }
 if ($ChangePassword) { $setupArguments += '--change-password' }
 & $python @setupArguments
 if ($LASTEXITCODE -ne 0) { throw 'Local configuration failed.' }

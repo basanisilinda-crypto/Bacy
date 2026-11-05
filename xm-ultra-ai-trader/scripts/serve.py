@@ -11,7 +11,7 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     args = parser.parse_args()
     config = load_config(args.config)
-    if not Path(config["password_hash_file"]).is_file():
+    if not config.get("local_passwordless", True) and not Path(config["password_hash_file"]).is_file():
         raise ValueError("Dashboard password is missing. Run Setup-Windows.ps1 first.")
     apply_environment(config)
     sys.path.insert(0, str(PROJECT))

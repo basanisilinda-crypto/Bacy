@@ -35,7 +35,7 @@ try {
     $venvPython = Join-Path $ProjectRoot '.venv\Scripts\python.exe'
     $configured = (Test-Path -LiteralPath $configFile) -and (Test-Path -LiteralPath $venvPython)
     if (-not $configured) {
-        Tell 'First setup needs a new dashboard password of at least 12 characters. Enter it twice in the setup window. This is NOT your XM password. Password characters may stay invisible while typing.'
+        Tell 'Local setup opens without a dashboard password. It runs only on this Windows computer. Phone/network access requires separate protected setup.'
         & (Join-Path $PSScriptRoot 'Setup-Windows.ps1')
     } else {
         & $venvPython -c 'import fastapi, uvicorn, numpy'
