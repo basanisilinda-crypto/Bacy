@@ -17,3 +17,5 @@ https://xm-trader-folio-preview.bacanyclinda.chatgpt.site
 This release changes folder protection to an access-only Windows security descriptor, avoiding audit/owner privilege requests. The Windows-native ACL test is supplied under tests but has not been executed in the Linux build environment.
 
 If setup stops, share only the error text. Never share broker passwords, bridge.secret, control.csv or private keys. No profits, fixed execution timing or 100% reliability are guaranteed.
+
+START/STOP REPAIR: After installing the updated files, click START DEMO TRADING. If the robot is in Emergency, that deliberate click sends the required resume command automatically. STOP blocks new entries and does not liquidate positions. Do not repeatedly click while a command is pending. Terminal scanner reports require the updated EA to be compiled and attached.

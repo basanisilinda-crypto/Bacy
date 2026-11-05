@@ -1,3 +1,5 @@
+> Start/Stop update: the main demo Start button now reads the current robot state and sends an explicit resume when Emergency is latched. No separate Resume screen is needed. Stop still blocks new entries; protective risk checks remain. The terminal displays actual broker/control events, and the updated EA emits scanner reports while genuinely running. Recompile the updated EA for those new reports.
+
 > Beginner update: double-click Start Here.cmd; local dashboard opens without a password. Main screen shows Start Demo Trading, Pause, Emergency Stop and verified activity/history. Advanced settings are hidden from the main view. Folder protection now writes only access permissions, without audit/ownership metadata. Windows execution remains to be verified.
 
 > Update: account-bound live-mode source support was added after the original demo baseline. See [live-mode notes](docs/LIVE_MODE.md). Defaults remain demo; no live broker validation has been performed. Older demo-specific procedures remain the recommended validation path.

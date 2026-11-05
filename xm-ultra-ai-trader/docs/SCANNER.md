@@ -11,3 +11,7 @@ scanner.csv contains only actual fresh bid/ask quotes from selected instruments,
 The screenshot-matched planned-loss field is an estimate derived from verified equity and the configured percentage cap. It remains blank when account data is absent. It is not a guaranteed maximum loss or an independently editable cash-risk override. Change approved limits through Settings while paused.
 
 The visual preview never connects to an XM account or sends orders. The updated MQL source requires MetaEditor compilation and broker demo testing. No execution timing, profitability or 100% reliability has been verified or guaranteed. General web searches/LLM calls are not installed in the order path; no reliable zero-cost real-time web-research provider is configured. Local technical analysis and the available native calendar are the automated inputs.
+
+The EA emits a real scan_cycle audit event about every five seconds while running. It counts instruments actually evaluated recently; it does not invent price searches, completed orders or web research. The GUI refreshes approximately every three seconds. Decorative candles and brain artwork are not market data.
+
+When connected but stopped by the operator, the EA now reports that stop explicitly instead of retaining an old broker-disconnected explanation. Start is translated to an explicit resume by the dashboard after a fresh state read; risk or broker blocks still reject it.

@@ -870,7 +870,7 @@ void ReconcileHistory()
 void RefreshState()
 {
    if(!TerminalInfoInteger(TERMINAL_CONNECTED)) { g_state="disconnected"; g_reason="Broker connection unavailable"; return; }
-   if(g_emergency) { g_state="emergency"; return; }
+   if(g_emergency) { g_state="emergency"; g_reason="Stopped by operator; press Start to deliberately resume"; return; }
    if(!g_running_requested) { g_state="paused"; return; }
    if(!g_tester&&UtcNow()>=g_lease)
    {
@@ -958,6 +958,14 @@ void OnTimer()
    ProcessControl(); RefreshState();
    if(g_running_requested&&g_state=="running") for(int i=0;i<ArraySize(g_markets);i++) Evaluate(g_markets[i]);
    ManagePositions();
+   static datetime last_scan_report=0;
+   if(!g_tester&&g_running_requested&&g_state=="running"&&UtcNow()-last_scan_report>=5)
+   {
+      int checked=0;
+      for(int i=0;i<ArraySize(g_markets);i++) if(g_markets[i].last_evaluation>=UtcNow()-2) checked++;
+      QueueEvent("scan_cycle","Scanner checked "+IntegerToString(checked)+" of "+IntegerToString(ArraySize(g_markets))+" selected instruments; strategy and risk approval remain required");
+      last_scan_report=UtcNow();
+   }
    static int cycle=0; cycle++;
    if(cycle%10==1) ReconcileHistory();
    if(!g_tester)

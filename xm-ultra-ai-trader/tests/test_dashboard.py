@@ -1,4 +1,5 @@
 """Browser integration against an actual disposable local HTTP backend."""
+import csv
 import shutil
 import socket
 import threading
@@ -10,6 +11,7 @@ import pytest
 import uvicorn
 from xmtrader.api import create_app
 from xmtrader.settings import Settings
+from xmtrader.bridge import ACCOUNT_FIELDS, POSITION_FIELDS, EVENT_FIELDS
 
 
 def test_dashboard_login_navigation_and_grounded_chat(tmp_path):
@@ -61,6 +63,28 @@ def test_dashboard_login_navigation_and_grounded_chat(tmp_path):
             page.screenshot(path=str(artifacts/'dashboard-mobile-firstlook.png'),full_page=False)
             page.set_viewport_size({'width':1440,'height':1000})
             page.screenshot(path=str(artifacts/'dashboard-desktop.png'),full_page=True)
+            # Regression: clicking Start while emergency is latched deliberately
+            # sends resume to the real local API; it never fabricates an ACK.
+            directory=app.state.settings.bridge_dir
+            directory.mkdir(exist_ok=True)
+            (directory/'bridge.secret').write_text('x'*48)
+            account=dict(zip(ACCOUNT_FIELDS,[1,time.time(),'12345','XM Demo','demo','USD',10000,10000,0,10000,0,0,0,'emergency','Emergency stop (test fixture)',2,10,20,30,40]))
+            for name,fields,rows in [('account.csv',ACCOUNT_FIELDS,[account]),('positions.csv',POSITION_FIELDS,[]),('events.csv',EVENT_FIELDS,[])]:
+                with (directory/name).open('w',newline='') as stream:
+                    writer=csv.DictWriter(stream,fieldnames=fields)
+                    writer.writeheader()
+                    writer.writerows(rows)
+            page.reload()
+            playwright.expect(page.locator('#workspace')).to_be_visible()
+            playwright.expect(page.locator('#connection-text')).to_have_text('MT5 connected')
+            with page.expect_response(lambda response: response.url.endswith('/api/control') and response.request.method=='POST') as sent:
+                page.locator('#overview-start').click()
+            assert sent.value.request.post_data_json['action']=='resume'
+            assert sent.value.request.post_data_json['confirmation']=='RESUME DEMO'
+            assert sent.value.status==200
+            assert sent.value.json()['state']=='pending'
+            assert app.state.bridge.pending['action']=='resume'
+            assert app.state.bridge.status()['robot_state']=='emergency'
             browser.close()
     finally:
         server.should_exit=True
