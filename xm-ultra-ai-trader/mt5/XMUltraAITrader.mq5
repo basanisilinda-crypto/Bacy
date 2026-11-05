@@ -1,7 +1,7 @@
 // XM ULTRA AI TRADER -- demo-default, account-authorized execution engine.
 // SPDX-License-Identifier: MIT
 #property copyright "XM Ultra AI Trader contributors"
-#property version   "0.10"
+#property version   "1.001"
 #property strict
 #property description "Demo-only, fail-closed MT5 execution. No profitability claim."
 
@@ -145,6 +145,68 @@ void Persist()
    GlobalVariableSet(Key("lastseen"),(double)UtcNow());
    GlobalVariablesFlush();
 }
+string g_anchor_reason="Verified broker history is required";
+bool ReconstructFlatBaseline(const datetime period,double &baseline,string &why)
+{
+   const long guard=10800; // Refuse activity around uncertain historical broker UTC offsets.
+   datetime now=UtcNow(),server_now=TimeTradeServer();
+   if(now<period+guard) { why="Period is too recent for guarded broker-history reconciliation"; return false; }
+   if(!TerminalInfoInteger(TERMINAL_CONNECTED)||PositionsTotal()!=0||OrdersTotal()!=0)
+   { why="Reconciliation requires a connected account with no positions or pending orders"; return false; }
+   double equity=AccountInfoDouble(ACCOUNT_EQUITY),balance=AccountInfoDouble(ACCOUNT_BALANCE),credit=AccountInfoDouble(ACCOUNT_CREDIT);
+   if(!Finite(equity)||!Finite(balance)||!Finite(credit)||equity<=0||MathAbs(equity-balance-credit)>.01)
+   { why="Account equity cannot be verified as flat"; return false; }
+   long offset=(long)server_now-(long)now;
+   datetime boundary=(datetime)((long)period+offset);
+   if(!HistorySelect((datetime)((long)boundary-guard),server_now))
+   { why="Broker history is unavailable"; return false; }
+   int count=HistoryDealsTotal();
+   if(count>5000) { why="History exceeds automatic reconciliation budget; independent review required"; return false; }
+   ulong ids[]; double volumes[]; int used=0; double changes=0;
+   for(int i=0;i<count;i++)
+   {
+      ulong ticket=HistoryDealGetTicket(i); if(ticket==0) { why="Incomplete broker history"; return false; }
+      datetime stamp=(datetime)HistoryDealGetInteger(ticket,DEAL_TIME);
+      if(MathAbs((double)((long)stamp-(long)boundary))<=guard)
+      { why="Activity near UTC boundary needs historical timezone/equity review"; return false; }
+      if(stamp<boundary) continue;
+      ENUM_DEAL_TYPE type=(ENUM_DEAL_TYPE)HistoryDealGetInteger(ticket,DEAL_TYPE);
+      if(type==DEAL_TYPE_BUY_CANCELED||type==DEAL_TYPE_SELL_CANCELED)
+      { why="Cancelled historical deals require independent reconciliation"; return false; }
+      double delta=HistoryDealGetDouble(ticket,DEAL_PROFIT)+HistoryDealGetDouble(ticket,DEAL_COMMISSION)+HistoryDealGetDouble(ticket,DEAL_SWAP)+HistoryDealGetDouble(ticket,DEAL_FEE);
+      if(!Finite(delta)) { why="Invalid historical account cash flow"; return false; }
+      changes+=delta;
+      if(type==DEAL_TYPE_BUY||type==DEAL_TYPE_SELL)
+      {
+         ulong id=(ulong)HistoryDealGetInteger(ticket,DEAL_POSITION_ID);
+         double volume=HistoryDealGetDouble(ticket,DEAL_VOLUME);
+         if(id==0||!Finite(volume)||volume<=0) { why="Missing position audit details"; return false; }
+         int at=-1; for(int j=0;j<used;j++) if(ids[j]==id) { at=j; break; }
+         if(at<0) { at=used++; ArrayResize(ids,used); ArrayResize(volumes,used); ids[at]=id; volumes[at]=0; }
+         volumes[at]+=(type==DEAL_TYPE_BUY?volume:-volume);
+      }
+   }
+   for(int i=0;i<used;i++) if(MathAbs(volumes[i])>1e-8)
+   { why="A position crossed the period boundary; historical floating equity must be verified"; return false; }
+   baseline=equity-changes;
+   if(!Finite(baseline)||baseline<=0) { why="Reconstructed equity baseline is invalid"; return false; }
+   return true;
+}
+bool ReconcileMissedBoundaries()
+{
+   if(g_tester||!g_anchor_block) return !g_anchor_block;
+   datetime day=DayStart(UtcNow()),week=WeekStart(UtcNow());
+   double day_equity=g_day_equity,week_equity=g_week_equity; string why;
+   if(!ReconstructFlatBaseline(day,day_equity,why)) { g_anchor_reason=why; return false; }
+   if(!ReconstructFlatBaseline(week,week_equity,why)) { g_anchor_reason=why; return false; }
+   // Update only verifiable period anchors. Never erase loss streaks or lower the lifetime peak.
+   g_day=day; g_week=week; g_day_equity=day_equity; g_week_equity=week_equity;
+   g_high_water=MathMax(g_high_water,MathMax(day_equity,week_equity));
+   g_anchor_block=false; g_anchor_reason="";
+   Persist(); QueueEvent("risk_baseline_reconciled","Daily and weekly equity baselines reconstructed from flat-account broker history; loss and drawdown checks remain active");
+   return true;
+}
+
 bool LoadAnchors()
 {
    datetime now=UtcNow(); double equity=AccountInfoDouble(ACCOUNT_EQUITY);
@@ -170,6 +232,7 @@ bool LoadAnchors()
       g_day=DayStart(now); g_week=WeekStart(now);
       g_day_equity=equity; g_week_equity=equity; g_high_water=equity;
    }
+   if(g_anchor_block) ReconcileMissedBoundaries();
    Persist(); return true;
 }
 void UpdateAnchors()
@@ -331,7 +394,7 @@ bool AccountGate(string &why)
       !AccountInfoInteger(ACCOUNT_TRADE_ALLOWED)||!AccountInfoInteger(ACCOUNT_TRADE_EXPERT)) { why="Terminal or account trading permission is disabled"; return false; }
    if(g_emergency) { why="Emergency stop is latched"; return false; }
    if(g_uncertain) { why="Uncertain prior order requires reconciliation; no retry will be sent"; return false; }
-   if(g_anchor_block) { why="Risk period baseline needs reconciliation after a missed UTC boundary"; return false; }
+   if(g_anchor_block) { why="Risk baseline reconciliation pending: "+g_anchor_reason; return false; }
    if(g_events_overflow) { why="Audit event storage failed"; return false; }
    if(g_cooldown>UtcNow()) { why="Consecutive-loss cooldown is active"; return false; }
    double equity=AccountInfoDouble(ACCOUNT_EQUITY),margin=AccountInfoDouble(ACCOUNT_MARGIN_FREE);
@@ -954,6 +1017,8 @@ void OnTick()
 void OnTimer()
 {
    UpdateAnchors();
+   static datetime last_reconcile=0;
+   if(g_anchor_block&&UtcNow()-last_reconcile>=30) { last_reconcile=UtcNow(); ReconcileMissedBoundaries(); }
    for(int i=0;i<ArraySize(g_markets);i++) { RefreshNews(g_markets[i]); if(!g_markets[i].valid) RefreshIndicators(g_markets[i]); }
    ProcessControl(); RefreshState();
    if(g_running_requested&&g_state=="running") for(int i=0;i<ArraySize(g_markets);i++) Evaluate(g_markets[i]);

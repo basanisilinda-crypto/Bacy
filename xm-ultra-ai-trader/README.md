@@ -1,3 +1,5 @@
+> Version 1.001 addresses the missed-UTC-boundary startup block with guarded flat-account broker-history reconciliation. It preserves loss limits and refuses unverifiable history. Compile and reattach the updated EA; a browser refresh alone cannot install this engine change. See docs/RISK_RECOVERY.md.
+
 > Animated terminal update: real MT5 activity is beside Start/Stop on desktop and above fixed controls on mobile. Matrix glyphs, flowing candles and floating brain artwork are decorative, explicitly labeled, pausable, reduced-motion aware, and suspended when the tab is hidden. No simulated balances, profits or executions are inserted.
 
 > Start/Stop update: the main demo Start button now reads the current robot state and sends an explicit resume when Emergency is latched. No separate Resume screen is needed. Stop still blocks new entries; protective risk checks remain. The terminal displays actual broker/control events, and the updated EA emits scanner reports while genuinely running. Recompile the updated EA for those new reports.
