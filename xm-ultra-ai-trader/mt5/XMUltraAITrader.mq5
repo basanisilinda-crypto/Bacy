@@ -1,7 +1,7 @@
 // XM ULTRA AI TRADER -- demo-default, account-authorized execution engine.
 // SPDX-License-Identifier: MIT
 #property copyright "XM Ultra AI Trader contributors"
-#property version   "1.001"
+#property version   "1.002"
 #property strict
 #property description "Demo-only, fail-closed MT5 execution. No profitability claim."
 
@@ -22,6 +22,7 @@ input int InpMaxSpreadPoints=25;
 input int InpMaxDeviationPoints=10;
 input int InpMaxTickAgeSeconds=15;
 input int InpCooldownMinutes=60;
+input bool InpDemoIgnoreLossStops=true;      // DEMO only: no daily/weekly/drawdown/baseline/cooldown suspension.
 input int InpMaxHoldingBars=96;
 input bool InpTrailing=true;
 input bool InpBreakEven=true;
@@ -73,6 +74,30 @@ long g_account=0;
 
 string Path(const string name) { return InpBridgeFolder+"\\"+name; }
 bool Finite(const double x) { return MathIsValidNumber(x); }
+// BEGIN PORTABLE LOSS POLICY -- exercised directly by the native-policy tests.
+bool EnforceLossStops(const bool demo_override,const bool demo_account,const bool tester)
+{
+   return !(demo_override&&demo_account&&!tester);
+}
+double EntryRiskBudget(const double equity,const double trade_pct,const int max_positions,
+                       const double existing,const double day_floor,const double week_floor,
+                       const double drawdown_floor,const bool enforce_losses)
+{
+   double available=MathMin(equity*trade_pct/100,equity*MathMin(.5,max_positions*trade_pct)/100-existing);
+   if(enforce_losses)
+   {
+      available=MathMin(available,equity-day_floor-existing);
+      available=MathMin(available,equity-week_floor-existing);
+      available=MathMin(available,equity-drawdown_floor-existing);
+   }
+   return available;
+}
+// END PORTABLE LOSS POLICY
+bool LossStopsActive()
+{
+   return EnforceLossStops(InpDemoIgnoreLossStops,
+                          AccountInfoInteger(ACCOUNT_TRADE_MODE)==ACCOUNT_TRADE_MODE_DEMO,g_tester);
+}
 string N(const double value,const int digits=8) { return DoubleToString(value,digits); }
 string U(const ulong value) { return StringFormat("%I64u",value); }
 string L(const long value) { return StringFormat("%I64d",value); }
@@ -395,15 +420,19 @@ bool AccountGate(string &why)
       !AccountInfoInteger(ACCOUNT_TRADE_ALLOWED)||!AccountInfoInteger(ACCOUNT_TRADE_EXPERT)) { why="Terminal or account trading permission is disabled"; return false; }
    if(g_emergency) { why="Emergency stop is latched"; return false; }
    if(g_uncertain) { why="Uncertain prior order requires reconciliation; no retry will be sent"; return false; }
-   if(g_anchor_block) { why="Risk baseline reconciliation pending: "+g_anchor_reason; return false; }
+   bool enforce_losses=LossStopsActive();
+   if(enforce_losses&&g_anchor_block) { why="Risk baseline reconciliation pending: "+g_anchor_reason; return false; }
    if(g_events_overflow) { why="Audit event storage failed"; return false; }
-   if(g_cooldown>UtcNow()) { why="Consecutive-loss cooldown is active"; return false; }
+   if(enforce_losses&&g_cooldown>UtcNow()) { why="Consecutive-loss cooldown is active"; return false; }
    double equity=AccountInfoDouble(ACCOUNT_EQUITY),margin=AccountInfoDouble(ACCOUNT_MARGIN_FREE);
    if(!Finite(equity)||equity<=0||!Finite(margin)||margin<=0) { why="Equity or free-margin data is invalid"; return false; }
-   if(g_day_equity<=0||g_week_equity<=0||g_high_water<=0) { why="Risk anchors are missing"; return false; }
-   if(equity<=g_day_equity*(1-g_daily_pct/100)) { why="Daily equity-loss limit reached (includes floating P/L)"; return false; }
-   if(equity<=g_week_equity*(1-g_weekly_pct/100)) { why="Weekly equity-loss limit reached (includes floating P/L)"; return false; }
-   if(equity<=g_high_water*(1-g_drawdown_pct/100)) { why="Equity drawdown limit reached"; return false; }
+   if(enforce_losses)
+   {
+      if(g_day_equity<=0||g_week_equity<=0||g_high_water<=0) { why="Risk anchors are missing"; return false; }
+      if(equity<=g_day_equity*(1-g_daily_pct/100)) { why="Daily equity-loss limit reached (includes floating P/L)"; return false; }
+      if(equity<=g_week_equity*(1-g_weekly_pct/100)) { why="Weekly equity-loss limit reached (includes floating P/L)"; return false; }
+      if(equity<=g_high_water*(1-g_drawdown_pct/100)) { why="Equity drawdown limit reached"; return false; }
+   }
    return true;
 }
 bool CurrentQuote(const string symbol,MqlTick &tick,string &why)
@@ -512,15 +541,10 @@ bool ApprovedRequest(MarketContext &m,const int direction,MqlTradeRequest &reque
    double adverse=price+(buy?1:-1)*(tick.ask-tick.bid+InpMaxDeviationPoints*point);
    ENUM_ORDER_TYPE type=buy?ORDER_TYPE_BUY:ORDER_TYPE_SELL;
    if(!OrderCalcProfit(type,m.symbol,1.0,adverse,sl,one_lot)||!Finite(one_lot)||one_lot>=0) { why="Stop risk calculation failed"; return false; }
-   double available=MathMin(equity*g_risk_pct/100,equity-g_day_equity*(1-g_daily_pct/100));
-   available=MathMin(available,equity-g_week_equity*(1-g_weekly_pct/100));
-   available=MathMin(available,equity-g_high_water*(1-g_drawdown_pct/100));
-   // Aggregate protected-loss budget is at most 0.5% equity and at most positions * trade cap.
-   double aggregate=equity*MathMin(.5,g_max_positions*g_risk_pct)/100;
-   available=MathMin(available,aggregate-existing);
-   available=MathMin(available,equity-g_day_equity*(1-g_daily_pct/100)-existing);
-   available=MathMin(available,equity-g_week_equity*(1-g_weekly_pct/100)-existing);
-   available=MathMin(available,equity-g_high_water*(1-g_drawdown_pct/100)-existing);
+   // Demo loss-stop override never increases the trade or concurrent-exposure caps.
+   double available=EntryRiskBudget(equity,g_risk_pct,g_max_positions,existing,
+                                   g_day_equity*(1-g_daily_pct/100),g_week_equity*(1-g_weekly_pct/100),
+                                   g_high_water*(1-g_drawdown_pct/100),LossStopsActive());
    if(!Finite(available)||available<=0) { why="No remaining account risk budget"; return false; }
    double volume=FloorVolume(m.symbol,available/(-one_lot));
    if(volume<=0) { why="Minimum lot would exceed approved risk"; return false; }
@@ -905,7 +929,12 @@ void RecordDeal(const ulong deal,const bool update_risk)
    if(update_risk&&own&&entry!=DEAL_ENTRY_IN)
    {
       if(profit+commission+swap<0) g_losses++; else if(profit+commission+swap>0) g_losses=0;
-      if(g_losses>=g_max_losses) { g_cooldown=UtcNow()+InpCooldownMinutes*60; QueueEvent("risk_limit","Consecutive-loss cooldown started",symbol,deal); }
+      if(g_losses>=g_max_losses)
+      {
+         g_cooldown=UtcNow()+InpCooldownMinutes*60;
+         QueueEvent(LossStopsActive()?"risk_limit":"demo_loss_policy",
+                    LossStopsActive()?"Consecutive-loss cooldown started":"Loss streak recorded; demo loss-stop suspension is disabled",symbol,deal);
+      }
    }
    if(deal==g_pending_deal) { g_pending_deal=0; g_pending_order=0; g_pending_at=0; }
 }
@@ -994,6 +1023,7 @@ int OnInit()
       g_reason="SIMULATION: Strategy Tester, no bridge telemetry or real account execution";
    }
    QueueEvent("engine_started","Demo EA initialized paused; actual broker positions will be reconciled");
+   if(!LossStopsActive()) QueueEvent("demo_loss_policy","DEMO ONLY: daily/weekly/drawdown limits, baseline suspension and loss cooldown are disabled. History is retained. Stop, trade/exposure caps, broker and execution checks remain active.");
    EventSetTimer(1); return INIT_SUCCEEDED;
 }
 void OnDeinit(const int reason)

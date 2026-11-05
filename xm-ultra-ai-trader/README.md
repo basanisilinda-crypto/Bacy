@@ -1,4 +1,4 @@
-> Version 1.001 addresses the missed-UTC-boundary startup block with guarded flat-account broker-history reconciliation. It preserves loss limits and refuses unverifiable history. Compile and reattach the updated EA; a browser refresh alone cannot install this engine change. See docs/RISK_RECOVERY.md.
+> Version 1.002 adds the requested demo loss-stop option, enabled by default for actual DEMO accounts only. Daily/weekly/drawdown, missed-baseline and loss-cooldown suspensions are bypassed without wiping history. Live/tester loss controls and operational checks remain. Compile and reattach the updated EA; refreshing the browser does not update it. See [demo update steps](docs/DEMO_LOSS_POLICY.md).
 
 > Animated terminal update: real MT5 activity is beside Start/Stop on desktop and above fixed controls on mobile. Matrix glyphs, flowing candles and floating brain artwork are decorative, explicitly labeled, pausable, reduced-motion aware, and suspended when the tab is hidden. No simulated balances, profits or executions are inserted.
 

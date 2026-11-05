@@ -1,5 +1,7 @@
 BC SILINDA FX / BACY05TEN - SIMPLE WINDOWS START
 
+VERSION 1.002: Demo loss-stop suspensions are disabled by default. Stop and broker/order checks remain. Real accounts are unchanged. Update AND recompile the EA, then attach it again. Follow docs/DEMO_LOSS_POLICY.md. History is retained.
+
 1. Download this ZIP on your Windows laptop.
 2. Right-click it, choose Extract All, then Extract.
 3. Open the extracted project folder.

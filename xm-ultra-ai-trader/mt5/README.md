@@ -1,5 +1,7 @@
 > Update: account-bound live-mode source support was added after the original demo baseline. See [live-mode notes](../docs/LIVE_MODE.md). Defaults remain demo; no live broker validation has been performed. Older demo-specific procedures remain the recommended validation path.
 
+Version 1.002: the demo-only loss-stop option is enabled by default and bypasses baseline/loss suspensions on DEMO accounts. Real accounts, tester runs and demos with the option disabled retain their loss controls. See docs/DEMO_LOSS_POLICY.md for details and update steps.
+
 # MT5 demo execution engine
 
 `XMUltraAITrader.mq5` is the native MQL5 execution engine. It is **demo-default**; non-demo accounts fail initialization and are rechecked before requests. This source has not been compiled in MetaEditor or connected to XM in the cloud workspace. A successful Python test run is not proof of MQL compilation or brokerage compatibility.

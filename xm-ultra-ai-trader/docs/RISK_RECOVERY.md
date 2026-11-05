@@ -1,5 +1,7 @@
 # Recovery after a missed UTC risk boundary
 
+Version 1.002: the demo-only loss-stop option is enabled by default and bypasses baseline/loss suspensions on DEMO accounts. Real accounts, tester runs and demos with the option disabled retain their loss controls. See docs/DEMO_LOSS_POLICY.md for details and update steps.
+
 The screenshot error means the EA lacks a verified daily/weekly starting-equity anchor. Connection and command delivery may work while this separate risk gate rejects entry. Repeated Start/Stop presses cannot repair the anchor.
 
 Version 1.001 adds broker-history reconstruction. It operates only with a connected, flat account, zero pending orders, valid book equity, supported complete history, and no deal activity within a three-hour guard around the period boundary. The guard avoids guessing historical broker UTC/DST conversion. It rejects positions carried across the boundary, cancelled deals, unknown audit details, too-recent periods, and histories exceeding the bounded processing budget.
