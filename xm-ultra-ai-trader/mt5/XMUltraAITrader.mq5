@@ -197,13 +197,14 @@ bool ReconcileMissedBoundaries()
    if(g_tester||!g_anchor_block) return !g_anchor_block;
    datetime day=DayStart(UtcNow()),week=WeekStart(UtcNow());
    double day_equity=g_day_equity,week_equity=g_week_equity; string why;
-   if(!ReconstructFlatBaseline(day,day_equity,why)) { g_anchor_reason=why; return false; }
-   if(!ReconstructFlatBaseline(week,week_equity,why)) { g_anchor_reason=why; return false; }
+   if(g_day==day&&g_week==week) { g_anchor_reason="Flagged current-period state requires independent reconciliation"; return false; }
+   if(g_day!=day&&!ReconstructFlatBaseline(day,day_equity,why)) { g_anchor_reason=why; return false; }
+   if(g_week!=week&&!ReconstructFlatBaseline(week,week_equity,why)) { g_anchor_reason=why; return false; }
    // Update only verifiable period anchors. Never erase loss streaks or lower the lifetime peak.
    g_day=day; g_week=week; g_day_equity=day_equity; g_week_equity=week_equity;
    g_high_water=MathMax(g_high_water,MathMax(day_equity,week_equity));
    g_anchor_block=false; g_anchor_reason="";
-   Persist(); QueueEvent("risk_baseline_reconciled","Daily and weekly equity baselines reconstructed from flat-account broker history; loss and drawdown checks remain active");
+   Persist(); QueueEvent("risk_baseline_reconciled","Missed-period equity baselines reconstructed from flat-account broker history; valid current-period anchors and loss/drawdown checks remain active");
    return true;
 }
 
