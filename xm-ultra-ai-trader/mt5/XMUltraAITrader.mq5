@@ -1,7 +1,7 @@
 // XM ULTRA AI TRADER -- demo-default, account-authorized execution engine.
 // SPDX-License-Identifier: MIT
 #property copyright "XM Ultra AI Trader contributors"
-#property version   "1.002"
+#property version   "1.003"
 #property strict
 #property description "Demo-only, fail-closed MT5 execution. No profitability claim."
 
@@ -62,6 +62,9 @@ string g_secret="",g_state="paused",g_reason="Waiting for an authenticated demo 
 string g_last_command="",g_prefix="";
 bool g_tester=false,g_emergency=false,g_uncertain=false,g_anchor_block=false,g_events_overflow=false;
 bool g_running_requested=false;
+bool g_state_loaded=false;                   // Failed initialization must never overwrite saved state.
+bool g_demo_recovered=false;                 // Recovered demo placeholders are never historical proof.
+string g_load_error="";
 int g_lock=INVALID_HANDLE,g_common=FILE_COMMON,g_losses=0;
 datetime g_lease=0,g_day=0,g_week=0,g_cooldown=0,g_last_timer=0,g_last_history=0;
 double g_day_equity=0,g_week_equity=0,g_high_water=0;
@@ -159,7 +162,7 @@ bool ValidStrategy(const string id)
 }
 void Persist()
 {
-   if(g_tester) return;
+   if(g_tester||!g_state_loaded) return;
    GlobalVariableSet(Key("day"),(double)g_day); GlobalVariableSet(Key("week"),(double)g_week);
    GlobalVariableSet(Key("dayeq"),g_day_equity); GlobalVariableSet(Key("weekeq"),g_week_equity);
    GlobalVariableSet(Key("hwm"),g_high_water); GlobalVariableSet(Key("losses"),g_losses);
@@ -168,6 +171,7 @@ void Persist()
    GlobalVariableSet(Key("uncertain"),g_uncertain?1:0);
    GlobalVariableSet(Key("anchorblock"),g_anchor_block?1:0);
    GlobalVariableSet(Key("lastseen"),(double)UtcNow());
+   GlobalVariableSet(Key("demorecovered"),g_demo_recovered?1:0);
    GlobalVariablesFlush();
 }
 string g_anchor_reason="Verified broker history is required";
@@ -220,6 +224,7 @@ bool ReconstructFlatBaseline(const datetime period,double &baseline,string &why)
 bool ReconcileMissedBoundaries()
 {
    if(g_tester||!g_anchor_block) return !g_anchor_block;
+   if(g_demo_recovered) { g_anchor_reason="Recovered demo bookkeeping requires independent review before enabling historical loss stops"; return false; }
    datetime day=DayStart(UtcNow()),week=WeekStart(UtcNow());
    double day_equity=g_day_equity,week_equity=g_week_equity; string why;
    if(g_day==day&&g_week==week) { g_anchor_reason="Flagged current-period state requires independent reconciliation"; return false; }
@@ -233,32 +238,92 @@ bool ReconcileMissedBoundaries()
    return true;
 }
 
+bool BackupRiskState()
+{
+   string fields[]={"day","week","dayeq","weekeq","hwm","losses","cooldown","emergency","uncertain","anchorblock","lastseen","demorecovered"};
+   string filename="risk-state-backup-"+L(g_account)+"-"+L((long)UtcNow())+"-"+U(GetTickCount64())+".csv";
+   int file=FileOpen(Path(filename),FILE_WRITE|FILE_CSV|FILE_ANSI|g_common,',',CP_UTF8);
+   if(file==INVALID_HANDLE) { g_load_error="Cannot back up saved demo state; check MT5 Common Files permissions"; return false; }
+   bool ok=FileWrite(file,"key","present","saved_value")>0;
+   for(int i=0;i<ArraySize(fields);i++)
+   {
+      bool present=GlobalVariableCheck(Key(fields[i]));
+      string value=present?DoubleToString(GlobalVariableGet(Key(fields[i])),16):"missing";
+      if(FileWrite(file,Key(fields[i]),present?"1":"0",value)==0) ok=false;
+   }
+   FileFlush(file); FileClose(file);
+   if(!ok) g_load_error="Demo state backup failed; original saved state was retained";
+   return ok;
+}
+bool ReadSavedNumber(const string field,double &value)
+{
+   if(!GlobalVariableCheck(Key(field))) return false;
+   value=GlobalVariableGet(Key(field)); return Finite(value);
+}
 bool LoadAnchors()
 {
+   g_state_loaded=false; g_load_error="";
    datetime now=UtcNow(); double equity=AccountInfoDouble(ACCOUNT_EQUITY);
-   if(!Finite(equity)||equity<=0) return false;
-   if(!g_tester && GlobalVariableCheck(Key("day")))
+   if(!Finite(equity)||equity<=0)
+   { g_load_error="Current MT5 equity is unavailable or zero; verify the connected account before reattaching"; return false; }
+   string fields[]={"day","week","dayeq","weekeq","hwm","losses","cooldown","emergency","uncertain","anchorblock","lastseen"};
+   bool any_saved=!g_tester&&GlobalVariableCheck(Key("demorecovered"));
+   if(!g_tester) for(int i=0;i<ArraySize(fields);i++) if(GlobalVariableCheck(Key(fields[i]))) any_saved=true;
+   bool repaired=false;
+   if(any_saved)
    {
-      string required[]={"week","dayeq","weekeq","hwm","losses","cooldown","emergency","uncertain","anchorblock","lastseen"};
-      for(int i=0;i<ArraySize(required);i++) if(!GlobalVariableCheck(Key(required[i]))) return false;
-      g_day=(datetime)GlobalVariableGet(Key("day")); g_week=(datetime)GlobalVariableGet(Key("week"));
-      g_day_equity=GlobalVariableGet(Key("dayeq")); g_week_equity=GlobalVariableGet(Key("weekeq"));
-      g_high_water=GlobalVariableGet(Key("hwm")); g_losses=(int)GlobalVariableGet(Key("losses"));
-      g_cooldown=(datetime)GlobalVariableGet(Key("cooldown"));
-      g_emergency=GlobalVariableGet(Key("emergency"))!=0;
-      g_uncertain=GlobalVariableGet(Key("uncertain"))!=0;
-      g_anchor_block=GlobalVariableGet(Key("anchorblock"))!=0;
+      double emergency=0,uncertain=0;
+      if(!ReadSavedNumber("emergency",emergency)||(emergency!=0&&emergency!=1)||
+         !ReadSavedNumber("uncertain",uncertain)||(uncertain!=0&&uncertain!=1))
+      { g_load_error="Saved Stop or uncertain-order flag is missing or invalid; saved state was not changed"; return false; }
+      // Never infer away an operator Stop or an unknown prior broker order.
+      g_emergency=emergency!=0; g_uncertain=uncertain!=0;
+      double recovered=0;
+      if(GlobalVariableCheck(Key("demorecovered")))
+      {
+         if(!ReadSavedNumber("demorecovered",recovered)||(recovered!=0&&recovered!=1))
+         { g_load_error="Saved demo-recovery marker is invalid; original state was retained"; return false; }
+         g_demo_recovered=recovered!=0;
+      }
+      double values[11]; bool valid[11];
+      for(int i=0;i<11;i++) valid[i]=ReadSavedNumber(fields[i],values[i]);
+      valid[0]=valid[0]&&values[0]>0&&values[0]<=DayStart(now)&&values[0]==(double)DayStart((datetime)values[0]);
+      valid[1]=valid[1]&&values[1]>0&&values[1]<=WeekStart(now)&&values[1]==(double)WeekStart((datetime)values[1]);
+      for(int i=2;i<=4;i++) valid[i]=valid[i]&&values[i]>0;
+      valid[5]=valid[5]&&values[5]>=0&&values[5]<=2147483647&&MathFloor(values[5])==values[5];
+      valid[6]=valid[6]&&values[6]>=0&&values[6]<=(double)now+7*86400&&MathFloor(values[6])==values[6];
+      valid[9]=valid[9]&&(values[9]==0||values[9]==1);
+      valid[10]=valid[10]&&values[10]>0&&values[10]<=(double)now+5;
+      for(int i=0;i<11;i++) if(!valid[i])
+      {
+         if(LossStopsActive()) { g_load_error="Saved risk field is missing or invalid: "+fields[i]+"; original state was retained"; return false; }
+         repaired=true;
+      }
+      if(repaired&&!BackupRiskState()) return false;
+      if(repaired) g_demo_recovered=true;
+      // Only disabled demo loss bookkeeping may use a marked current-equity placeholder.
+      // It is never represented as verified historical equity and cannot enable live operation.
+      g_day=valid[0]?(datetime)values[0]:DayStart(now); g_week=valid[1]?(datetime)values[1]:WeekStart(now);
+      g_day_equity=valid[2]?values[2]:equity; g_week_equity=valid[3]?values[3]:equity;
+      g_high_water=valid[4]?values[4]:equity;
+      g_losses=valid[5]?(int)values[5]:g_max_losses;
+      g_cooldown=valid[6]?(datetime)values[6]:now+InpCooldownMinutes*60;
+      g_anchor_block=g_demo_recovered||(valid[9]&&values[9]!=0);
       // A missed UTC boundary cannot be reconstructed from balance alone because floating P/L matters.
       if(g_day!=DayStart(now)||g_week!=WeekStart(now)) g_anchor_block=true;
-      if(!Finite(g_day_equity)||!Finite(g_week_equity)||!Finite(g_high_water)||
-         g_day_equity<=0||g_week_equity<=0||g_high_water<=0) return false;
    }
    else
    {
       g_day=DayStart(now); g_week=WeekStart(now);
       g_day_equity=equity; g_week_equity=equity; g_high_water=equity;
    }
-   if(g_anchor_block) ReconcileMissedBoundaries();
+   g_state_loaded=true;
+   if(g_anchor_block&&!repaired) ReconcileMissedBoundaries();
+   if(repaired)
+   {
+      g_anchor_reason="Demo bookkeeping recovered; historical anchors remain unverified";
+      QueueEvent("demo_state_recovered","Original demo state backed up; disabled loss bookkeeping repaired. Stop and uncertain-order flags retained; historical baselines remain unverified. Reattach starts paused.");
+   }
    Persist(); return true;
 }
 void UpdateAnchors()
@@ -994,7 +1059,7 @@ int OnInit()
       int prior=FileOpen(Path("last_command.csv"),FILE_READ|FILE_CSV|FILE_ANSI|FILE_COMMON,',',CP_UTF8);
       if(prior!=INVALID_HANDLE) { FileReadString(prior); g_last_command=FileReadString(prior); FileClose(prior); }
    }
-   if(!LoadAnchors()) { Print("Risk state is missing or damaged; initialization refused."); return INIT_FAILED; }
+   if(!LoadAnchors()) { Print("Robot startup paused: ",g_load_error); return INIT_FAILED; }
    string symbols[]; int count=StringSplit(InpSymbols,',',symbols);
    if(InpMaxScanSymbols<1||InpMaxScanSymbols>12) return INIT_PARAMETERS_INCORRECT;
    if(InpSymbols=="")

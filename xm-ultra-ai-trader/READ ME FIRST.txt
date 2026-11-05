@@ -1,5 +1,7 @@
 BC SILINDA FX / BACY05TEN - SIMPLE WINDOWS START
 
+VERSION 1.003 STARTUP REPAIR: Failed startup no longer overwrites saved state. Demo-only recovery backs up damaged loss bookkeeping first and keeps Stop/uncertain-order flags. Install, compile, and attach the updated EA; do not delete MT5 global variables.
+
 VERSION 1.002: Demo loss-stop suspensions are disabled by default. Stop and broker/order checks remain. Real accounts are unchanged. Update AND recompile the EA, then attach it again. Follow docs/DEMO_LOSS_POLICY.md. History is retained.
 
 1. Download this ZIP on your Windows laptop.
