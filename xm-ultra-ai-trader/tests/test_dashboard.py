@@ -63,6 +63,10 @@ def test_dashboard_login_navigation_and_grounded_chat(tmp_path):
             page.screenshot(path=str(artifacts/'dashboard-mobile-firstlook.png'),full_page=False)
             page.set_viewport_size({'width':1440,'height':1000})
             page.screenshot(path=str(artifacts/'dashboard-desktop.png'),full_page=True)
+            page.locator('#motion-toggle').click()
+            assert 'visuals-paused' in page.locator('body').get_attribute('class')
+            assert page.locator('#motion-toggle').inner_text() == 'Play visuals'
+            page.locator('#motion-toggle').click()
             # Regression: clicking Start while emergency is latched deliberately
             # sends resume to the real local API; it never fabricates an ACK.
             directory=app.state.settings.bridge_dir

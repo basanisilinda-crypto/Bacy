@@ -1,0 +1,12 @@
+/* Decorative animation only. No market prices, account data, or trading calls. */
+const canvas=document.getElementById('matrix-canvas');
+const toggle=document.getElementById('motion-toggle');
+const context=canvas?.getContext('2d',{alpha:true});
+const preference=matchMedia('(prefers-reduced-motion: reduce)');
+let active=!preference.matches,frame=0,last=0,width=0,height=0,drops=[];
+function resize(){if(!canvas)return;width=Math.min(innerWidth,1440);height=Math.min(innerHeight,1000);canvas.width=width;canvas.height=height;drops=Array.from({length:Math.ceil(width/42)},(_,i)=>(i*37)%Math.ceil(height/18));if(context)context.clearRect(0,0,width,height);}
+function draw(now){if(!context||!active||document.hidden)return;if(now-last<100){frame=requestAnimationFrame(draw);return;}last=now;context.fillStyle='rgba(2,12,8,.14)';context.fillRect(0,0,width,height);context.font='11px monospace';context.fillStyle='rgba(74,225,135,.32)';const glyphs='01◇∑∆<>/';drops.forEach((drop,i)=>{context.fillText(glyphs[(Math.floor(now/240)+i)%glyphs.length],i*42,drop*18);drops[i]=drop*18>height+70?-(i%9):drop+.35;});const phase=now/3200;
+context.save();context.globalAlpha=.27;context.strokeStyle='#58e6a0';context.lineWidth=1;context.beginPath();for(let x=0;x<=width;x+=8){const y=height*.62+Math.sin(x/110+phase)*height*.075+Math.cos(x/43-phase*.7)*height*.025;if(x===0)context.moveTo(x,y);else context.lineTo(x,y);}context.stroke();
+for(let i=0;i<Math.ceil(width/45);i++){const x=((i*45-now/95)% (width+90)+width+90)%(width+90)-45;const y=height*.65+Math.sin(i*.73+phase*.1)*height*.09;const amount=20+Math.abs(Math.sin(i*1.27))*38;context.strokeStyle=i%3?'#43d791':'#bd6378';context.fillStyle=context.strokeStyle;context.beginPath();context.moveTo(x,y-amount);context.lineTo(x,y+amount);context.stroke();context.fillRect(x-5,y-amount*.5,10,amount);}context.restore();frame=requestAnimationFrame(draw);}
+function update(){cancelAnimationFrame(frame);document.body.classList.toggle('visuals-paused',!active);if(toggle)toggle.textContent=active?'Pause visuals':'Play visuals';if(active&&!document.hidden)frame=requestAnimationFrame(draw);else if(context)context.clearRect(0,0,width,height);}
+if(context){resize();update();toggle?.addEventListener('click',()=>{active=!active;update();});addEventListener('resize',resize);document.addEventListener('visibilitychange',update);preference.addEventListener('change',event=>{active=!event.matches;update();});addEventListener('pagehide',()=>cancelAnimationFrame(frame));}

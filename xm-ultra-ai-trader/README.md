@@ -1,3 +1,5 @@
+> Animated terminal update: real MT5 activity is beside Start/Stop on desktop and above fixed controls on mobile. Matrix glyphs, flowing candles and floating brain artwork are decorative, explicitly labeled, pausable, reduced-motion aware, and suspended when the tab is hidden. No simulated balances, profits or executions are inserted.
+
 > Start/Stop update: the main demo Start button now reads the current robot state and sends an explicit resume when Emergency is latched. No separate Resume screen is needed. Stop still blocks new entries; protective risk checks remain. The terminal displays actual broker/control events, and the updated EA emits scanner reports while genuinely running. Recompile the updated EA for those new reports.
 
 > Beginner update: double-click Start Here.cmd; local dashboard opens without a password. Main screen shows Start Demo Trading, Pause, Emergency Stop and verified activity/history. Advanced settings are hidden from the main view. Folder protection now writes only access permissions, without audit/ownership metadata. Windows execution remains to be verified.

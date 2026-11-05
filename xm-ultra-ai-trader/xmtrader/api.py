@@ -366,7 +366,7 @@ def create_app(settings: Settings | None = None):
 
     @app.get("/{asset}")
     def asset(asset: str):
-        permitted = {"app.js": "application/javascript", "style.css": "text/css", "manifest.webmanifest": "application/manifest+json", "sw.js": "application/javascript"}
+        permitted = {"motion.js": "application/javascript", "app.js": "application/javascript", "style.css": "text/css", "manifest.webmanifest": "application/manifest+json", "sw.js": "application/javascript"}
         if asset not in permitted:
             raise HTTPException(404)
         path = settings.web_dir / asset
