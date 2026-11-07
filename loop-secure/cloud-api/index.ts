@@ -110,8 +110,8 @@ async function route(req:Request,path:string){
  if(path.startsWith('/api/device/')){
   const dev=await device(req);
   if(path==='/api/device/app-update'&&method==='POST'){const data=z.object({version_code:z.number().int().min(1).max(2147483647)}).parse(await body(req));const row=await db.from('loop_devices').select('released').eq('id',dev.id).single();check(row.error);return json(await signed(clientUpdateManifest(row.data.released?null:await currentInstaller(),dev.id,data.version_code,now())));}
-  if(path==='/api/device/payments/ikhokha'&&method==='POST')return json(await ikpay.create(dev.id));
-  if(path==='/api/device/payments/ikhokha/check'&&method==='POST'){await ikpay.reconcile(dev.id);return json(await ikpay.current(dev.id));}
+  if(path==='/api/device/payments/ikhokha'&&method==='POST'){const data=z.object({fresh:z.boolean().default(false)}).parse(await body(req));return json(await ikpay.create(dev.id,data.fresh));}
+  if(path==='/api/device/payments/ikhokha/check'&&method==='POST'){const data=z.object({checkout_outcome:z.enum(['failure','attempt_limit','cancel','success']).optional()}).parse(await body(req));await ikpay.reconcile(dev.id);if(data.checkout_outcome)await ikpay.reportOutcome(dev.id,data.checkout_outcome);return json(await ikpay.current(dev.id));}
   if(path==='/api/device/sync'||path==='/api/device/events')queuePaymentCheck(dev.id);
   if(path==='/api/device/sync'&&method==='POST')return json(await signed(await rpc('sync',acknowledgment.parse(await body(req)),dev.id,'device')));
   if(path==='/api/device/claims'&&method==='POST'){const data=z.object({request_key:keySchema,bank_reference:text(3,100)}).parse(await body(req));return json(await rpc('claim',data,dev.id,'device'));}
@@ -128,7 +128,7 @@ async function route(req:Request,path:string){
  if(path.startsWith('/api/admin/')){
   const actor=await administrator(req);
   if(path==='/api/admin/payments/ikhokha'){if(method==='GET')return json(await ikpay.status());if(method==='PUT'){if(actor!=='site-owner')fail(403,'Only the website owner can configure payment credentials');return json(await ikpay.configure(await body(req)));}}
-  const paymentDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/payment-link$/i);if(paymentDevice&&method==='POST')return json(await ikpay.create(paymentDevice[1]));
+  const paymentDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/payment-link$/i);if(paymentDevice&&method==='POST'){const data=z.object({fresh:z.boolean().default(false)}).parse(await body(req));return json(await ikpay.create(paymentDevice[1],data.fresh));}
   if(path==='/api/admin/overview')queuePaymentCheck();
   if(path==='/api/admin/site'){
    if(actor!=='site-owner')fail(403,'Only the website owner can change its hosting address');

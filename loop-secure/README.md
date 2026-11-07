@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.16.0).
-- Customer app **0.16.0**, administrator app **1.6.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.16.1).
+- Customer app **0.16.1**, administrator app **1.6.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,8 +43,10 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer 0.16.0 fixes unrestricted app access and adds SMS/bank verification controls, exact Tyme bank challenge support, bank pop-up sessions, checkout error recovery and a browser option on unrestricted phones. Account refreshes retain the Payments page, with online payment status and duplicate-payment protection. [Payment recovery guide](docs/PAYMENT_RECOVERY_AND_UPDATES.md).
+Customer 0.16.1 fixes failed payment-link reuse. Matching provider-confirmed UNPAID or ATTEMPTS_EXCEEDED links can be replaced after a live status check; paid or ambiguous attempts cannot silently create a replacement checkout. Old intents remain reconcilable for late callbacks. Stale cached unpaid links refresh after 15 minutes, and the app and website now offer explicit fresh-link recovery.
 
-Install this version once over the existing customer app. It then supports protected automatic self-updates on unmetered Wi-Fi while idle: device-bound signed manifests, fixed trusted storage, exact SHA-256/size, same APK signing identity and no downgrades. A manual update check is available from the device management status screen. Manufacturer restrictions are reported without replacing the working app. Existing account data and device ownership are retained.
+The payment menu separates card/online checkout, Instant EFT/Ozow, manual bank transfer details, payment status and fresh links. The Instant EFT shortcut opens iKhokha's hosted method selector; provider availability and the Ozow bank list remain outside this app's control. Payment outcomes improve status messages but never grant credit without provider PAID verification.
 
-Verified: signed release build/lint, original signing identity, 32 Android regression tests (SDK 30 and 35), eight provider/update-manifest fixture tests and live authentication/installer checks. The stored payment attempt returned UNPAID during diagnosis. Physical-card 3-D Secure, SMS switching and the first silent managed update need handset acceptance testing. No card-number/CVV store or undocumented provider tokenisation was added.
+[Fresh payment link guide](docs/FRESH_PAYMENT_LINKS.md). A fresh link is not a completed payment. A new checkout was created for the affected customer only after directly confirming the old provider attempt-limit status; no charge was initiated. Device-owner phones on 0.16 receive this release through the protected automatic-update channel on a scheduled Wi-Fi/idle check. Handset scheduling and silent installation still need acceptance testing.
+
+Validated: 11 provider/update fixtures, 16 Android payment/access/update regression cases on SDK 30/35, signed release build/lint, signing continuity, website browser recovery checks and live installer-byte verification. Existing account and enrollment data are retained. No provider/card fraud controls or verification steps are bypassed, and saved-card tokenisation is not configured.

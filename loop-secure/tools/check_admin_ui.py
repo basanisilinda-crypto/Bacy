@@ -69,6 +69,9 @@ with sync_playwright() as p:
  page.locator('#ikpay-link-url').wait_for(state='visible')
  assert page.locator('#ikpay-link-url').input_value()=='https://securepay.ikhokha.red/fixture-only'
  assert page.locator('#copy-ikpay-link').is_visible()
+ page.once('dialog',lambda dialog:dialog.accept())
+ page.locator('#renew-ikpay-link').click()
+ page.wait_for_function("document.querySelector('#ikpay-link-status').textContent.startsWith('Fresh checkout ready')")
  page.keyboard.press('Escape')
  assert not errors,errors
  browser.close()

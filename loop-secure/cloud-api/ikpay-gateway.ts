@@ -15,11 +15,30 @@ export class IkPayGateway {
   const r=await this.db.from('loop_config').upsert({key:'ikpay-provider',value});this.checked(r.error);return this.status();
  }
  private async save(id:string,value:any,onlyPending=false){let q=this.db.from('loop_config').update({value}).eq('key','ikpay-intent:'+id);if(onlyPending)q=q.eq('value->>state','pending');const r=await q;this.checked(r.error);}
- private publicIntent(p:any){return {id:p.id,state:p.state,amount_minor:p.amount_minor,currency:p.currency,checkout_url:p.state==='pending'?p.checkout_url||null:null,created:p.created,confirmed_at:p.confirmed_at||null};}
- async create(deviceId:string){
+ private publicIntent(p:any){return {id:p.id,state:p.state,amount_minor:p.amount_minor,currency:p.currency,checkout_url:p.state==='pending'?p.checkout_url||null:null,created:p.created,confirmed_at:p.confirmed_at||null,needs_new_link:p.state==='pending'&&['failure','attempt_limit'].includes(p.last_checkout_outcome)};}
+ async create(deviceId:string,fresh=false){
   const cfg=await this.config(),now=Math.floor(Date.now()/1000);const pointerKey='ikpay-active:'+deviceId;
   const pointer=await this.read(pointerKey);
-  if(pointer){const p=await this.read('ikpay-intent:'+pointer.id);if(p?.state==='review_required')return this.publicIntent(p);if(p?.state==='paid'&&now-(p.confirmed_at||p.created)<120)return this.publicIntent(p);if(p?.state==='pending'&&now-p.created<86400&&trustedCheckoutUrl(p.checkout_url)){try{const checked=await this.verifyAndCredit(p.id);if(checked?.state==='paid'||checked?.state==='review_required')return this.publicIntent(checked);}catch{/* Existing checkout remains usable during a temporary status-service error. */}return this.publicIntent(p);}if(p?.state==='creating'&&now-p.created<120)this.failure(409,'A payment link is being prepared. Please try again shortly.');if(p?.state==='failed'&&now-p.created<60)this.failure(429,'The provider could not create the link. Wait one minute before retrying, or use EFT.');const removed=await this.db.from('loop_config').delete().eq('key',pointerKey).eq('value->>id',pointer.id);this.checked(removed.error);}
+  if(pointer){
+   const p=await this.read('ikpay-intent:'+pointer.id);
+   if(p?.state==='review_required')return this.publicIntent(p);
+   if(p?.state==='paid'&&now-(p.confirmed_at||p.created)<120)return this.publicIntent(p);
+   if(p?.state==='pending'){
+    if(fresh||now-p.created>=900||['failure','attempt_limit'].includes(p.last_checkout_outcome)){
+     const result=await ikRequest(cfg,'/public-api/v1/api/getStatus/'+p.paylink_id);
+     if(result.status==='PAID'){const checked=await this.verifyAndCredit(p.id,true);if(checked?.state==='paid'||checked?.state==='review_required')return this.publicIntent(checked);this.failure(409,'Payment confirmation is processing. Check status before requesting another link.');}
+     if(!['UNPAID','ATTEMPTS_EXCEEDED'].includes(result.status)||result.paylinkID!==p.paylink_id||result.amount!==p.amount_minor||(result.currency!==undefined&&result.currency!=='ZAR'))this.failure(409,'The old payment could not be confirmed unpaid. Check payment status or contact support before creating another link.');
+     if(now-p.created<60)this.failure(429,'Wait one minute after creating a checkout before requesting a replacement. Check payment status first.');
+    }else if(trustedCheckoutUrl(p.checkout_url)){
+     try{const checked=await this.verifyAndCredit(p.id);if(checked?.state==='paid'||checked?.state==='review_required')return this.publicIntent(checked);if(checked?.last_checkout_outcome==='attempt_limit')return await this.create(deviceId,true);}catch{/* Keep an existing checkout during a temporary status-service error. */}
+     return this.publicIntent(p);
+    }
+   }
+   if(p?.state==='creating'&&now-p.created<120)this.failure(409,'A payment link is being prepared. Please try again shortly.');
+   if(p?.state==='failed'&&now-p.created<60)this.failure(429,'The provider could not create the link. Wait one minute before retrying, or use EFT.');
+   const removed=await this.db.from('loop_config').delete().eq('key',pointerKey).eq('value->>id',pointer.id).select('key');this.checked(removed.error);if(!removed.data?.length)this.failure(409,'Another checkout is being prepared. Please try again.');
+   // Keep the old intent pending: late signed callbacks must still reconcile and credit exactly once.
+  }
   const deviceResult=await this.db.from('loop_devices').select('id,customer_id,released,token').eq('id',deviceId).maybeSingle();this.checked(deviceResult.error);const device=deviceResult.data;
   if(!device?.token||device.released)this.failure(409,'Online payments require an active enrolled customer account.');
   const count=await this.db.from('loop_config').select('key',{count:'exact',head:true}).like('key','ikpay-intent:%').eq('value->>device_id',deviceId).gte('value->>created',String(now-86400));this.checked(count.error);if((count.count||0)>=10)this.failure(429,'Too many new payment links today. Use your existing link or EFT.');
@@ -38,7 +57,7 @@ export class IkPayGateway {
   const now=Math.floor(Date.now()/1000);if(!force&&now-intent.last_checked<45)return intent;
   const lease=await this.db.from('loop_config').update({value:{...intent,last_checked:now}}).eq('key','ikpay-intent:'+id).eq('value->>state','pending').eq('value->>last_checked',String(intent.last_checked||0)).select('key');this.checked(lease.error);if(!lease.data?.length)return this.read('ikpay-intent:'+id);
   const cfg=await this.config();if(intent.app_id!==cfg.app_id)this.failure(409,'This payment belongs to a different merchant application.');const result=await ikRequest(cfg,'/public-api/v1/api/getStatus/'+intent.paylink_id);
-  if(!isPaidForIntent(intent,result)){if(result.status==='PAID')await this.save(id,{...intent,last_checked:now,state:'review_required',note:'Provider payment fields did not match the expected link, amount or currency'},true);return this.read('ikpay-intent:'+id);}
+  if(!isPaidForIntent(intent,result)){if(result.status==='ATTEMPTS_EXCEEDED'&&result.paylinkID===intent.paylink_id&&result.amount===intent.amount_minor)await this.save(id,{...intent,last_checked:now,last_checkout_outcome:'attempt_limit'},true);if(result.status==='PAID')await this.save(id,{...intent,last_checked:now,state:'review_required',note:'Provider payment fields did not match the expected link, amount or currency'},true);return this.read('ikpay-intent:'+id);}
   const paid=await this.db.rpc('loop_confirm_ikpay_payment',{p_id:id,p_paylink:intent.paylink_id,p_amount:result.amount,p_currency:'ZAR'});this.checked(paid.error);return this.read('ikpay-intent:'+id);
  }
  async reconcile(deviceId?:string){
@@ -47,6 +66,7 @@ export class IkPayGateway {
   const rows=await q.order('value->>last_checked',{ascending:true}).limit(deviceId?5:10);this.checked(rows.error);
   await Promise.allSettled((rows.data||[]).map((r:any)=>this.verifyAndCredit(r.value.id)));
  }
+ async reportOutcome(deviceId:string,outcome:string){const active=await this.read('ikpay-active:'+deviceId);if(!active)return;const p=await this.read('ikpay-intent:'+active.id);if(p?.device_id===deviceId&&p.state==='pending')await this.save(p.id,{...p,last_checkout_outcome:outcome,last_checkout_reported:Math.floor(Date.now()/1000)},true);}
  async current(deviceId:string){const active=await this.read('ikpay-active:'+deviceId);if(!active)return {state:'none'};const intent=await this.read('ikpay-intent:'+active.id);return intent?.device_id===deviceId?this.publicIntent(intent):{state:'none'};}
  async callback(headers:Headers,raw:string){
   const cfg=await this.config();if(headers.get('ik-appid')!==cfg.app_id||!await verifyIkCallback(new URL(this.base).pathname+'/payments/ikhokha/callback',raw,headers.get('ik-sign')||'',cfg.secret))this.failure(403,'Invalid payment callback signature');
@@ -54,7 +74,7 @@ export class IkPayGateway {
   if(!/^[0-9a-f-]{36}$/i.test(payload.externalTransactionID||'')||typeof payload.paylinkID!=='string'||payload.responseCode!=='00'||!['SUCCESS','FAILURE'].includes(payload.status))this.failure(400,'Invalid payment callback fields');
   const intent=await this.read('ikpay-intent:'+payload.externalTransactionID);
   if(!intent||intent.paylink_id!==payload.paylinkID)this.failure(409,'Payment callback does not match a stored payment intent');
-  if(payload.status==='FAILURE')return {received:true,state:'payment_not_confirmed'};
+  if(payload.status==='FAILURE'){if(intent.state==='pending')await this.save(intent.id,{...intent,last_checkout_outcome:'failure'},true);return {received:true,state:'payment_not_confirmed'};}
   const result=await this.verifyAndCredit(intent.id,true);return {received:true,state:result?.state||'pending'};
  }
 }
