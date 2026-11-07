@@ -5,7 +5,7 @@ android {
     compileSdk 36
     buildFeatures { buildConfig true }
     testOptions { unitTests.includeAndroidResources = true }
-    defaultConfig { applicationId 'za.co.loopmanager'; minSdk 30; targetSdk 36; versionCode 27; versionName '0.18.0' }
+    defaultConfig { applicationId 'za.co.loopmanager'; minSdk 30; targetSdk 36; versionCode 28; versionName '0.18.1' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     signingConfigs {
         if (System.getenv('LOOP_SIGNING_STORE_FILE')) {

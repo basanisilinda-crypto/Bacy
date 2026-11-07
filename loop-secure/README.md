@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.0).
-- Customer app **0.18.0**, administrator app **1.7.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.1).
+- Customer app **0.18.1**, administrator app **1.7.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,12 +43,8 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.18.0/code 27** and administrator **1.7.0/code 12** check on opening and Wi-Fi connection, download verified updates automatically and show installation approval controls. The native admin updater never restricts its phone. Android can require installation permission/confirmation. Existing clients need this updater-capable release once; update in place to retain accounts and device ownership.
+Customer **0.18.1/code 28** is a small update to test the signed automatic-download channel from 0.18.0. It adds the installed version on Home, a gold What’s new strip with release notes, and an EFT-reference copy shortcut on the account card. Administrator remains **1.7.0/code 12**.
 
-Signed required customer updates have a ten-minute maintenance recovery deadline, preserve bank/emergency/Wi-Fi access, do not interrupt payment checkout, clear on failure and never alter financial approval. See [automatic update and dashboard guide](docs/AUTOMATIC_APP_UPDATES.md) for scheduling and recovery limits.
+Keep 0.18.0 installed and enrolled, connect to unmetered Wi-Fi and open the app. Let it download, then tap Install update. After installation, Home shows **v0.18.1** and the gold strip. Do not manually install the new APK first if you want to test the automatic download. Existing enrollment and account data remain in place. [Step-by-step test](docs/TEST_UPDATE_0181.md).
 
-The dashboard adds per-phone version/state reports, an older-version filter, update readiness/retry counts, recent iKhokha reconciliation and displayed-claim CSV export. Unknown or stale phone reports remain labelled; installation requests are not proof of installation.
-
-This release also replaces all remaining app-controlled customer dialogs/buttons with colourful custom sheets and actions, uses a new folded-loop L/check logo throughout, and retains DM Sans/Fraunces. Six usability additions cover last-used bank ordering, payment-history filters, per-value EFT copying, a connection-check panel, dismissible notices and duplicate-send protection for support. [Complete customer UI guide](docs/COMPLETE_CUSTOMER_UI.md).
-
-Validated: same-signer release builds/lint, 38 native regression/rendering cases on SDK 30/35, 12 gateway/update manifest fixtures, website authentication/relay checks, browser acceptance fixtures, live signed administrator manifest, authentication rejection and hosted APK byte verification. Real handset update prompts, network scheduling and bank authentication still require handset checks. No merchant/signing secrets or customer enrollment tokens are included. Direct bank EFT remains reviewed; hosted Instant EFT/Ozow bank availability is controlled by iKhokha.
+Release build/lint, SDK 30/35 version/shortcut and manifest regression cases, original signing-certificate checks and live hosted-byte verification passed. Publication does not prove that a particular phone downloaded or installed it; confirm the new version on that handset. The previous [automatic update and dashboard guide](docs/AUTOMATIC_APP_UPDATES.md) documents approval, recovery and Android scheduling limits.

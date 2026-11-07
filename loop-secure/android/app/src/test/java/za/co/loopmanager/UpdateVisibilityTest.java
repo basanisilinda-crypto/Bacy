@@ -1,0 +1,7 @@
+package za.co.loopmanager;
+import android.view.View;import android.widget.TextView;import org.junit.Test;import org.junit.runner.RunWith;import org.robolectric.*;import org.robolectric.annotation.Config;import za.co.bacy.ui.CustomerHome;import static org.junit.Assert.*;
+@RunWith(RobolectricTestRunner.class) @Config(sdk={30,35})
+public class UpdateVisibilityTest {
+ private View action(View root,String label){java.util.ArrayList<View> found=new java.util.ArrayList<>();root.findViewsWithText(found,label,View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION);return found.stream().filter(v->label.contentEquals(v.getContentDescription())).findFirst().orElseThrow();}
+ @Test public void newReleaseIsVisibleAndShortcutsRouteToTheCorrectActions(){MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().visible().get();CustomerHome.Model m=new CustomerHome.Model();m.appVersion=BuildConfig.VERSION_NAME;m.name="Fixture customer";m.reference="QA-REFERENCE";m.status="Account connected";int[] selected={-1};View page=CustomerHome.create(a,m,id->selected[0]=id);a.setContentView(page);action(page,"What’s new in "+BuildConfig.VERSION_NAME).performClick();assertEquals(13,selected[0]);action(page,"Copy EFT reference").performClick();assertEquals(14,selected[0]);java.util.ArrayList<View> found=new java.util.ArrayList<>();page.findViewsWithText(found,"v"+BuildConfig.VERSION_NAME,View.FIND_VIEWS_WITH_TEXT);assertTrue(found.stream().anyMatch(v->v instanceof TextView&&((TextView)v).getText().toString().contains("Your device account · v"+BuildConfig.VERSION_NAME)));}
+}
