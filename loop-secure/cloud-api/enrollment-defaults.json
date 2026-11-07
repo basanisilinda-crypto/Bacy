@@ -1,0 +1,13 @@
+{
+  "enforcement_enabled": true,
+  "block_factory_reset": true,
+  "block_uninstall": true,
+  "block_wifi_changes": false,
+  "block_notification_center": true,
+  "block_navigation": true,
+  "block_outgoing_calls": true,
+  "banking_packages": ["capitec.acuity.mobile.prod", "za.co.gotyme", "consumer.cbsa.smartapp"],
+  "grace_hours": 24,
+  "update_window_start": 120,
+  "update_window_end": 240
+}

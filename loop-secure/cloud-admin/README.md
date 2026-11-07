@@ -1,0 +1,1 @@
+Private owner-only Phone Finance Manager administrator site. The platform supplies authenticated identity; every API route checks the owner email. Runtime backend credentials are stored in Sites secrets and excluded from source. Customer device APIs and the signed APK are served by the separately authenticated cloud function.

@@ -1,0 +1,6 @@
+package za.co.loopmanager.preview;
+import android.graphics.Bitmap;import android.graphics.Canvas;import android.view.View;import java.io.File;import java.io.FileOutputStream;import org.junit.Test;import org.junit.runner.RunWith;import org.robolectric.Robolectric;import org.robolectric.RobolectricTestRunner;import org.robolectric.annotation.Config;import org.robolectric.annotation.GraphicsMode;
+@RunWith(RobolectricTestRunner.class) @Config(sdk=35,qualifiers="w393dp-h851dp-xxhdpi") @GraphicsMode(GraphicsMode.Mode.NATIVE)
+public class HomeScreenshotTest {
+ @Test public void renderHome() throws Exception {MainActivity activity=Robolectric.buildActivity(MainActivity.class).setup().visible().get();View decor=activity.getWindow().getDecorView();decor.measure(View.MeasureSpec.makeMeasureSpec(1179,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(2553,View.MeasureSpec.EXACTLY));decor.layout(0,0,1179,2553);Bitmap bitmap=Bitmap.createBitmap(1179,2553,Bitmap.Config.ARGB_8888);decor.draw(new Canvas(bitmap));File out=new File("/workspace/loop-phone-manager/artifacts/bacy-customer-native.png");out.getParentFile().mkdirs();try(FileOutputStream stream=new FileOutputStream(out)){bitmap.compress(Bitmap.CompressFormat.PNG,100,stream);}org.junit.Assert.assertTrue(out.length()>20000);}
+}

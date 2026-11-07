@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    environment:
+      LOOP_DATA_DIR: /data
+      LOOP_DEV: '1'
+      LOOP_PUBLIC_URL: http://127.0.0.1:8000
+    ports:
+      - '127.0.0.1:8000:8000'
+    volumes:
+      - loop_data:/data
+volumes:
+  loop_data:

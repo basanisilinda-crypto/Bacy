@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "loop-secure-admin",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-06",
+  "workers_dev": true,
+  "preview_urls": false,
+  "send_metrics": false,
+  "vars": {
+    "LOOP_API_URL": "https://ourxezawbfclmhbggskv.supabase.co/functions/v1/loop-manager",
+    "CF_ACCESS_TEAM_DOMAIN": "loopsecure-bacanyclinda.cloudflareaccess.com",
+    "CF_ACCESS_AUD": "88d0eb9dba134a9ac7e0af5e80c1ad27a4d02b61dd1d8c0e26d99502710cce7e",
+    "LOOP_ADMIN_EMAIL": "bacanyclinda@gmail.com"
+  },
+  "account_id": "0f09be76e1058d00a2c1217a327aa00d"
+}

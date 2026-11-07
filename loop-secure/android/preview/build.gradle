@@ -1,0 +1,28 @@
+plugins { id 'com.android.application' }
+android {
+    sourceSets { main.java.srcDirs += '../shared-ui/src/main/java'; main.res.srcDirs += '../shared-ui/src/main/res' }
+    namespace 'za.co.loopmanager.preview'
+    compileSdk 36
+    testOptions { unitTests.includeAndroidResources = true }
+    defaultConfig { applicationId 'za.co.loopmanager.preview'; minSdk 30; targetSdk 36; versionCode 8; versionName '1.1.0' }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    signingConfigs {
+        if (System.getenv('LOOP_SIGNING_STORE_FILE')) {
+            release {
+                storeFile file(System.getenv('LOOP_SIGNING_STORE_FILE'))
+                storePassword System.getenv('LOOP_SIGNING_STORE_PASSWORD')
+                keyAlias System.getenv('LOOP_SIGNING_KEY_ALIAS')
+                keyPassword System.getenv('LOOP_SIGNING_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes { release { if (System.getenv('LOOP_SIGNING_STORE_FILE')) signingConfig signingConfigs.release } }
+}
+dependencies { implementation 'com.google.android.material:material:1.13.0' }
+
+dependencies { testImplementation 'junit:junit:4.13.2'; testImplementation 'org.robolectric:robolectric:4.14.1' }
+tasks.withType(Test).configureEach {
+ systemProperty 'user.home', '/tmp/loop-build/robolectric-home'
+ systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+ ['https.proxyHost','https.proxyPort','http.proxyHost','http.proxyPort'].each { key -> if (System.getProperty(key)) systemProperty key,System.getProperty(key) }
+}

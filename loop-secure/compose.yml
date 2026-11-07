@@ -1,0 +1,35 @@
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      LOOP_DATA_DIR: /data
+      LOOP_PUBLIC_URL: https://${LOOP_DOMAIN:?Set LOOP_DOMAIN to your server hostname}
+    volumes:
+      - loop_data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+  https:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      LOOP_DOMAIN: ${LOOP_DOMAIN:?Set LOOP_DOMAIN to your server hostname}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./deployment/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  loop_data:
+  caddy_data:
+  caddy_config:

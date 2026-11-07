@@ -1,0 +1,5 @@
+# Examples only. Set actual values using Cloudflare runtime secrets, never Git.
+CF_ACCESS_TEAM_DOMAIN="YOUR-TEAM.cloudflareaccess.com"
+CF_ACCESS_AUD="YOUR-ACCESS-APPLICATION-AUDIENCE"
+LOOP_ADMIN_EMAIL="YOUR-OWNER-EMAIL"
+LOOP_ADMIN_TOKEN="YOUR-EXISTING-BACKEND-ADMIN-TOKEN"
