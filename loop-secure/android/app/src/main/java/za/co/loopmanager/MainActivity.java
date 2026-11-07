@@ -90,28 +90,25 @@ public class MainActivity extends AppCompatActivity {
         scroll.setOnApplyWindowInsetsListener((view,insets)->{android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars());view.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;});
         LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setBackgroundColor(Color.WHITE);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         if(entitlement!=null){
-            LinearLayout nav=new LinearLayout(this);nav.setBackgroundColor(Color.WHITE);nav.setElevation(dp(5));nav.setPadding(dp(6),dp(7),dp(6),dp(8));
-            String[] labels={"Home","Payments","Banking","Support"},icons={"home","payment","bank","help"};Runnable[] taps={this::dashboard,this::history,this::openBank,this::support};
-            for(int i=0;i<labels.length;i++){final int index=i;boolean selected=labels[i].equals(selectedTab);LinearLayout item=new LinearLayout(this);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);item.setPadding(dp(2),dp(8),dp(2),dp(8));item.setMinimumHeight(dp(56));
-                za.co.bacy.ui.InstrumentIcon icon=new za.co.bacy.ui.InstrumentIcon(this,icons[i],selected?GREEN:MUTED);item.addView(icon,new LinearLayout.LayoutParams(dp(23),dp(23)));TextView name=new TextView(this);name.setText(labels[i]);name.setTextSize(11);name.setTextColor(selected?GREEN:MUTED);name.setTypeface(za.co.bacy.ui.BrandFonts.sans(this,selected));name.setPadding(0,dp(4),0,0);item.addView(name);item.setContentDescription(labels[i]);item.setSelected(selected);item.setFocusable(true);item.setOnClickListener(v->taps[index].run());nav.addView(item,new LinearLayout.LayoutParams(0,-2,1));}
-            nav.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.navigationBars());v.setPadding(dp(6)+bars.left,dp(7),dp(6)+bars.right,dp(8)+bars.bottom);return insets;});page.addView(nav);
+            String[] labels={"Home","Payments","Banking","Support"},icons={"home","payment","bank","help"};Runnable[] taps={this::dashboard,this::history,this::openBank,this::support};int selected=0;for(int i=0;i<labels.length;i++)if(labels[i].equals(selectedTab))selected=i;
+            View nav=za.co.bacy.ui.SecureNavigation.create(this,labels,icons,selected,index->taps[index].run());nav.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.navigationBars());v.setPadding(dp(14)+bars.left,dp(8),dp(14)+bars.right,dp(10)+bars.bottom);return insets;});page.addView(nav,new LinearLayout.LayoutParams(-1,-2));
         }
         setContentView(page);
     }
     private TextView text(LinearLayout parent,String value,int size,int color,boolean bold){
         TextView label=new TextView(this);label.setText(value);label.setTextSize(size);label.setTextColor(color);
-        label.setTypeface(size>=26?za.co.bacy.ui.BrandFonts.heading(this):za.co.bacy.ui.BrandFonts.sans(this,bold));label.setLineSpacing(dp(3),1);
+        label.setTypeface(za.co.bacy.ui.BrandFonts.sans(this,bold||size>=20));label.setLineSpacing(dp(3),1);
         LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,-2);params.bottomMargin=dp(10);parent.addView(label,params);return label;
     }
     private void gap(int height){content.addView(new View(this),new LinearLayout.LayoutParams(1,dp(height)));}
     private LinearLayout card(int background){
-        MaterialCardView card=new MaterialCardView(this);card.setRadius(dp(14));card.setCardBackgroundColor(background);card.setStrokeWidth(background==Color.WHITE?dp(1):0);card.setStrokeColor(za.co.bacy.ui.CustomerHome.RULE);card.setCardElevation(dp(1));
+        MaterialCardView card=new MaterialCardView(this);card.setRadius(dp(22));card.setCardBackgroundColor(background);card.setStrokeWidth(0);card.setStrokeColor(za.co.bacy.ui.CustomerHome.RULE);card.setCardElevation(dp(2));
         LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(23),dp(23),dp(23),dp(17));card.addView(body);
         LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,-2);params.bottomMargin=dp(16);content.addView(card,params);return body;
     }
     private MaterialButton action(LinearLayout parent,String label,boolean primary,Runnable click){
         MaterialButton button=new MaterialButton(this,null,primary?com.google.android.material.R.attr.materialButtonStyle:com.google.android.material.R.attr.materialButtonOutlinedStyle);
-        button.setText(label);button.setAllCaps(false);button.setTextSize(15);button.setCornerRadius(dp(12));button.setMinHeight(dp(54));button.setInsetTop(0);button.setInsetBottom(0);
+        button.setText(label);button.setAllCaps(false);button.setTextSize(15);button.setCornerRadius(dp(15));button.setMinHeight(dp(54));button.setInsetTop(0);button.setInsetBottom(0);
         if(primary){button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GREEN));button.setTextColor(Color.WHITE);}else button.setTextColor(GREEN);
         LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,dp(54));params.topMargin=dp(7);params.bottomMargin=dp(7);parent.addView(button,params);button.setOnClickListener(v->click.run());return button;
     }
