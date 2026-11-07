@@ -13,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -61,7 +62,11 @@ public final class CustomerHome {
         ScrollView scroll=new ScrollView(c);scroll.setFillViewport(true);scroll.setClipToPadding(false);scroll.setVerticalScrollBarEnabled(false);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout content=col(c);content.setPadding(d(c,20),d(c,16),d(c,20),d(c,24));scroll.addView(content);
         LinearLayout brand=new LinearLayout(c);brand.setGravity(Gravity.CENTER_VERTICAL);brand.addView(new Logo(c),new LinearLayout.LayoutParams(d(c,38),d(c,38)));TextView wordmark=heading(c,"Loop Secure",22);LinearLayout.LayoutParams wp=new LinearLayout.LayoutParams(0,-2,1);wp.leftMargin=d(c,9);brand.addView(wordmark,wp);LinearLayout help=new LinearLayout(c);help.setGravity(Gravity.CENTER);icon(help,"help",MUTED,23);tap(help,()->actions.run(3),SURFACE,24);help.setContentDescription("Get support");brand.addView(help,new LinearLayout.LayoutParams(d(c,46),d(c,46)));content.addView(brand);space(content,22);
-        content.addView(heading(c,"Your account",28));space(content,6);content.addView(text(c,m.preview?"No customer account connected":("Your account".equals(m.name)?value(m.subline,"Your device plan"):value(m.name,"Your device plan")),14,MUTED,false));
+        LinearLayout introduction=new LinearLayout(c);introduction.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout greeting=col(c);greeting.addView(heading(c,"Your account",28));space(greeting,6);greeting.addView(text(c,m.preview?"No customer account connected":("Your account".equals(m.name)?value(m.subline,"Your device plan"):value(m.name,"Your device plan")),14,MUTED,false));
+        introduction.addView(greeting,new LinearLayout.LayoutParams(0,-2,1));
+        ImageView phones=new ImageView(c);phones.setImageResource(za.co.bacy.ui.PhoneArtwork.resource(c));phones.setScaleType(ImageView.ScaleType.FIT_CENTER);phones.setContentDescription("Loop phone illustration, front and back");
+        LinearLayout.LayoutParams phoneParams=new LinearLayout.LayoutParams(d(c,104),d(c,124));phoneParams.leftMargin=d(c,12);introduction.addView(phones,phoneParams);content.addView(introduction);
         String state=value(m.status,"Not connected");boolean paid=m.paidOff||"Paid off".equals(state);String normalized=state.toLowerCase(java.util.Locale.ROOT);boolean attention=normalized.contains("grace")||normalized.contains("overdue")||normalized.contains("restrict")||normalized.contains("expired");boolean connected=paid||normalized.equals("account connected");int stateColor=attention?AMBER:connected?GREEN:MUTED;int stateFill=attention?AMBER_SOFT:connected?GREEN_SOFT:PAPER;
         LinearLayout summary=panel(c);addPanel(content,summary,20);
         LinearLayout summaryHead=new LinearLayout(c);summaryHead.setGravity(Gravity.CENTER_VERTICAL);TextView plan=text(c,paid?"Plan completed":"Monthly payment",13,MUTED,true);summaryHead.addView(plan,new LinearLayout.LayoutParams(0,-2,1));TextView chip=text(c,m.preview?"View only":state,10,stateColor,true);chip.setPadding(d(c,9),d(c,6),d(c,9),d(c,6));chip.setBackground(shape(c,stateFill,7,0));chip.setMaxWidth(d(c,152));summaryHead.addView(chip);summary.addView(summaryHead);space(summary,14);
