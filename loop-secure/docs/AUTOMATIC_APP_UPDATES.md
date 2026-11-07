@@ -1,3 +1,7 @@
+# Current customer behaviour: 0.18.3
+
+Customer 0.18.3 supersedes the customer Wi-Fi/manual-install instructions below: it checks and downloads in the background on Wi-Fi or mobile data, and attempts unattended installation only as device owner with explicit signed server permission. Older clients need one installation approval to receive this behaviour. Android may still require approval or delay background work. See [background customer update guide](BACKGROUND_CUSTOMER_UPDATES.md). Administrator behaviour is unchanged.
+
 # Automatic app updates — customer 0.18.0 / administrator 1.7.0
 
 Both apps check immediately when opened with a connected account on validated, unmetered Wi-Fi. A connection callback checks again when Wi-Fi becomes available while the app or customer connection service is running. Android schedules a persisted six-hour background check as a backstop; Android controls its exact timing. Offline, battery-restricted or stopped apps cannot promise immediate checks. A manual check can use the current connection.

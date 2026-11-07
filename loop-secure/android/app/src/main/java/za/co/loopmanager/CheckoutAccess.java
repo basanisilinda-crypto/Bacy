@@ -16,6 +16,7 @@ final class CheckoutAccess {
  private static long until;private static int owners;
  static synchronized void begin(){owners++;until=SystemClock.elapsedRealtime()+10*60*1000L;}
  static synchronized void end(){owners=Math.max(0,owners-1);if(owners==0)until=0;}
+ static synchronized boolean inProgress(){return owners>0;}
  static synchronized boolean active(){return owners>0&&SystemClock.elapsedRealtime()<until;}
  private static boolean known(String p){return java.util.Arrays.asList("com.google.android.apps.messaging","com.android.mms","com.android.messaging","com.samsung.android.messaging","com.sonyericsson.conversations","com.huawei.message","com.hihonor.mms").contains(p);}
  static String messages(Context c){

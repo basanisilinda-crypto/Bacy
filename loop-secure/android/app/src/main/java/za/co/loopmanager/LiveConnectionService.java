@@ -35,6 +35,7 @@ public class LiveConnectionService extends Service {
         connectivity=getSystemService(ConnectivityManager.class);
         networkCallback=new ConnectivityManager.NetworkCallback(){
             @Override public void onCapabilitiesChanged(Network network,NetworkCapabilities capabilities){
+                if(!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)&&network.equals(validatedNetwork))validatedNetwork=null;
                 if(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)&&!network.equals(validatedNetwork)){validatedNetwork=network;requestCloudSync();ManagedUpdates.checkSoon(LiveConnectionService.this);}
             }
             @Override public void onLost(Network network){if(network.equals(validatedNetwork))validatedNetwork=null;}
@@ -91,13 +92,13 @@ public class LiveConnectionService extends Service {
                 Store store=new Store(this);
                 if(syncRequested.getAndSet(false)){
                     Entitlement fresh=Sync.run(this);String applied=PolicyController.apply(this,fresh);Sync.report(this,fresh,applied);
-                    lastSync=android.os.SystemClock.elapsedRealtime();sendBroadcast(new Intent(UPDATED).putExtra("account_verified",true).setPackage(getPackageName()),getPackageName()+".permission.INTERNAL");
+                    ManagedUpdates.checkSoon(this);lastSync=android.os.SystemClock.elapsedRealtime();sendBroadcast(new Intent(UPDATED).putExtra("account_verified",true).setPackage(getPackageName()),getPackageName()+".permission.INTERNAL");
                     if(fresh!=null&&fresh.data.optBoolean("released")){stopSelf();return;}
                 }
                 JSONObject event=new Api(store).post("/api/device/events",new JSONObject().put("cursor",cursor).put("wait_seconds",10),true);
                 if(event.optBoolean("changed")||android.os.SystemClock.elapsedRealtime()-lastSync>=60000){
                     Entitlement e=Sync.run(this);String status=PolicyController.apply(this,e);Sync.report(this,e,status);
-                    cursor=event.getString("cursor");lastSync=android.os.SystemClock.elapsedRealtime();
+                    cursor=event.getString("cursor");lastSync=android.os.SystemClock.elapsedRealtime();ManagedUpdates.checkSoon(this);
                     sendBroadcast(new Intent(UPDATED).putExtra("account_verified",true).setPackage(getPackageName()),getPackageName()+".permission.INTERNAL");
                     if(e!=null&&e.data.optBoolean("released")){stopSelf();return;}
                 }else cursor=event.getString("cursor");

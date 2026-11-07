@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <queries>
+        <intent><action android:name="android.content.pm.action.CONFIRM_INSTALL"/></intent>
         <intent><action android:name="android.intent.action.SENDTO"/><data android:scheme="smsto"/></intent>
         <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
         <intent><action android:name="android.intent.action.DIAL"/><data android:scheme="tel"/></intent>
@@ -37,6 +38,7 @@
         <receiver android:name=".BootReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/><action android:name="android.intent.action.MY_PACKAGE_REPLACED"/></intent-filter></receiver>
         <!-- Device Owner is a documented systemExempted prerequisite alternative to exact-alarm permissions. The service checks actual ownership before starting. -->
         <service tools:ignore="ForegroundServicePermission" android:name=".LiveConnectionService" android:exported="false" android:foregroundServiceType="systemExempted"/>
+        <activity android:name=".UpdateApprovalActivity" android:exported="false" android:excludeFromRecents="true"/>
         <receiver android:name=".UpdateReceiver" android:exported="false"/>
         <service android:name=".UpdateJobService" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false"/>
         <service android:name=".SyncJobService" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false"/>

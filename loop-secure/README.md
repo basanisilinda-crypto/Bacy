@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.2).
-- Customer app **0.18.2**, administrator app **1.7.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.3).
+- Customer app **0.18.3**, administrator app **1.7.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,10 +43,12 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.18.2/code 29** has a full signed download of **18,621,423 bytes (18.6 MB)** for testing the automatic-download channel. Administrator **1.7.1/code 13** and the private website use the same new realistic phone-padlock logo: a closed gold loop protecting a green phone.
+Customer **0.18.3/code 30** checks for updates without opening the app: the enrolled device-owner connection service checks when validated internet returns and during background account sync, and a persisted 15-minute any-network job provides recovery. Wi-Fi and mobile data are eligible. Android controls background timing and may delay stopped or restricted apps.
 
-The owner explicitly set **R1,700 as the full repayment total for every customer**. Customer Home and administrator account records show verified paid total, remaining balance and repayment percentage. Normal payments are up to R300; a R1,500 paid balance produces a final **R200** hosted checkout or EFT claim. Only approved settlement counts. Once approved receipts reach R1,700, the account is permanently released on the next device sync. Existing released accounts and financial history are preserved. [Repayment rules](docs/PLAN_R1700.md).
+With explicit permission in the signed manifest, a device-owner customer app downloads and attempts unattended PackageInstaller installation. Payment checkouts defer installation, even after their temporary SMS-access window expires. Android-required approval is retained through a trusted system-installer, session-bound notification rather than discarded. Failed installs retain the account/app and retry after a cooldown. [Background update guide](docs/BACKGROUND_CUSTOMER_UPDATES.md).
 
-The customer also shows the Android installation date, cached download size and a Wi-Fi settings shortcut in App updates. Existing updater-capable phones can download this release on validated unmetered Wi-Fi after opening the app, then the user taps Install. Keep the older app installed to test the automatic download; installing the new APK manually first skips that test. [Test instructions](docs/TEST_UPDATE_0182.md).
+**One-time transition:** 0.18.0–0.18.2 wait for installation approval. Install 0.18.3 once through that existing flow, then future enrolled customer updates can happen without opening Loop Secure or tapping Install where Android permits. Publication alone is not proof of installation on a handset.
 
-Validation passed: customer/admin release builds and lint; 24 SDK 30/35 native regression cases; 13 gateway/update fixtures; transaction-rollback tests for final EFT, exact final online payment, duplicate confirmation, full payoff and stale-link overpayment review; website authentication/relay and browser acceptance checks; original APK signing identity and hosted-byte verification. The automatic download/install result still needs confirmation on the user's handset. Direct bank EFT remains manually reviewed. iKhokha controls hosted Instant EFT/Ozow bank availability.
+Administrator stays **1.7.1/code 13**, with its existing Wi-Fi download and approval flow and no phone restrictions. The R1,700 repayment total, verified progress/balance, exact final payment and realistic phone-lock logo remain in place. [Repayment rules](docs/PLAN_R1700.md).
+
+Validation includes release build/lint, SDK 30/35 scheduling/owner/manifest/payment/approval-target/session/freshness regressions, 14 gateway/update fixtures, original signing certificate and hosted-byte verification. Actual background timing, mobile download and silent install completion still need handset confirmation. No permission, TLS, financial verification or package-signer checks are bypassed.
