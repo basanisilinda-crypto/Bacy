@@ -47,6 +47,7 @@ final class BankApps {
     static void allowForLock(Context context,JSONObject policy){
         if(!PolicyController.owns(context))return;
         LinkedHashSet<String> packages=new LinkedHashSet<>();packages.add(context.getPackageName());packages.addAll(approved(policy));
+        packages.addAll(DeviceSettings.packages(context));
         TelecomManager telecom=context.getSystemService(TelecomManager.class);
         if(telecom!=null&&telecom.getDefaultDialerPackage()!=null)packages.add(telecom.getDefaultDialerPackage());
         context.getSystemService(DevicePolicyManager.class).setLockTaskPackages(PolicyController.admin(context),packages.toArray(new String[0]));

@@ -37,6 +37,9 @@ final class DeviceHealth {
             try{
                 Bundle restrictions=manager.getUserRestrictions(PolicyController.admin(context));
                 result.append("\nSettings factory reset restriction: ").append(restrictions.getBoolean(UserManager.DISALLOW_FACTORY_RESET)?"Applied":"Not applied");
+                result.append("\nSafe boot restriction: ").append(restrictions.getBoolean(UserManager.DISALLOW_SAFE_BOOT)?"Applied":"Not applied");
+                result.append("\nWi-Fi configuration: ").append(restrictions.getBoolean(UserManager.DISALLOW_CONFIG_WIFI)?"Restricted":"Available");
+                result.append("\nManagement app clear-data / force-stop protection: ").append(manager.getUserControlDisabledPackages(PolicyController.admin(context))!=null&&manager.getUserControlDisabledPackages(PolicyController.admin(context)).contains(context.getPackageName())?"Applied":"Not applied");
                 result.append("\nManagement app uninstall restriction: ").append(manager.isUninstallBlocked(PolicyController.admin(context),context.getPackageName())?"Applied":"Not applied");
                 result.append("\nOrdinary outgoing call restriction: ").append(restrictions.getBoolean(UserManager.DISALLOW_OUTGOING_CALLS)?"Applied":"Not applied");
             }catch(SecurityException unavailable){result.append("\nPolicy details: Unavailable on this phone");}
@@ -48,7 +51,7 @@ final class DeviceHealth {
             if(owner)result.append(context.getSystemService(DevicePolicyManager.class).isLockTaskPermitted(bank.packageName)?" · allowed in lock mode":" · not allowed in lock mode");
         }
         if(!available)result.append("\nNone found. EFT can be made from another device using your reference.");
-        result.append("\n\nBank-app presence does not prove payment or in-lock compatibility. Emergency calling remains available. Recovery-reset and manufacturer financing protection are not verified by this screen.");
+        result.append("\n\nWi-Fi and system Settings remain accessible through Loop Secure. Bank-app presence does not prove payment or in-lock compatibility. Emergency calling remains available. Physical button/recovery-mode reset blocking requires manufacturer support and is not guaranteed by standard Android device ownership.");
         return result.toString();
     }
 }

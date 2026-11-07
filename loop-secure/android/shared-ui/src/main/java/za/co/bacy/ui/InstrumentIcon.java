@@ -14,6 +14,7 @@ public final class InstrumentIcon extends View {
     @Override protected void onDraw(Canvas canvas){
         super.onDraw(canvas);canvas.save();canvas.scale(getWidth()/24f,getHeight()/24f);paint.setColor(color);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(1.9f);paint.setStrokeCap(Paint.Cap.SQUARE);paint.setStrokeJoin(Paint.Join.ROUND);Path p=new Path();
         switch(name){
+            case "wifi":canvas.drawArc(new RectF(2,5,22,25),225,90,false,paint);canvas.drawArc(new RectF(6,10,18,22),225,90,false,paint);paint.setStyle(Paint.Style.FILL);canvas.drawCircle(12,19,1.8f,paint);break;
             case "home":paint.setStyle(Paint.Style.FILL);canvas.drawRoundRect(new RectF(3,3,10,10),1,1,paint);canvas.drawRoundRect(new RectF(13,3,21,7),1,1,paint);canvas.drawRoundRect(new RectF(3,13,10,21),1,1,paint);canvas.drawRoundRect(new RectF(13,10,21,21),1,1,paint);break;
             case "payment":canvas.drawRoundRect(new RectF(3,7,21,21),2,2,paint);canvas.drawLine(6,3,18,3,paint);paint.setStyle(Paint.Style.FILL);canvas.drawRect(3,10,21,13,paint);canvas.drawRect(6,16,10,18,paint);break;
             case "bank":p.moveTo(2,8);p.lineTo(12,2);p.lineTo(22,8);p.close();paint.setStyle(Paint.Style.FILL);canvas.drawPath(p,paint);canvas.drawRect(3,20,21,22,paint);for(int i=5;i<=17;i+=6)canvas.drawRect(i,11,i+2,18,paint);break;

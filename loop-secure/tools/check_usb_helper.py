@@ -14,15 +14,14 @@ root = Path(__file__).resolve().parents[1]
 source = (root / 'deployment/usb/Enroll-Windows.cmd').read_text()
 commands = [line.split('-Command "', 1)[1][:-1] for line in source.splitlines()
             if line.startswith('powershell.exe ') and '-Command "' in line]
-owner_parser = next(s for s in commands if 'LoopSecureOwnerCheck:v1:' in s)
+owner_parser = next(s for s in commands if '^Row: 0 nonce=' in s)
 device_parser = next(s for s in commands if 'BACY_SERIAL_RESULT' in s)
 pwsh = sys.argv[1] if len(sys.argv) > 1 else 'pwsh'
 nonce = '123456789'
 
 
 def probe_line(owner='true', active='true', linked='false', reply_nonce=nonce):
-    return (f'Broadcast completed: result=1, data="LoopSecureOwnerCheck:v1:{reply_nonce}:'
-            f'owner={owner};active={active};linked={linked}"')
+    return f'Row: 0 nonce={reply_nonce}, owner={owner}, active={active}, linked={linked}'
 
 
 cases = [
@@ -35,11 +34,11 @@ cases = [
     ('unreadable account', probe_line(linked='unknown'), 30),
     ('unavailable management API', probe_line(owner='unknown'), 30),
     ('stale nonce', probe_line(reply_nonce='99999'), 30),
-    ('missing response', 'Broadcast completed: result=0', 30),
+    ('missing response', 'No result found.', 30),
     ('duplicate response', probe_line() + '\n' + probe_line(), 30),
     ('marker in exception text', 'Error: ' + probe_line(), 30),
     ('suffix garbage', probe_line() + '; ignored=true', 30),
-    ('ambiguous response', 'Broadcast completed: result=0\n' + probe_line(), 30),
+    ('ambiguous response', probe_line()+'\nRow: 1 nonce=999, owner=true, active=true, linked=false', 30),
 ]
 
 

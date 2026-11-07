@@ -8,31 +8,21 @@ echo Loop Secure client update
 echo This updates the installed app while retaining its existing customer account.
 echo No reset, account deletion or new enrollment is performed.
 echo.
-set "ADB=adb.exe"
-if exist "%~dp0adb.exe" set "ADB=.\adb.exe"
-"!ADB!" version >nul 2>nul
-if not errorlevel 1 goto adbready
 set "BACY_ADB_CACHE=%LOCALAPPDATA%\LoopSecure\adb-path.txt"
-if exist "!BACY_ADB_CACHE!" set /p "ADB="<"!BACY_ADB_CACHE!"
-"!ADB!" version >nul 2>nul
-if not errorlevel 1 goto adbready
-echo Choose adb.exe from your extracted Google platform-tools folder once.
-echo This laptop will remember that location for future customer setups.
-powershell.exe -NoProfile -STA -Command "$ErrorActionPreference='Stop';$cache=Join-Path $env:LOCALAPPDATA 'LoopSecure\adb-path.txt';[IO.Directory]::CreateDirectory((Split-Path -Parent $cache))|Out-Null;$downloads=Join-Path $env:USERPROFILE 'Downloads';$candidates=@((Join-Path $downloads 'platform-tools\adb.exe'),(Join-Path $downloads 'platform-tools-latest-windows\platform-tools\adb.exe'));$adb=$candidates|Where-Object{Test-Path -LiteralPath $_ -PathType Leaf}|Select-Object -First 1;if($null -eq $adb){Add-Type -AssemblyName System.Windows.Forms;$pick=New-Object System.Windows.Forms.OpenFileDialog;$pick.Title='Loop Secure: choose adb.exe in Google platform-tools';$pick.Filter='Android Debug Bridge (adb.exe)|adb.exe';$pick.InitialDirectory=$downloads;if($pick.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK){exit 2};$adb=$pick.FileName};[IO.File]::WriteAllText($cache,$adb,[System.Text.UTF8Encoding]::new($false))"
-if errorlevel 1 (
- echo No Android tool was selected. Nothing was installed or reset.
- echo Download Google's Windows Platform Tools first if needed:
- echo https://developer.android.com/tools/releases/platform-tools
+if not exist "%~dp0Prepare-Tools.ps1" (
+ echo Download the full current setup ZIP. Keep its files in the extracted folder.
  pause
  exit /b 1
 )
-set /p "ADB="<"!BACY_ADB_CACHE!"
-"!ADB!" version >nul 2>nul
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Prepare-Tools.ps1"
 if errorlevel 1 (
- echo The selected adb.exe could not run. Run this helper again and select Google's adb.exe.
+ echo USB tools could not be prepared. Check the error above and the laptop internet connection.
  pause
  exit /b 1
 )
+set "ADB="
+set /p "ADB="<"%BACY_ADB_CACHE%"
+if not defined ADB exit /b 1
 :adbready
 echo Connect ONE phone by USB, enable USB debugging and approve this laptop on the phone.
 :checkdevice

@@ -26,6 +26,11 @@ final class PolicyController {
         restriction(pm,admin,UserManager.DISALLOW_ADD_USER,protectedDevice);
         restriction(pm,admin,UserManager.DISALLOW_USER_SWITCH,protectedDevice);
         pm.setUninstallBlocked(admin,packageName,protectedDevice);
+        java.util.List<String> existingProtection=pm.getUserControlDisabledPackages(admin);
+        java.util.ArrayList<String> protectedPackages=new java.util.ArrayList<>(existingProtection==null?java.util.Collections.emptyList():existingProtection);
+        if(protectedDevice&&!protectedPackages.contains(packageName))protectedPackages.add(packageName);
+        if(!protectedDevice)protectedPackages.remove(packageName);
+        pm.setUserControlDisabledPackages(admin,protectedPackages);
     }
     static synchronized String apply(Context c,Entitlement entitlement) throws Exception {
         Entitlement latest=Entitlement.load(c,new Store(c));
@@ -44,7 +49,8 @@ final class PolicyController {
         }
         boolean enabled=policy.optBoolean("enforcement_enabled");
         financeProtection(pm,admin,true,c.getPackageName());
-        restriction(pm,admin,UserManager.DISALLOW_CONFIG_WIFI,enabled&&policy.optBoolean("block_wifi_changes"));
+        // Connectivity must remain available for payment verification and server recovery.
+        restriction(pm,admin,UserManager.DISALLOW_CONFIG_WIFI,false);
         if(!enabled){pm.setSystemUpdatePolicy(admin,null);leave(c,pm,admin);return "unrestricted";}
         int updateStart=policy.optInt("update_window_start",120),updateEnd=policy.optInt("update_window_end",240);
         pm.setSystemUpdatePolicy(admin,updateStart==updateEnd?SystemUpdatePolicy.createAutomaticInstallPolicy():SystemUpdatePolicy.createWindowedInstallPolicy(updateStart,updateEnd));

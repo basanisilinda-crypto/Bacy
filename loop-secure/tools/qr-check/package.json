@@ -1,0 +1,1 @@
+{"name":"loop-provisioning-qr-check","private":true,"version":"1.0.0","dependencies":{"qrcode":"1.5.4","@zxing/library":"0.21.3","pngjs":"7.0.0"}}

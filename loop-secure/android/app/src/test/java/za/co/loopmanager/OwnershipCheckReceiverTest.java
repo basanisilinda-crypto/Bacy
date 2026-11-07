@@ -51,6 +51,15 @@ public class OwnershipCheckReceiverTest {
         Security.removeProvider(PROVIDER_NAME);
     }
 
+    @Test public void providerReportsFreshReadOnlyStatusWithoutCredentials() {
+        OwnershipStatusProvider provider=org.robolectric.Robolectric.buildContentProvider(OwnershipStatusProvider.class).create().get();
+        try(android.database.Cursor cursor=provider.query(android.net.Uri.parse("content://za.co.loopmanager.ownership/status?nonce="+NONCE),null,null,null,null)){
+            assertArrayEquals(new String[]{"nonce","owner","active","linked"},cursor.getColumnNames());assertTrue(cursor.moveToFirst());assertEquals(NONCE,cursor.getString(0));assertEquals("false",cursor.getString(1));assertEquals("false",cursor.getString(3));assertFalse(cursor.moveToNext());
+        }
+        assertThrows(IllegalArgumentException.class,()->provider.query(android.net.Uri.parse("content://za.co.loopmanager.ownership/status?nonce=invalid"),null,null,null,null));
+        assertThrows(UnsupportedOperationException.class,()->provider.delete(android.net.Uri.parse("content://za.co.loopmanager.ownership/status"),null,null));
+    }
+
     @Test public void unownedPhoneDoesNotPassOwnershipGate() {
         assertEquals("owner=false;active=false;linked=false", OwnershipCheckReceiver.inspect(context));
     }

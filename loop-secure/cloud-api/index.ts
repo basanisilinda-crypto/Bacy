@@ -2,6 +2,8 @@ import {zipSync,strToU8} from 'npm:fflate@0.8.2';
 import windowsEnroll from './Enroll-Windows.cmd.ts';
 import windowsUpdate from './Update-Windows.cmd.ts';
 import usbReadme from './READ-ME.txt.ts';
+import prepareTools from './Prepare-Tools.ps1.ts';
+import {provisioningPayload} from './provisioning.ts';
 import {createClient} from 'npm:@supabase/supabase-js@2.57.0';
 import {z} from 'npm:zod@3.25.76';
 import QRCode from 'npm:qrcode@1.5.4';
@@ -22,13 +24,13 @@ function fail(status:number,message:string):never{throw Object.assign(new Error(
 function check(error:any){if(!error)return;const match=String(error.message).match(/^(\d{3}):(.*)$/s);if(match)fail(+match[1],match[2]);if(error.code==='23505')fail(409,'This reference or request has already been used');if(error.code==='22P02')fail(422,'Invalid record identifier');throw error;}
 async function rpc(action:string,data:any={},device:string|null=null,actor='site-owner'){const result=await db.rpc('loop_dispatch',{p_action:action,p_actor:actor,p_device:device,p_data:data});check(result.error);return result.data;}
 async function configuration(key:string){const result=await db.from('loop_config').select('value').eq('key',key).maybeSingle();check(result.error);return result.data?.value;}
-const defaultAdminSite='https://phone-finance-manager-bc.bacanyclinda.chatgpt.site';
+const defaultAdminSite='https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev';
 function checkedAdminSite(value:string){
  let url:URL;try{url=new URL(value);}catch{fail(422,'Use the administrator website HTTPS address');}
  if(url.protocol!=='https:'||url.username||url.password||url.port||url.pathname!=='/'||url.search||url.hash||(url.origin!==defaultAdminSite&&!/^[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev$/.test(url.hostname)))fail(422,'Use the current administrator site or a production workers.dev address without a path');
  return url.origin;
 }
-async function administratorSite(){const stored=await configuration('admin_site_url');return stored?checkedAdminSite(stored.url):defaultAdminSite;}
+async function administratorSite(){const stored=await configuration('admin_site_url');if(!stored||stored.url==='https://phone-finance-manager-bc.bacanyclinda.chatgpt.site')return defaultAdminSite;return checkedAdminSite(stored.url);}
 let aesPromise:Promise<CryptoKey>|null=null;
 function aes(){return aesPromise??=(async()=>crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',enc.encode(serviceKey)),{name:'AES-GCM'},false,['encrypt','decrypt']))();}
 async function encrypt(value:string){const iv=crypto.getRandomValues(new Uint8Array(12));const ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},await aes(),enc.encode(value)));const packed=new Uint8Array(iv.length+ciphertext.length);packed.set(iv);packed.set(ciphertext,iv.length);return b64(packed);}
@@ -58,7 +60,7 @@ async function route(req:Request,path:string){
  const method=req.method;
  if(path==='/health'&&method==='GET'){const keys=await cryptoConfiguration();return json({status:'ok',version:'0.5.0',public_key:keys.public_key});}
  if(path==='/downloads/usb-helper.zip'&&method==='GET'){
-  const zip=zipSync({'Enroll-Windows.cmd':strToU8(windowsEnroll.replaceAll('\r\n','\n').replaceAll('\n','\r\n')),'READ-ME.txt':strToU8(usbReadme)},{level:6});
+  const zip=zipSync({'Prepare-Tools.ps1':strToU8(prepareTools),'START-HERE.cmd':strToU8('@echo off\r\ncall "%~dp0Enroll-Windows.cmd"\r\n'),'Enroll-Windows.cmd':strToU8(windowsEnroll.replaceAll('\r\n','\n').replaceAll('\n','\r\n')),'READ-ME.txt':strToU8(usbReadme)},{level:6});
   return new Response(zip,{headers:{'content-type':'application/zip','cache-control':'no-store','content-disposition':'attachment; filename="Bacy-USB-helper-update.zip"','x-content-type-options':'nosniff'}});
  }
  if(path==='/downloads/client-update.zip'&&method==='GET'){
@@ -68,8 +70,8 @@ async function route(req:Request,path:string){
   const apk=new Uint8Array(await response.arrayBuffer());if(apk.length>30*1024*1024)fail(502,'Unexpected installer size');
   const checksum=b64(new Uint8Array(await crypto.subtle.digest('SHA-256',apk))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
   if(checksum!==installer.apk_sha256)fail(502,'Managed installer checksum mismatch');
-  const readme='BACY CLIENT UPDATE\r\nExtract these files into their own folder. The helper finds Google Platform Tools or asks you to select adb.exe once. Connect the enrolled phone by USB, approve USB debugging, then run Update-Windows.cmd. Keep the phone online afterward. This is an app update: no new customer enrollment or code is needed. Your existing account data is retained.\r\n';
-  const zip=zipSync({'Bacy-Client.apk':apk,'Update-Windows.cmd':strToU8(windowsUpdate.replaceAll('\r\n','\n').replaceAll('\n','\r\n')),'READ-ME.txt':strToU8(readme)},{level:0});
+  const readme='BACY CLIENT UPDATE\r\nExtract these files into their own folder. The helper prepares verified official Google tools automatically. Connect the enrolled phone by USB, approve USB debugging, then run START-HERE.cmd. Keep the phone online afterward. This is an app update: no new customer enrollment or code is needed. Your existing account data is retained.\r\n';
+  const zip=zipSync({'Bacy-Client.apk':apk,'Prepare-Tools.ps1':strToU8(prepareTools),'START-HERE.cmd':strToU8('@echo off\r\ncall "%~dp0Update-Windows.cmd"\r\n'),'Update-Windows.cmd':strToU8(windowsUpdate.replaceAll('\r\n','\n').replaceAll('\n','\r\n')),'READ-ME.txt':strToU8(readme)},{level:0});
   return new Response(zip,{headers:{'content-type':'application/zip','cache-control':'no-store','content-disposition':'attachment; filename="Bacy-Client-Update.zip"','x-content-type-options':'nosniff'}});
  }
  if(path.startsWith('/a/')&&method==='GET'){
@@ -169,7 +171,7 @@ async function route(req:Request,path:string){
    const apk=new Uint8Array(await response.arrayBuffer());if(apk.length>30*1024*1024)fail(502,'Unexpected installer size');
    const checksum=b64(new Uint8Array(await crypto.subtle.digest('SHA-256',apk))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
    if(checksum!==installer.apk_sha256)fail(502,'Managed installer checksum mismatch');
-   const zip=zipSync({'Bacy-Client.apk':apk,'Enroll-Windows.cmd':strToU8(windowsEnroll.replaceAll('\r\n','\n').replaceAll('\n','\r\n')),'enrollment-code.txt':strToU8(data.enrollment_token+'\r\n'),'READ-ME.txt':strToU8(usbReadme)},{level:0});
+   const zip=zipSync({'Bacy-Client.apk':apk,'Prepare-Tools.ps1':strToU8(prepareTools),'START-HERE.cmd':strToU8('@echo off\r\ncall "%~dp0Enroll-Windows.cmd"\r\n'),'Enroll-Windows.cmd':strToU8(windowsEnroll.replaceAll('\r\n','\n').replaceAll('\n','\r\n')),'enrollment-code.txt':strToU8(data.enrollment_token+'\r\n'),'READ-ME.txt':strToU8(usbReadme)},{level:0});
    return new Response(zip,{headers:{'content-type':'application/zip','cache-control':'no-store','content-disposition':'attachment; filename="Bacy-Windows-Enrollment.zip"'}});
   }
   if(path==='/api/admin/overview'&&method==='GET')return json(await rpc('overview',{},null,actor));
@@ -186,9 +188,7 @@ async function route(req:Request,path:string){
    const installer=await currentInstaller();
    if(data.apk_url!==installer.apk_url||data.apk_sha256.replaceAll('=','')!==installer.apk_sha256)fail(422,'Use the verified hosted client APK');
    await rpc('qr_check',{enrollment_hash:await sha(data.enrollment_token)},null,actor);
-   const version=String(installer.version).split('.').map(Number);const compact=version[0]>0||version[1]>9||(version[1]===9&&version[2]>=2);
-   const extras=compact?{enrollment_token:data.enrollment_token}:{server_url:baseUrl,enrollment_token:data.enrollment_token,public_key:(await cryptoConfiguration()).public_key};
-   const payload={'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME':'za.co.loopmanager/.LoopAdminReceiver','android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION':installer.download_url||data.apk_url,'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_CHECKSUM':installer.apk_sha256,'android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED':true,'android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE':extras};
+   const payload=provisioningPayload(data.enrollment_token,installer,baseUrl,(await cryptoConfiguration()).public_key);
    if(data.format==='svg'){const svg=await QRCode.toString(JSON.stringify(payload),{type:'svg',errorCorrectionLevel:'M',margin:6,width:900});return new Response(svg,{headers:{'content-type':'image/svg+xml','cache-control':'no-store','x-content-type-options':'nosniff'}});}
    const png=await QRCode.toDataURL(JSON.stringify(payload),{type:'image/png',errorCorrectionLevel:'M',margin:6,scale:10});
    return new Response(unb64(png.split(',')[1]),{headers:{'content-type':'image/png','cache-control':'no-store','x-content-type-options':'nosniff'}});

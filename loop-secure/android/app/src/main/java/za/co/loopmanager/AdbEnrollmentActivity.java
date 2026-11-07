@@ -17,9 +17,14 @@ public class AdbEnrollmentActivity extends AppCompatActivity {
         try{
             if(!PolicyController.owns(this))throw new IllegalStateException("Android has not assigned this app device ownership. Finish the Windows ADB ownership step first.");
             Store store=new Store(this);
-            if(!store.get("device_token").isEmpty())throw new IllegalStateException("This phone is already enrolled. USB setup cannot replace its customer account.");
+            if(!store.get("device_token").isEmpty()){
+                startActivity(new Intent(this,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));finish();return;
+            }
             String token=getIntent().getStringExtra("enrollment_token");
             if(token==null||!token.matches("[A-Za-z0-9_-]{20,100}"))throw new IllegalArgumentException("Invalid or missing one-time enrollment code.");
+            if(getIntent().getBooleanExtra("administrator_confirmed",false)){
+                android.widget.LinearLayout progress=new android.widget.LinearLayout(this);progress.setOrientation(android.widget.LinearLayout.VERTICAL);progress.setGravity(android.view.Gravity.CENTER);progress.setPadding(32,32,32,32);progress.setBackgroundColor(za.co.bacy.ui.CustomerHome.PAPER);progress.addView(new za.co.bacy.ui.CustomerHome.Logo(this),new android.widget.LinearLayout.LayoutParams(96,96));android.widget.TextView message=new android.widget.TextView(this);message.setText("Connecting customer account…\nKeep this phone connected to the internet.");message.setTextSize(17);message.setTextColor(za.co.bacy.ui.CustomerHome.INK);message.setTypeface(za.co.bacy.ui.BrandFonts.sans(this,false));message.setGravity(android.view.Gravity.CENTER);message.setPadding(0,32,0,32);progress.addView(message);progress.addView(new android.widget.ProgressBar(this));setContentView(progress);connect(token);return;
+            }
             new MaterialAlertDialogBuilder(this).setTitle("Connect this managed phone?")
                 .setMessage("Your administrator supplied a one-time customer enrollment code over USB. Continue only for the intended customer. This connects the phone to Loop Secure and applies the agreed finance-management policy.")
                 .setPositiveButton("Connect customer account",(dialog,which)->connect(token))
