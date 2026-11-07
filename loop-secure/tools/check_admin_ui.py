@@ -43,5 +43,7 @@ with sync_playwright() as p:
  assert not errors,errors
  out=ROOT/'artifacts';out.mkdir(exist_ok=True);page.screenshot(path=str(out/'admin-mobile-improvements.png'),full_page=True)
  page.set_viewport_size({'width':1440,'height':1050});page.screenshot(path=str(out/'admin-desktop-improvements.png'),full_page=True)
+ page.locator('nav [data-view="overview"]').click();page.screenshot(path=str(out/'admin-overview-redesign.png'),full_page=True)
+ page.locator('nav [data-view="payments"]').click();page.screenshot(path=str(out/'admin-payments-redesign.png'),full_page=True)
  browser.close()
  print('Browser checks passed: sorting, filters, saved density/navigation, payment search/counts, help, dismissible status, refresh feedback, offline banner and mobile cards without horizontal overflow.')
