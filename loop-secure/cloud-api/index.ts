@@ -4,6 +4,7 @@ import windowsUpdate from './Update-Windows.cmd.ts';
 import usbReadme from './READ-ME.txt.ts';
 import prepareTools from './Prepare-Tools.ps1.ts';
 import {provisioningPayload} from './provisioning.ts';
+import {IkPayGateway} from './ikpay-gateway.ts';
 import {createClient} from 'npm:@supabase/supabase-js@2.57.0';
 import {z} from 'npm:zod@3.25.76';
 import QRCode from 'npm:qrcode@1.5.4';
@@ -56,8 +57,12 @@ async function activationToken(code:string,nonce:string){const key=await crypto.
 const acknowledgment=z.object({revision:z.number().int().min(0),status:z.enum(['unrestricted','restricted','released','unsupported','needs_online_check','policy_error','restricted_banking_unavailable'])});
 const identifiers=z.object({imeis:z.array(z.string().regex(/^\d{14,17}$/)).max(4).default([]),sim_operator:text(0,100).default(''),sim_country:text(0,10).default(''),status:z.enum(['available','permission_denied','unsupported']).default('unsupported')});
 function json(value:any,status=200){return new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});}
+const ikpay=new IkPayGateway(db,configuration,encrypt,decrypt,baseUrl);
+function queuePaymentCheck(deviceId?:string){const task=ikpay.reconcile(deviceId).catch(()=>console.error('Payment reconciliation deferred'));const runtime=(globalThis as any).EdgeRuntime;if(runtime?.waitUntil)runtime.waitUntil(task);return task;}
+async function callbackBody(req:Request){const reader=req.body?.getReader();if(!reader)fail(400,'Callback body required');let size=0;const chunks:Uint8Array[]=[];while(true){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>16384){await reader.cancel();fail(413,'Callback body too large');}chunks.push(value);}const all=new Uint8Array(size);let offset=0;for(const chunk of chunks){all.set(chunk,offset);offset+=chunk.length;}return new TextDecoder().decode(all);}
 async function route(req:Request,path:string){
  const method=req.method;
+ if(path==='/payments/ikhokha/callback'&&method==='POST')return json(await ikpay.callback(req.headers,await callbackBody(req)));
  if(path==='/health'&&method==='GET'){const keys=await cryptoConfiguration();return json({status:'ok',version:'0.5.0',public_key:keys.public_key});}
  if(path==='/downloads/usb-helper.zip'&&method==='GET'){
   const zip=zipSync({'Prepare-Tools.ps1':strToU8(prepareTools),'START-HERE.cmd':strToU8('@echo off\r\ncall "%~dp0Enroll-Windows.cmd"\r\n'),'Enroll-Windows.cmd':strToU8(windowsEnroll.replaceAll('\r\n','\n').replaceAll('\n','\r\n')),'READ-ME.txt':strToU8(usbReadme)},{level:6});
@@ -103,6 +108,9 @@ async function route(req:Request,path:string){
  }
  if(path.startsWith('/api/device/')){
   const dev=await device(req);
+  if(path==='/api/device/payments/ikhokha'&&method==='POST')return json(await ikpay.create(dev.id));
+  if(path==='/api/device/payments/ikhokha/check'&&method==='POST'){await ikpay.reconcile(dev.id);return json(await ikpay.current(dev.id));}
+  if(path==='/api/device/sync'||path==='/api/device/events')queuePaymentCheck(dev.id);
   if(path==='/api/device/sync'&&method==='POST')return json(await signed(await rpc('sync',acknowledgment.parse(await body(req)),dev.id,'device')));
   if(path==='/api/device/claims'&&method==='POST'){const data=z.object({request_key:keySchema,bank_reference:text(3,100)}).parse(await body(req));return json(await rpc('claim',data,dev.id,'device'));}
   if(path==='/api/device/support'&&method==='POST')return json(await rpc('support',z.object({message:text(5,2000)}).parse(await body(req)),dev.id,'device'));
@@ -117,6 +125,9 @@ async function route(req:Request,path:string){
  }
  if(path.startsWith('/api/admin/')){
   const actor=await administrator(req);
+  if(path==='/api/admin/payments/ikhokha'){if(method==='GET')return json(await ikpay.status());if(method==='PUT'){if(actor!=='site-owner')fail(403,'Only the website owner can configure payment credentials');return json(await ikpay.configure(await body(req)));}}
+  const paymentDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/payment-link$/i);if(paymentDevice&&method==='POST')return json(await ikpay.create(paymentDevice[1]));
+  if(path==='/api/admin/overview')queuePaymentCheck();
   if(path==='/api/admin/site'){
    if(actor!=='site-owner')fail(403,'Only the website owner can change its hosting address');
    if(method==='GET')return json({url:await administratorSite()});
@@ -231,7 +242,7 @@ Deno.serve(async(req)=>{
  try{
   const path=new URL(req.url).pathname.replace(/^\/(?:functions\/v1\/)?loop-manager/,'')||'/';
   // Browser writes go through the private administrator Site. No public CORS grant.
-  if(req.headers.get('origin'))return json({detail:'Use the private administrator dashboard'},403);
+  if(req.headers.get('origin')&&path!=='/payments/ikhokha/callback')return json({detail:'Use the private administrator dashboard'},403);
   return await route(req,path);
  }catch(error:any){if(error instanceof z.ZodError)return json({detail:'Check all required fields and their formats'},422);if(error.status)return json({detail:error.message},error.status);console.error('Loop API operation failed',String(error.code||error.name||'error'));return json({detail:'Cloud service could not complete this request'},500);}
 });

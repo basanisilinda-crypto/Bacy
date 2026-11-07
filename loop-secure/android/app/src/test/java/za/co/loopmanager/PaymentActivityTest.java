@@ -1,0 +1,8 @@
+package za.co.loopmanager;
+import org.junit.Test;import org.junit.runner.RunWith;import org.robolectric.RobolectricTestRunner;import org.robolectric.annotation.Config;import static org.junit.Assert.*;
+@RunWith(RobolectricTestRunner.class) @Config(sdk={30,35})
+public class PaymentActivityTest {
+ @Test public void initialCheckoutMustBeTheRealProvider(){assertTrue(PaymentActivity.initialUrl("https://securepay.ikhokha.red/legitimate-link"));assertFalse(PaymentActivity.initialUrl("https://ikhokha.red.evil.example/pay"));assertFalse(PaymentActivity.initialUrl("https://ikhokha.red@evil.example/pay"));assertFalse(PaymentActivity.initialUrl("javascript:alert(1)"));assertFalse(PaymentActivity.initialUrl("file:///data/local/file"));}
+ @Test public void navigationDoesNotEnableGeneralBrowserEscape(){assertTrue(PaymentActivity.navigationUrl("https://acs.bankserv.co.za/challenge"));assertFalse(PaymentActivity.navigationUrl("https://www.google.com/search?q=anything"));assertFalse(PaymentActivity.navigationUrl("https://ikhokha.com.evil.example/"));assertFalse(PaymentActivity.navigationUrl("intent://unsafe"));}
+ @Test public void returnUrlIsExactAndIsNotProofOfPayment(){assertTrue(PaymentActivity.returnUrl("https://loop-secure-pay.loopsecure-bacanyclinda.workers.dev/return?result=success"));assertFalse(PaymentActivity.returnUrl("https://loop-secure-pay.loopsecure-bacanyclinda.workers.dev.evil.example/return"));assertFalse(PaymentActivity.returnUrl("https://loop-secure-pay.loopsecure-bacanyclinda.workers.dev/other"));}
+}

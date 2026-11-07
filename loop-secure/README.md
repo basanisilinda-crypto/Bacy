@@ -3,12 +3,12 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.14.0).
-- Customer app **0.14.0**, administrator app **1.6.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.15.0).
+- Customer app **0.15.0**, administrator app **1.6.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
-Create or reopen the intended customer in the dashboard and download its fresh Windows enrollment ZIP. Extract it into its own folder, connect one authorized phone, and run `START-HERE.cmd`. The helper prepares verified official stable Google Platform Tools automatically, rejects obsolete ADB clients,, verifies the exact selected phone and actual device-owner/admin state, and starts the administrator-recorded customer connection automatically only when verified. New enrollment codes expire after 30 minutes. Installation alone does not assign device ownership.
+Create or reopen the intended customer in the dashboard and download its fresh Windows enrollment ZIP. Extract it into its own folder, connect one authorized phone, and run `START-HERE.cmd`. The helper prepares verified official stable Google Platform Tools automatically, rejects obsolete ADB clients, verifies the exact selected phone and actual device-owner/admin state, and starts the administrator-recorded customer connection automatically only when verified. New enrollment codes expire after 30 minutes. Installation alone does not assign device ownership.
 
 Android can refuse ownership when accounts or another device owner exist. Back up/sync phone data and confirm credentials before changing accounts. The helper never resets the phone or removes accounts. If ownership cannot be verified, inspect `Ownership-check.txt`; repeated downloads do not repair an unreadable local account or a permission failure.
 
@@ -35,12 +35,14 @@ For the website, follow `cloudflare-admin/README.md`; dependencies are pinned an
 
 ## Payments and device controls
 
-EFT claims require bank-settlement verification before administrator approval. A submitted reference is not proof of payment. Approved payments, grace periods, manual controls and permanent release produce signed authorizations; requested changes and actual handset acknowledgements are shown separately. Automatic EFT verification and outbound payment emails require separately configured providers and credentials.
+The customer app now offers **Make a payment → Pay online with iKhokha**. The server creates a R300 hosted payment link and verifies the provider’s paid status, amount and receipt before adding 30 days and clearing the finance lock. Duplicate callbacks cannot add duplicate credit. See [iKhokha customer steps and live acceptance check](docs/IKHOKHA_PAYMENTS.md). A real checkout/card payment still needs to be tested.
+
+Direct bank EFT claims require bank-settlement verification before administrator approval. A submitted reference is not proof of payment. Approved payments, grace periods, manual controls and permanent release produce signed authorizations; requested changes and actual handset acknowledgements are shown separately. Automatic verification of direct bank EFT and outbound payment emails require separately configured providers and credentials. iKhokha online payments use the separately configured private merchant connection.
 
 Banking, Wi-Fi, system Settings and emergency access remain part of the managed flow. The managed client clears Wi-Fi configuration restrictions while retaining finance reset/uninstall protections. Device-owner restrictions use supported Android APIs; recovery/firmware protection and instantaneous delivery on every manufacturer are not guaranteed. Offline reboot behavior and banking app compatibility require the handset checks in `docs/HANDSET_TESTS.md`.
 
 ## This publication
 
-Includes corrected USB ownership diagnostics and six administrator conveniences: keyboard customer search, remembered page, offline status, refresh time, copyable references and customer CSV export with spreadsheet-formula escaping. No customer records or private enrollment codes are included.
+Customer 0.15.0 adds hosted iKhokha checkout, the existing EFT alternative and an online payment check action. The administrator website adds owner-only merchant configuration and per-customer payment links. The public return Worker carries no secrets and never approves payments. This update preserves existing enrollment, device ownership, banking and connectivity policies.
 
-Verified before publication: signed APK identity/checksum, Android release lint and 30 unit cases, 20 actual PowerShell parser cases, Cloudflare JWT/relay tests, build dry run and protected public sign-in redirects. Physical enrollment and first owner sign-in remain handset/browser acceptance steps.
+Verified: six provider signing/transport/receipt checks, transactional database duplicate-credit and released-device checks with explicit rollback, 14 Android checkout/banking tests, release build/lint, signing identity continuity, administrator browser checks, eight Cloudflare authentication/relay checks and live unsigned-callback rejection. A real R300 payment, bank 3-D Secure flow and handset unlock acknowledgement remain the final acceptance test. No real card charge or persistent fixture customer was created.

@@ -1,0 +1,9 @@
+{
+  "name": "loop-secure-pay",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-07",
+  "workers_dev": true,
+  "preview_urls": false,
+  "send_metrics": false,
+  "account_id": "0f09be76e1058d00a2c1217a327aa00d"
+}

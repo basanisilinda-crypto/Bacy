@@ -45,5 +45,31 @@ with sync_playwright() as p:
  page.set_viewport_size({'width':1440,'height':1050});page.screenshot(path=str(out/'admin-desktop-improvements.png'),full_page=True)
  page.locator('nav [data-view="overview"]').click();page.screenshot(path=str(out/'admin-overview-redesign.png'),full_page=True)
  page.locator('nav [data-view="payments"]').click();page.screenshot(path=str(out/'admin-payments-redesign.png'),full_page=True)
+ # Gateway UI uses intercepted fixture calls only: no live financial writes.
+ def gateway_route(route):
+  request=route.request
+  if request.method=='PUT':
+   data=request.post_data_json
+   assert data=={'app_id':'','app_secret':'','enabled':True},data
+  else: assert request.method=='GET'
+  route.fulfill(status=200,content_type='application/json',body=json.dumps({'configured':True,'enabled':True,'app_id_hint':'…TEST','callback_url':'https://fixture.invalid/callback','return_url':'https://fixture.invalid/return'}))
+ context.route('https://loop-ui.test/api/admin/payments/ikhokha',gateway_route)
+ page.locator('#open-ikpay-settings').click()
+ page.locator('#ikpay-settings-dialog').wait_for(state='visible')
+ assert page.locator('#ikpay-settings-form input[name="app_secret"]').input_value()==''
+ page.locator('#ikpay-settings-form button[type="submit"]').click()
+ page.locator('#ikpay-settings-dialog').wait_for(state='hidden')
+ def link_route(route):
+  assert route.request.method=='POST'
+  route.fulfill(status=200,content_type='application/json',body=json.dumps({'checkout_url':'https://securepay.ikhokha.red/fixture-only','state':'pending'}))
+ context.route('https://loop-ui.test/api/admin/devices/TEST-A/payment-link',link_route)
+ page.locator('nav [data-view="devices"]').click()
+ page.get_by_role('button',name='Manage Alpha fixture',exact=True).click()
+ page.locator('#create-ikpay-link').click()
+ page.locator('#ikpay-link-url').wait_for(state='visible')
+ assert page.locator('#ikpay-link-url').input_value()=='https://securepay.ikhokha.red/fixture-only'
+ assert page.locator('#copy-ikpay-link').is_visible()
+ page.keyboard.press('Escape')
+ assert not errors,errors
  browser.close()
  print('Browser checks passed: sorting, filters, saved density/navigation, payment search/counts, help, dismissible status, refresh feedback, offline banner and mobile cards without horizontal overflow.')
