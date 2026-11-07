@@ -1,0 +1,47 @@
+"""Browser acceptance checks using intercepted fixture responses, never production writes."""
+from pathlib import Path
+import json,time
+from playwright.sync_api import sync_playwright
+ROOT=Path(__file__).resolve().parents[1]
+t=int(time.time())
+def device(name,ref,due,status):
+ return dict(id=ref,name=name,phone='0600000000',reference=ref,due=due,revision=1,acknowledged_revision=1,released=False,policy='{}',model='Test handset' if status!='not_enrolled' else None,last_seen=t,enforcement_status=status,approved_total=300,approved_count=1)
+records=dict(devices=[device('Alpha fixture','TEST-A',t+1000,'unrestricted'),device('Beta fixture','TEST-B',t-1000,'not_enrolled')],claims=[dict(id='1',name='Alpha fixture',reference='TEST-A',bank_reference='BANK-TEST-1',amount=300,state='pending',submitted=t),dict(id='2',name='Beta fixture',reference='TEST-B',bank_reference='BANK-TEST-2',amount=300,state='approved',submitted=t)],audit=[],support=[],messages=[],server_time=t,payment_summary=dict(approved_total=300,approved_count=1,pending_count=1))
+with sync_playwright() as p:
+ browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
+ context=browser.new_context(viewport={'width':1440,'height':1050})
+ def route(req):
+  path=req.request.url.split('loop-ui.test',1)[-1].split('?',1)[0]
+  if path.startswith('/api/'):
+   assert req.request.method=='GET','UI checks must never write customer data'
+   value=records if path=='/api/admin/overview' else {'email':'owner@fixture.invalid','role':'owner'} if path=='/api/auth/me' else {'requests':[]}
+   req.fulfill(status=200,content_type='application/json',body=json.dumps(value));return
+  f=ROOT/'backend/static'/('index.html' if path=='/' else path.removeprefix('/static/'))
+  kind='text/html' if f.suffix=='.html' else 'text/javascript' if f.suffix=='.js' else 'text/css' if f.suffix=='.css' else 'image/png' if f.suffix=='.png' else 'font/woff2'
+  req.fulfill(status=200,content_type=kind,body=f.read_bytes())
+ context.route('https://loop-ui.test/**',route)
+ page=context.new_page();errors=[];page.on('pageerror',lambda err:errors.append(str(err)))
+ page.goto('https://loop-ui.test/');page.locator('#workspace').wait_for(state='visible')
+ page.keyboard.press('Control+k');assert page.locator('#search').evaluate('(el)=>el===document.activeElement')
+ page.select_option('#customer-sort','due');assert 'Beta fixture' in page.locator('#devices-table tr').first.inner_text()
+ page.get_by_role('button',name='Setup pending · 1',exact=True).click();assert page.locator('#devices-table tr').count()==1
+ page.get_by_role('button',name='All · 2',exact=True).click()
+ page.get_by_role('button',name='Compact rows',exact=True).click();assert page.locator('html').get_attribute('data-density')=='compact'
+ page.reload();page.locator('#workspace').wait_for(state='visible');assert page.locator('html').get_attribute('data-density')=='compact';assert page.locator('#devices-view').is_visible()
+ page.evaluate("notice('Fixture status message')");page.get_by_role('button',name='Dismiss message').click();assert page.locator('#notice').is_hidden()
+ page.get_by_role('button',name='Setup help',exact=True).click();assert page.locator('#workspace-help').is_visible();page.keyboard.press('Escape')
+ page.locator('nav [data-view="payments"]').click();page.locator('#payment-search').fill('BANK-TEST-1');assert page.locator('#payments-list .payment-card').count()==1
+ assert page.locator('[data-payment-filter="approved"]').last.inner_text()=='Approved (1)'
+ page.locator('nav [data-view="devices"]').click();page.set_viewport_size({'width':390,'height':844});assert page.locator('#devices-table tr').first.evaluate('(el)=>getComputedStyle(el).display')=='block'
+ assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Mobile page overflows horizontally'
+ assert page.locator('#devices-table tr').first.bounding_box()['height']<600,'Mobile customer card is unnecessarily tall'
+ assert page.locator('.full-register table').evaluate('(el)=>el.scrollWidth<=el.clientWidth+1'),'Mobile table clips card content'
+ context.set_offline(True);assert page.locator('.connection-banner').is_visible();context.set_offline(False)
+ page.locator("#refresh").click()
+ page.wait_for_function("document.querySelector('#sync-status').textContent.includes('Updated ')",timeout=3000)
+ assert page.locator('#sync-status').inner_text().startswith('Updated ')
+ assert not errors,errors
+ out=ROOT/'artifacts';out.mkdir(exist_ok=True);page.screenshot(path=str(out/'admin-mobile-improvements.png'),full_page=True)
+ page.set_viewport_size({'width':1440,'height':1050});page.screenshot(path=str(out/'admin-desktop-improvements.png'),full_page=True)
+ browser.close()
+ print('Browser checks passed: sorting, filters, saved density/navigation, payment search/counts, help, dismissible status, refresh feedback, offline banner and mobile cards without horizontal overflow.')
