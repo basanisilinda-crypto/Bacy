@@ -1,6 +1,6 @@
 # Loop Secure downloads
 
-Managed client 0.18.3, native administrator 1.7.1 and optional disconnected preview 1.3.0.
+Managed client 0.18.4, native administrator 1.7.1 and optional disconnected preview 1.3.0.
 
 Install signed updates over the matching existing app. Do not uninstall an enrolled client to update it. The Windows update ZIP retains the customer account and does not assign ownership again.
 
@@ -23,3 +23,5 @@ Customer 0.18.1 is a visible update test: installed version on Home, gold releas
 Customer 0.18.2 is an 18.6 MB test release with the realistic phone-padlock logo and R1,700 repayment plan. Admin 1.7.1 includes the new logo and plan reporting. Keep an older updater-capable app installed to test automatic downloading. Tap Install after download; Android may need installation approval. Admin updates never restrict the admin phone. Update in place; keep account data and existing ownership. [Update guide](../docs/AUTOMATIC_APP_UPDATES.md).
 
 Customer 0.18.3 adds background Wi-Fi/mobile downloads and signed device-owner unattended installation. Existing versions need one approval to receive it. Future customer updates do not need the account screen open where Android permits background work and installation. Admin stays 1.7.1 with approval and no restrictions. Tap Install after download; Android may need installation approval. Admin updates never restrict the admin phone. Update in place; keep account data and existing ownership. [Update guide](../docs/AUTOMATIC_APP_UPDATES.md).
+
+Customer 0.18.4 adds Copy payment summary in My plan and exact final-payment wording. Keep 0.18.3 installed and enrolled to test background updating while the phone remains online. See [test instructions](../docs/TEST_UPDATE_0184.md).

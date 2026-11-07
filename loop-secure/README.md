@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.3).
-- Customer app **0.18.3**, administrator app **1.7.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.4).
+- Customer app **0.18.4**, administrator app **1.7.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,12 +43,8 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.18.3/code 30** checks for updates without opening the app: the enrolled device-owner connection service checks when validated internet returns and during background account sync, and a persisted 15-minute any-network job provides recovery. Wi-Fi and mobile data are eligible. Android controls background timing and may delay stopped or restricted apps.
+Customer **0.18.4/code 31** adds **My plan → Copy payment summary** with the verified total, amount paid, balance, percentage and next payment. It also shows the exact signed amount in manual bank-transfer details and removes the fixed-R300 description from fresh-link guidance.
 
-With explicit permission in the signed manifest, a device-owner customer app downloads and attempts unattended PackageInstaller installation. Payment checkouts defer installation, even after their temporary SMS-access window expires. Android-required approval is retained through a trusted system-installer, session-bound notification rather than discarded. Failed installs retain the account/app and retry after a cooldown. [Background update guide](docs/BACKGROUND_CUSTOMER_UPDATES.md).
+Keep 0.18.3 installed and enrolled, and leave the phone online to test discovery/download/installation without opening the app. Confirm v0.18.4 on Home afterwards and try the new copy button. Android can delay background scheduling or require approval. Do not install the APK manually first if testing the automatic channel. [Test instructions](docs/TEST_UPDATE_0184.md).
 
-**One-time transition:** 0.18.0–0.18.2 wait for installation approval. Install 0.18.3 once through that existing flow, then future enrolled customer updates can happen without opening Loop Secure or tapping Install where Android permits. Publication alone is not proof of installation on a handset.
-
-Administrator stays **1.7.1/code 13**, with its existing Wi-Fi download and approval flow and no phone restrictions. The R1,700 repayment total, verified progress/balance, exact final payment and realistic phone-lock logo remain in place. [Repayment rules](docs/PLAN_R1700.md).
-
-Validation includes release build/lint, SDK 30/35 scheduling/owner/manifest/payment/approval-target/session/freshness regressions, 14 gateway/update fixtures, original signing certificate and hosted-byte verification. Actual background timing, mobile download and silent install completion still need handset confirmation. No permission, TLS, financial verification or package-signer checks are bypassed.
+Administrator stays 1.7.1; the R1,700 plan, approved-payment rules, signing identity and account/device ownership are retained. Release build/lint, existing native UI/updater regressions and hosted-byte checks passed. Handset confirmation is still needed for actual unattended download/installation.
