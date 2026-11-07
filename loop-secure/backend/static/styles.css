@@ -23,3 +23,7 @@ dialog{border:1px solid #aebba3;border-radius:8px;box-shadow:0 28px 90px #1d2e26
 .summary-strip{grid-template-columns:1.5fr repeat(4,minmax(0,1fr))}@media(max-width:850px) and (min-width:761px){.summary-receipts>strong{font-size:30px}.summary-stat>strong{font-size:28px}.summary-stat>small{font-size:10px}}@media(max-width:760px){.summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-receipts{grid-column:1/-1}.summary-stat{border-top:1px solid var(--line)}.summary-stat:nth-child(odd){border-right:0}.summary-stat:nth-child(even){border-right:1px solid var(--line)}}
 
 .gateway-setup{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px;margin-bottom:22px}.gateway-setup h2{font-size:23px}.gateway-setup p{font-size:13px;margin-top:7px}.gateway-customer{margin:22px 0;padding-top:20px;border-top:1px solid var(--line)}.gateway-customer p{margin:10px 0}.gateway-customer input{margin:12px 0}#ikpay-connection-addresses{overflow-wrap:anywhere;font-size:12px}@media(max-width:760px){.gateway-setup{align-items:stretch;flex-direction:column}}
+
+/* Tall phone-and-lock emblem needs a clear readable frame. */
+.sidebar .wordmark img{width:48px;height:62px;object-fit:contain}
+@media(max-width:760px){.sidebar .wordmark img{width:42px;height:54px}}

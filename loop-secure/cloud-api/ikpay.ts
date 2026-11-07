@@ -13,7 +13,7 @@ export async function verifyIkCallback(path:string,rawBody:string,signature:stri
  const signingKey=await key(secret);for(const body of variants)if(await crypto.subtle.verify('HMAC',signingKey,bytes,encoder.encode(escapedIkPayload(path,body))))return true;return false;
 }
 export function isPaidForIntent(intent:any,result:any){
- return intent?.amount_minor===30000&&intent?.currency==='ZAR'&&typeof intent.paylink_id==='string'&&result?.status==='PAID'&&result.paylinkID===intent.paylink_id&&Number.isSafeInteger(result.amount)&&result.amount===intent.amount_minor&&(result.currency===undefined||result.currency==='ZAR')&&(result.externalTransactionID===undefined||result.externalTransactionID===intent.id);
+ return Number.isSafeInteger(intent?.amount_minor)&&intent.amount_minor>0&&intent.amount_minor<=30000&&intent.amount_minor%100===0&&intent?.currency==='ZAR'&&typeof intent.paylink_id==='string'&&result?.status==='PAID'&&result.paylinkID===intent.paylink_id&&Number.isSafeInteger(result.amount)&&result.amount===intent.amount_minor&&(result.currency===undefined||result.currency==='ZAR')&&(result.externalTransactionID===undefined||result.externalTransactionID===intent.id);
 }
 export function trustedCheckoutUrl(value:string){try{const url=new URL(value);return url.protocol==='https:'&&!url.username&&!url.password&&!url.port&&!url.hash&&(url.hostname==='ikhokha.com'||url.hostname.endsWith('.ikhokha.com')||url.hostname==='ikhokha.red'||url.hostname.endsWith('.ikhokha.red'));}catch{return false;}}
 export async function ikRequest(config:{app_id:string;secret:string},path:string,body?:Record<string,unknown>){

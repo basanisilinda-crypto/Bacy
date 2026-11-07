@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.1).
-- Customer app **0.18.1**, administrator app **1.7.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.2).
+- Customer app **0.18.2**, administrator app **1.7.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,8 +43,10 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.18.1/code 28** is a small update to test the signed automatic-download channel from 0.18.0. It adds the installed version on Home, a gold What’s new strip with release notes, and an EFT-reference copy shortcut on the account card. Administrator remains **1.7.0/code 12**.
+Customer **0.18.2/code 29** has a full signed download of **18,621,423 bytes (18.6 MB)** for testing the automatic-download channel. Administrator **1.7.1/code 13** and the private website use the same new realistic phone-padlock logo: a closed gold loop protecting a green phone.
 
-Keep 0.18.0 installed and enrolled, connect to unmetered Wi-Fi and open the app. Let it download, then tap Install update. After installation, Home shows **v0.18.1** and the gold strip. Do not manually install the new APK first if you want to test the automatic download. Existing enrollment and account data remain in place. [Step-by-step test](docs/TEST_UPDATE_0181.md).
+The owner explicitly set **R1,700 as the full repayment total for every customer**. Customer Home and administrator account records show verified paid total, remaining balance and repayment percentage. Normal payments are up to R300; a R1,500 paid balance produces a final **R200** hosted checkout or EFT claim. Only approved settlement counts. Once approved receipts reach R1,700, the account is permanently released on the next device sync. Existing released accounts and financial history are preserved. [Repayment rules](docs/PLAN_R1700.md).
 
-Release build/lint, SDK 30/35 version/shortcut and manifest regression cases, original signing-certificate checks and live hosted-byte verification passed. Publication does not prove that a particular phone downloaded or installed it; confirm the new version on that handset. The previous [automatic update and dashboard guide](docs/AUTOMATIC_APP_UPDATES.md) documents approval, recovery and Android scheduling limits.
+The customer also shows the Android installation date, cached download size and a Wi-Fi settings shortcut in App updates. Existing updater-capable phones can download this release on validated unmetered Wi-Fi after opening the app, then the user taps Install. Keep the older app installed to test the automatic download; installing the new APK manually first skips that test. [Test instructions](docs/TEST_UPDATE_0182.md).
+
+Validation passed: customer/admin release builds and lint; 24 SDK 30/35 native regression cases; 13 gateway/update fixtures; transaction-rollback tests for final EFT, exact final online payment, duplicate confirmation, full payoff and stale-link overpayment review; website authentication/relay and browser acceptance checks; original APK signing identity and hosted-byte verification. The automatic download/install result still needs confirmation on the user's handset. Direct bank EFT remains manually reviewed. iKhokha controls hosted Instant EFT/Ozow bank availability.

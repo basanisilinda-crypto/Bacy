@@ -29,14 +29,14 @@ public final class CustomerHome {
         public String monthlyPayment="",subline="Complete enrollment to connect";
         public String foot="Account connection required",banner="",ringCaption="days left";
         /** Formatted verified monetary values. Empty means the value is not available. */
-        public String paidTotal="",totalPrice="";
+        public String paidTotal="",totalPrice="",balance="",paymentsRemaining="";
         /** Verified approved claim count; -1 means unknown. */
         public int approvedPayments=-1;
         /** Financed-plan repayment percentage, 0..100; -1 means unknown. Requires totalPrice. */
         public float progressPercent=-1f;
         /** Retained for caller compatibility. Time entitlement is never shown as repayment progress. */
         public float fraction=0;
-        public boolean preview=false,paidOff=false;
+        public boolean preview=false,paidOff=false,finalPayment=false;
     }
     public interface Actions { void run(int index); }
     private CustomerHome(){}
@@ -58,7 +58,7 @@ public final class CustomerHome {
         LinearLayout page=col(c);page.setBackgroundColor(PAPER);page.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars());v.setPadding(b.left,b.top,b.right,b.bottom);return insets;});
         ScrollView scroll=new ScrollView(c);scroll.setFillViewport(true);scroll.setClipToPadding(false);scroll.setVerticalScrollBarEnabled(false);page.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout content=col(c);content.setPadding(d(c,18),d(c,14),d(c,18),d(c,16));scroll.addView(content);
-        LinearLayout brand=new LinearLayout(c);brand.setGravity(Gravity.CENTER_VERTICAL);brand.addView(new Logo(c),new LinearLayout.LayoutParams(d(c,40),d(c,40)));
+        LinearLayout brand=new LinearLayout(c);brand.setGravity(Gravity.CENTER_VERTICAL);brand.addView(new Logo(c),new LinearLayout.LayoutParams(d(c,52),d(c,62)));
         LinearLayout brandCopy=col(c);TextView wordmark=heading(c,"Loop Secure",20);wordmark.setTypeface(BrandFonts.heading(c));brandCopy.addView(wordmark);space(brandCopy,3);brandCopy.addView(text(c,m.appVersion.isEmpty()?"Your device account":"Your device account · v"+m.appVersion,10,MUTED,false));LinearLayout.LayoutParams brandParams=new LinearLayout.LayoutParams(0,-2,1);brandParams.leftMargin=d(c,10);brand.addView(brandCopy,brandParams);
         LinearLayout help=new LinearLayout(c);help.setGravity(Gravity.CENTER);icon(help,"help",INK,22);tap(help,()->actions.run(3),SURFACE,16);help.setContentDescription("Get support");brand.addView(help,new LinearLayout.LayoutParams(d(c,46),d(c,46)));content.addView(brand);space(content,14);
         if(!m.appVersion.isEmpty()){
@@ -73,7 +73,7 @@ public final class CustomerHome {
         LinearLayout due=col(c);due.addView(text(c,paid?"Finance plan":"Next payment",10,MUTED,false));space(due,5);due.addView(text(c,paid?"Completed":value(m.due,"Available after enrollment"),12,INK,true));timing.addView(due,new LinearLayout.LayoutParams(0,-2,1));
         LinearLayout remaining=col(c);remaining.setGravity(Gravity.END);TextView timeLabel=text(c,paid?"No further payments":value(m.ringCaption,"days left"),10,MUTED,false);timeLabel.setGravity(Gravity.END);remaining.addView(timeLabel);space(remaining,5);TextView timeValue=text(c,paid?"Paid off":value(m.remaining,"—"),17,attention?AMBER:BLUE,true);timeValue.setGravity(Gravity.END);remaining.addView(timeValue);LinearLayout.LayoutParams remainingParams=new LinearLayout.LayoutParams(0,-2,.65f);remainingParams.leftMargin=d(c,12);timing.addView(remaining,remainingParams);content.addView(timing);
         LinearLayout payment=panel(c);payment.setPadding(d(c,20),d(c,20),d(c,20),d(c,18));addPanel(content,payment,0);
-        LinearLayout amountRow=new LinearLayout(c);amountRow.setGravity(Gravity.CENTER_VERTICAL);LinearLayout amountCopy=col(c);amountCopy.addView(text(c,paid?"Plan completed":"Monthly payment",11,MUTED,false));space(amountCopy,7);amountCopy.addView(reading(c,paid?"Paid off":value(m.monthlyPayment,"—"),34));space(amountCopy,5);amountCopy.addView(text(c,paid?"No further plan payments are due":value(m.monthlyPayment,"").isEmpty()?"Amount available after enrollment":"Per 30-day period",11,MUTED,false));amountRow.addView(amountCopy,new LinearLayout.LayoutParams(0,-2,1));
+        LinearLayout amountRow=new LinearLayout(c);amountRow.setGravity(Gravity.CENTER_VERTICAL);LinearLayout amountCopy=col(c);amountCopy.addView(text(c,paid?"Plan completed":m.finalPayment?"Final payment":"Monthly payment",11,MUTED,false));space(amountCopy,7);amountCopy.addView(reading(c,paid?"Paid off":value(m.monthlyPayment,"—"),34));space(amountCopy,5);amountCopy.addView(text(c,paid?"No further plan payments are due":value(m.monthlyPayment,"").isEmpty()?"Amount available after enrollment":m.finalPayment?"Completes your phone payments":"Per 30-day period",11,MUTED,false));amountRow.addView(amountCopy,new LinearLayout.LayoutParams(0,-2,1));
         LinearLayout paymentIcon=new LinearLayout(c);paymentIcon.setGravity(Gravity.CENTER);paymentIcon.setBackground(shape(c,SOFT,18,0));icon(paymentIcon,paid?"check":"payment",BLUE,26);amountRow.addView(paymentIcon,new LinearLayout.LayoutParams(d(c,56),d(c,56)));payment.addView(amountRow);
         if(!paid)button(payment,"Make a payment","payment",6,actions);
         if(!value(m.banner,"").isEmpty()){space(payment,12);payment.addView(text(c,m.banner,12,attention?AMBER:MUTED,false));}
@@ -81,7 +81,7 @@ public final class CustomerHome {
         LinearLayout progress=new LinearLayout(c);progress.setGravity(Gravity.CENTER_VERTICAL);progress.setPadding(d(c,18),d(c,18),d(c,18),d(c,18));progress.setBackground(shape(c,SURFACE,22,0));addPanel(content,progress,10);
         boolean hasPrice=!value(m.totalPrice,"").isEmpty();boolean hasProgress=hasPrice&&m.progressPercent>=0&&m.progressPercent<=100;
         progress.addView(new ProgressDial(c,hasProgress?m.progressPercent:-1,m.approvedPayments),new LinearLayout.LayoutParams(d(c,104),d(c,104)));
-        LinearLayout progressCopy=col(c);progressCopy.addView(text(c,"Paid so far",11,MUTED,false));space(progressCopy,6);progressCopy.addView(reading(c,value(m.paidTotal,"—"),27));space(progressCopy,7);progressCopy.addView(text(c,m.approvedPayments<0?"Approved payments unavailable":m.approvedPayments+(m.approvedPayments==1?" payment approved":" payments approved"),11,MUTED,false));if(hasPrice){space(progressCopy,6);progressCopy.addView(text(c,"of "+m.totalPrice,11,BLUE,true));}LinearLayout.LayoutParams progressParams=new LinearLayout.LayoutParams(0,-2,1);progressParams.leftMargin=d(c,20);progress.addView(progressCopy,progressParams);
+        LinearLayout progressCopy=col(c);progressCopy.addView(text(c,"Paid so far",11,MUTED,false));space(progressCopy,6);progressCopy.addView(reading(c,value(m.paidTotal,"—"),27));space(progressCopy,7);progressCopy.addView(text(c,m.approvedPayments<0?"Approved payments unavailable":m.approvedPayments+(m.approvedPayments==1?" payment approved":" payments approved"),11,MUTED,false));if(hasPrice){space(progressCopy,6);progressCopy.addView(text(c,"of "+m.totalPrice,11,BLUE,true));if(!m.balance.isEmpty()){space(progressCopy,6);progressCopy.addView(text(c,m.balance+" left to pay",12,INK,true));}if(!m.paymentsRemaining.isEmpty()){space(progressCopy,4);progressCopy.addView(text(c,m.paymentsRemaining+" payments remaining",10,MUTED,false));}}LinearLayout.LayoutParams progressParams=new LinearLayout.LayoutParams(0,-2,1);progressParams.leftMargin=d(c,20);progress.addView(progressCopy,progressParams);
         space(content,23);section(c,content,"Quick access","",null);space(content,10);
         LinearLayout first=new LinearLayout(c);tile(first,"Banking","Open your bank","bank",9,actions,true);tile(first,"My plan","Your agreement","payment",0,actions,false);content.addView(first);space(content,10);
         LinearLayout second=new LinearLayout(c);tile(second,"My device","Management status","shield",5,actions,false);tile(second,"Messages","Account updates","message",4,actions,false);content.addView(second);space(content,10);LinearLayout connectivity=new LinearLayout(c);tile(connectivity,"Wi-Fi","Connect to internet","wifi",10,actions,false);tile(connectivity,"Settings","Phone preferences","settings",11,actions,false);content.addView(connectivity);

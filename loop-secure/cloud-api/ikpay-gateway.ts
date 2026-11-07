@@ -18,12 +18,14 @@ export class IkPayGateway {
  private publicIntent(p:any){return {id:p.id,state:p.state,amount_minor:p.amount_minor,currency:p.currency,checkout_url:p.state==='pending'?p.checkout_url||null:null,created:p.created,confirmed_at:p.confirmed_at||null,needs_new_link:p.state==='pending'&&['failure','attempt_limit'].includes(p.last_checkout_outcome)};}
  async create(deviceId:string,fresh=false){
   const cfg=await this.config(),now=Math.floor(Date.now()/1000);const pointerKey='ikpay-active:'+deviceId;
+  let next:number|undefined;const nextAmount=async()=>{if(next!==undefined)return next;const summary=await this.db.rpc('loop_plan_summary',{p_device:deviceId});this.checked(summary.error);next=summary.data?.next_payment;if(!Number.isSafeInteger(next)||(next as number)<=0||(next as number)>300)this.failure(409,'The plan has no further payment due, or its balance could not be confirmed.');return next!;};
   const pointer=await this.read(pointerKey);
   if(pointer){
    const p=await this.read('ikpay-intent:'+pointer.id);
    if(p?.state==='review_required')return this.publicIntent(p);
    if(p?.state==='paid'&&now-(p.confirmed_at||p.created)<120)return this.publicIntent(p);
    if(p?.state==='pending'){
+    if(p.amount_minor!==100*await nextAmount())fresh=true;
     if(fresh||now-p.created>=900||['failure','attempt_limit'].includes(p.last_checkout_outcome)){
      const result=await ikRequest(cfg,'/public-api/v1/api/getStatus/'+p.paylink_id);
      if(result.status==='PAID'){const checked=await this.verifyAndCredit(p.id,true);if(checked?.state==='paid'||checked?.state==='review_required')return this.publicIntent(checked);this.failure(409,'Payment confirmation is processing. Check status before requesting another link.');}
@@ -42,12 +44,13 @@ export class IkPayGateway {
   const deviceResult=await this.db.from('loop_devices').select('id,customer_id,released,token').eq('id',deviceId).maybeSingle();this.checked(deviceResult.error);const device=deviceResult.data;
   if(!device?.token||device.released)this.failure(409,'Online payments require an active enrolled customer account.');
   const count=await this.db.from('loop_config').select('key',{count:'exact',head:true}).like('key','ikpay-intent:%').eq('value->>device_id',deviceId).gte('value->>created',String(now-86400));this.checked(count.error);if((count.count||0)>=10)this.failure(429,'Too many new payment links today. Use your existing link or EFT.');
+  const dueAmount=await nextAmount();
   const id=crypto.randomUUID();const hold=await this.db.from('loop_config').insert({key:pointerKey,value:{id,created:now}});if(hold.error){if(hold.error.code==='23505')this.failure(409,'Another payment link is being prepared. Please try again shortly.');this.checked(hold.error);}
-  const intent:any={id,device_id:deviceId,amount_minor:30000,currency:'ZAR',app_id:cfg.app_id,state:'creating',created:now,last_checked:0};
+  const intent:any={id,device_id:deviceId,amount_minor:dueAmount*100,currency:'ZAR',app_id:cfg.app_id,state:'creating',created:now,last_checked:0};
   const stored=await this.db.from('loop_config').insert({key:'ikpay-intent:'+id,value:intent});this.checked(stored.error);
   try{
    const customer=await this.db.from('loop_customers').select('reference').eq('id',device.customer_id).single();this.checked(customer.error);
-   const result=await ikRequest(cfg,'/public-api/v1/api/payment',{entityID:cfg.app_id,externalEntityID:deviceId,amount:intent.amount_minor,currency:'ZAR',requesterUrl:PAYMENT_SITE,mode:'live',description:'Loop Secure '+customer.data.reference+' · 30-day payment',externalTransactionID:id,urls:{callbackUrl:this.base+'/payments/ikhokha/callback',successPageUrl:PAYMENT_SITE+'/return?result=success',failurePageUrl:PAYMENT_SITE+'/return?result=failure',cancelUrl:PAYMENT_SITE+'/return?result=cancel'}});
+   const result=await ikRequest(cfg,'/public-api/v1/api/payment',{entityID:cfg.app_id,externalEntityID:deviceId,amount:intent.amount_minor,currency:'ZAR',requesterUrl:PAYMENT_SITE,mode:'live',description:'Loop Secure '+customer.data.reference+' · plan payment',externalTransactionID:id,urls:{callbackUrl:this.base+'/payments/ikhokha/callback',successPageUrl:PAYMENT_SITE+'/return?result=success',failurePageUrl:PAYMENT_SITE+'/return?result=failure',cancelUrl:PAYMENT_SITE+'/return?result=cancel'}});
    if(result.responseCode!=='00'||result.externalTransactionID!==id||!trustedCheckoutUrl(result.paylinkUrl)||typeof result.paylinkID!=='string'||!/^[A-Za-z0-9_-]{3,100}$/.test(result.paylinkID))throw new Error('iKhokha did not return a valid payment link. Check the merchant API configuration.');
    Object.assign(intent,{paylink_id:result.paylinkID,checkout_url:result.paylinkUrl,state:'pending'});await this.save(id,intent);return this.publicIntent(intent);
   }catch(error:any){await this.save(id,{...intent,state:'failed'});this.failure(502,error.message||'The payment link could not be created. Bank EFT remains available.');}

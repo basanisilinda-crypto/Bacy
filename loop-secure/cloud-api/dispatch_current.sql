@@ -7,7 +7,7 @@ declare
  t bigint:=floor(extract(epoch from clock_timestamp()));
  d public.loop_devices%rowtype; c public.loop_customers%rowtype; cl public.loop_claims%rowtype;
  msg public.loop_messages%rowtype; saved public.loop_requests%rowtype;
- result jsonb; people jsonb; payments jsonb; events jsonb; tickets jsonb; inbox jsonb; banking jsonb;
+ plan jsonb; result jsonb; people jsonb; payments jsonb; events jsonb; tickets jsonb; inbox jsonb; banking jsonb;
  token_hash text; did uuid; cid uuid; mid uuid; total integer; item text; status text;
 begin
  if p_action='enroll_create' then
@@ -44,7 +44,7 @@ begin
   select * into c from public.loop_customers where id=d.customer_id;
   result:=jsonb_build_object('device_id',d.id,'reference',c.reference);
  elsif p_action='overview' then
-  select coalesce(jsonb_agg(to_jsonb(x)),'[]') into people from (select dv.id,cu.name,cu.phone,cu.reference,cu.verified,dv.due,dv.revision,dv.released,dv.model,dv.last_seen,dv.acknowledged_revision,dv.enforcement_status,dv.policy::text as policy,(select coalesce(sum(amount),0) from public.loop_claims pay where pay.device_id=dv.id and pay.state='approved') as approved_total,(select count(*) from public.loop_claims pay where pay.device_id=dv.id and pay.state='approved') as approved_count from public.loop_devices dv join public.loop_customers cu on cu.id=dv.customer_id order by cu.created desc) x;
+  select coalesce(jsonb_agg(to_jsonb(x)),'[]') into people from (select dv.id,cu.name,cu.phone,cu.reference,cu.verified,dv.due,dv.revision,dv.released,dv.model,dv.last_seen,dv.acknowledged_revision,dv.enforcement_status,dv.policy::text as policy,public.loop_plan_summary(dv.id) as payment_summary,(select coalesce(sum(amount),0) from public.loop_claims pay where pay.device_id=dv.id and pay.state='approved') as approved_total,(select count(*) from public.loop_claims pay where pay.device_id=dv.id and pay.state='approved') as approved_count from public.loop_devices dv join public.loop_customers cu on cu.id=dv.customer_id order by cu.created desc) x;
   select coalesce(jsonb_agg(to_jsonb(x)),'[]') into payments from (select p.*,cu.name,cu.reference from public.loop_claims p join public.loop_devices dv on dv.id=p.device_id join public.loop_customers cu on cu.id=dv.customer_id where p.state='pending' or p.id in (select id from public.loop_claims order by submitted desc limit 200) order by p.submitted desc) x;
   select coalesce(jsonb_agg(to_jsonb(x)),'[]') into events from (select * from public.loop_audit order by id desc limit 100) x;
   select coalesce(jsonb_agg(to_jsonb(x)),'[]') into tickets from (select s.*,cu.name,cu.reference from public.loop_support s join public.loop_devices dv on dv.id=s.device_id join public.loop_customers cu on cu.id=dv.customer_id order by s.created desc limit 100) x;
@@ -59,7 +59,8 @@ begin
   select coalesce(jsonb_agg(to_jsonb(x)),'[]') into payments from (select id,amount,state,submitted,reviewed,reason from public.loop_claims where device_id=d.id order by submitted desc limit 30) x;
   select coalesce(jsonb_agg(to_jsonb(x)),'[]') into inbox from (select x.id,m.title,m.body,m.created,x.delivered,x.read_at from public.loop_deliveries x join public.loop_messages m on m.id=x.message_id where x.device_id=d.id order by (x.delivered is not null),case when x.delivered is null then x.id else -x.id end limit 100) x;
   select value into banking from public.loop_config where key='banking';
-  return jsonb_build_object('device_id',d.id,'revision',d.revision,'server_time',t,'due',d.due,'released',d.released,'policy',d.policy,'customer_name',c.name,'customer_phone',c.phone,'account_created',c.created,'reference',c.reference,'amount',300,'currency','ZAR','support_email','basanisilinda@gmail.com','payment_summary',(select jsonb_build_object('approved_total',coalesce(sum(amount) filter (where state='approved'),0),'approved_count',count(*) filter (where state='approved'),'pending_count',count(*) filter (where state='pending'),'currency','ZAR','contract_total',null,'progress_percent',null) from public.loop_claims where device_id=d.id),'claims',payments,'messages',inbox,'eft',coalesce(banking,'{}'));
+  plan:=public.loop_plan_summary(d.id);
+  return jsonb_build_object('device_id',d.id,'revision',d.revision,'server_time',t,'due',d.due,'released',d.released,'policy',d.policy,'customer_name',c.name,'customer_phone',c.phone,'account_created',c.created,'reference',c.reference,'amount',(plan->>'next_payment')::integer,'currency','ZAR','support_email','basanisilinda@gmail.com','payment_summary',plan,'claims',payments,'messages',inbox,'eft',coalesce(banking,'{}'));
  elsif p_action='events' then
   select * into d from public.loop_devices where id=p_device;
   select jsonb_build_object('cursor',d.revision::text||':'||coalesce(max(id),0)::text||':'||coalesce(min(case when delivered is null then id end),0)::text) into result from public.loop_deliveries where device_id=p_device;
@@ -69,7 +70,8 @@ begin
   if d.released then raise exception '409:Account released'; end if;
   select * into cl from public.loop_claims where device_id=d.id and (request_key=p_data->>'request_key' or state='pending') order by (request_key=p_data->>'request_key') desc limit 1;
   if found then return jsonb_build_object('id',cl.id,'state',cl.state); end if;
-  insert into public.loop_claims(device_id,request_key,amount,bank_reference,submitted) values(d.id,p_data->>'request_key',300,p_data->>'bank_reference',t) returning * into cl;
+  plan:=public.loop_plan_summary(d.id);if (plan->>'next_payment')::integer<=0 then raise exception '409:Plan fully paid; no further payment is due';end if;
+  insert into public.loop_claims(device_id,request_key,amount,bank_reference,submitted) values(d.id,p_data->>'request_key',(plan->>'next_payment')::integer,p_data->>'bank_reference',t) returning * into cl;
   result:=jsonb_build_object('id',cl.id,'state','pending');
  elsif p_action='review' then
   select * into cl from public.loop_claims where id=(p_data->>'id')::uuid for update;
@@ -78,10 +80,12 @@ begin
   select * into d from public.loop_devices where id=cl.device_id for update;
   if d.released then raise exception '409:Account released'; end if;
   if p_data->>'decision'='approve' then
+   plan:=public.loop_plan_summary(d.id);if cl.amount>(plan->>'remaining_balance')::integer then raise exception '409:Claim exceeds the remaining balance; review the actual settlement and any refund before approval';end if;
    if char_length(p_data->>'receipt_reference')<5 then raise exception '422:Settled bank transaction reference required'; end if;
    if exists(select 1 from public.loop_claims where receipt_reference=p_data->>'receipt_reference') then raise exception '409:Bank transaction already used'; end if;
    update public.loop_devices set due=greatest(due,t)+2592000,policy=policy||'{"manual_lock":false,"grace_until":0}'::jsonb,revision=revision+1 where id=d.id;
    update public.loop_claims set state='approved',receipt_reference=p_data->>'receipt_reference',reviewed=t,reviewer=p_actor,reason=p_data->>'reason' where id=cl.id;
+   perform public.loop_finish_paid_plan(d.id);
    status:='approved';
   else
    update public.loop_devices set revision=revision+1 where id=d.id;
@@ -174,4 +178,4 @@ begin
  end if;
  insert into public.loop_audit(at,actor,action,subject,detail) values(t,coalesce(nullif(p_actor,''),p_device::text,'device'),p_action,coalesce(p_data->>'id',p_device::text,result->>'device_id',result->>'id','fleet'),coalesce(p_data->>'reason',p_data->>'verification_note',p_data->>'consent_source',''));
  return result;
-end;$function$
+end;$function$;

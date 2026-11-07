@@ -2,7 +2,7 @@
 
 The installed customer app uses a real Supabase Edge Function and isolated Postgres tables. The private administrator Site proxies authenticated owner requests to that API. Native device calls use one-time enrollment codes and per-device credentials; they do not require ChatGPT sign-in or a private-Site bypass token.
 
-- Private admin: https://phone-finance-manager-bc.bacanyclinda.chatgpt.site
+- Private admin: https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev
 - Device API base: https://ourxezawbfclmhbggskv.supabase.co/functions/v1/loop-manager
 - Signed installer: device API base plus `/downloads/client.apk`
 
@@ -27,3 +27,8 @@ The connected account's existing quotas apply. No project, paid plan or billing 
 The current integration uses `ikpay.ts`, `ikpay-gateway.ts` and the additive `ikpay-confirmation.sql` migration. Signed webhooks are verified against the provider status before the private atomic confirmation function can grant paid time. `check_ikpay_transactions.sql` explicitly rolls back all fixtures. Follow [iKhokha payment setup and acceptance](../docs/IKHOKHA_PAYMENTS.md) for customer steps, server-only credentials, public callback/return endpoints and the required first live payment test.
 
 The owner-authenticated managed-installer upload now requires `X-App-Version-Code` in addition to the release version. `tools/publish_installer.py` reads it from the Android build. Device-authenticated `POST /api/device/app-update` returns a short-lived device-bound signed manifest for a newer managed client only; released accounts receive no automatic update. `app-update.ts` validates the fixed public storage origin and APK metadata before signing. No new database schema is required.
+
+
+## R1,700 repayment plan migration
+
+After the base schema and existing migrations, apply `plan-1700.sql` with the migration tool. It includes the current dispatch function, service-role plan-summary/payoff helpers and updated online confirmation function. Do not reapply an older dispatch/confirmation function afterwards. Run `check_plan_1700.sql` and `check_ikpay_transactions.sql` as explicit rollback acceptance checks. The merchant owner authorized the R1,700 total for all customers; existing released accounts remain released. See `../docs/PLAN_R1700.md`.
