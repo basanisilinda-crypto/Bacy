@@ -5,6 +5,7 @@ import usbReadme from './READ-ME.txt.ts';
 import prepareTools from './Prepare-Tools.ps1.ts';
 import {provisioningPayload} from './provisioning.ts';
 import {IkPayGateway} from './ikpay-gateway.ts';
+import {clientUpdateManifest} from './app-update.ts';
 import {createClient} from 'npm:@supabase/supabase-js@2.57.0';
 import {z} from 'npm:zod@3.25.76';
 import QRCode from 'npm:qrcode@1.5.4';
@@ -108,6 +109,7 @@ async function route(req:Request,path:string){
  }
  if(path.startsWith('/api/device/')){
   const dev=await device(req);
+  if(path==='/api/device/app-update'&&method==='POST'){const data=z.object({version_code:z.number().int().min(1).max(2147483647)}).parse(await body(req));const row=await db.from('loop_devices').select('released').eq('id',dev.id).single();check(row.error);return json(await signed(clientUpdateManifest(row.data.released?null:await currentInstaller(),dev.id,data.version_code,now())));}
   if(path==='/api/device/payments/ikhokha'&&method==='POST')return json(await ikpay.create(dev.id));
   if(path==='/api/device/payments/ikhokha/check'&&method==='POST'){await ikpay.reconcile(dev.id);return json(await ikpay.current(dev.id));}
   if(path==='/api/device/sync'||path==='/api/device/events')queuePaymentCheck(dev.id);
@@ -154,6 +156,7 @@ async function route(req:Request,path:string){
   if((path==='/api/admin/installer'||path==='/api/admin/preview-installer'||path==='/api/admin/admin-installer')&&method==='PUT'){
    const isPreview=path==='/api/admin/preview-installer',isAdmin=path==='/api/admin/admin-installer';
    const version=req.headers.get('x-app-version')||'';if(!/^\d+\.\d+\.\d+$/.test(version))fail(422,'A release version is required');
+   const versionCode=Number(req.headers.get('x-app-version-code')||0);if(!isPreview&&!isAdmin&&(!Number.isSafeInteger(versionCode)||versionCode<1))fail(422,'The managed client version code is required');
    const max=30*1024*1024;if(Number(req.headers.get('content-length')||0)>max)fail(413,'Installer too large');
    const reader=req.body?.getReader();if(!reader)fail(400,'Installer bytes required');const chunks:Uint8Array[]=[];let size=0;
    while(true){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>max){await reader.cancel();fail(413,'Installer too large');}chunks.push(value);}
@@ -168,7 +171,7 @@ async function route(req:Request,path:string){
    const uploaded=await db.storage.from(bucket).upload(object,bytes,{contentType:'application/vnd.android.package-archive',cacheControl:'31536000',upsert:false});
    if(uploaded.error&&!String(uploaded.error.message).toLowerCase().includes('already exists'))check(uploaded.error);
    const apkUrl=db.storage.from(bucket).getPublicUrl(object).data.publicUrl;
-   const tag=version+'-'+checksum.slice(0,12);const metadata={available:true,version,apk_url:apkUrl,apk_sha256:checksum,bytes:size,...(!isPreview&&!isAdmin?{download_url:baseUrl+'/a/'+tag+'.apk'}:{})};
+   const tag=version+'-'+checksum.slice(0,12);const metadata={available:true,version,...(!isPreview&&!isAdmin?{version_code:versionCode}:{}),apk_url:apkUrl,apk_sha256:checksum,bytes:size,...(!isPreview&&!isAdmin?{download_url:baseUrl+'/a/'+tag+'.apk'}:{})};
    if(!isPreview&&!isAdmin){const release=await db.from('loop_config').upsert({key:'apk_release:'+tag,value:metadata});check(release.error);}
    const stored=await db.from('loop_config').upsert({key:isAdmin?'admin_installer_current':isPreview?'preview_installer_current':'installer_current',value:metadata});check(stored.error);
    return json(metadata);

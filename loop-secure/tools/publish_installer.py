@@ -7,9 +7,10 @@ apk=root/'android/app/build/outputs/apk/release/app-release.apk'
 key=json.loads((root/'.signing/cloud-admin.json').read_text())['token']
 base='https://ourxezawbfclmhbggskv.supabase.co/functions/v1/loop-manager'
 version=re.search(r"versionName '([^']+)'",(root/'android/app/build.gradle').read_text()).group(1)
+version_code=int(re.search(r'versionCode (\d+)',(root/'android/app/build.gradle').read_text()).group(1))
 raw=apk.read_bytes();checksum=base64.urlsafe_b64encode(hashlib.sha256(raw).digest()).decode().rstrip('=')
 with httpx.Client(timeout=120) as client:
-    response=client.put(base+'/api/admin/installer',content=raw,headers={'Authorization':'Bearer '+key,'Content-Type':'application/vnd.android.package-archive','X-App-Version':version,'X-APK-SHA256':checksum})
+    response=client.put(base+'/api/admin/installer',content=raw,headers={'Authorization':'Bearer '+key,'Content-Type':'application/vnd.android.package-archive','X-App-Version':version,'X-App-Version-Code':str(version_code),'X-APK-SHA256':checksum})
     if response.status_code!=200:raise RuntimeError('Installer publish failed: '+str(response.status_code)+' '+response.text[:500])
     metadata=response.json()
     hosted=client.get(metadata['apk_url'])

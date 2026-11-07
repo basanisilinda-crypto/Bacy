@@ -25,3 +25,5 @@ The connected account's existing quotas apply. No project, paid plan or billing 
 ## iKhokha online payments
 
 The current integration uses `ikpay.ts`, `ikpay-gateway.ts` and the additive `ikpay-confirmation.sql` migration. Signed webhooks are verified against the provider status before the private atomic confirmation function can grant paid time. `check_ikpay_transactions.sql` explicitly rolls back all fixtures. Follow [iKhokha payment setup and acceptance](../docs/IKHOKHA_PAYMENTS.md) for customer steps, server-only credentials, public callback/return endpoints and the required first live payment test.
+
+The owner-authenticated managed-installer upload now requires `X-App-Version-Code` in addition to the release version. `tools/publish_installer.py` reads it from the Android build. Device-authenticated `POST /api/device/app-update` returns a short-lived device-bound signed manifest for a newer managed client only; released accounts receive no automatic update. `app-update.ts` validates the fixed public storage origin and APK metadata before signing. No new database schema is required.

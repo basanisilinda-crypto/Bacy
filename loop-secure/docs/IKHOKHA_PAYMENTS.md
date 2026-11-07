@@ -1,6 +1,6 @@
 # iKhokha online payments
 
-Loop Secure uses **Payment API → iK Pay hosted payment links**. Customers choose when to pay; this is not a recurring debit. The customer app is version 0.15.0 (Android 11+). Existing installations must be updated in place, retaining their customer connection and device ownership.
+Loop Secure uses **Payment API → iK Pay hosted payment links**. Customers choose when to pay; this is not a recurring debit. The customer app is version 0.16.0 (Android 11+). Existing installations must be updated in place, retaining their customer connection and device ownership.
 
 ## Customer steps
 
@@ -9,7 +9,7 @@ Loop Secure uses **Payment API → iK Pay hosted payment links**. Customers choo
 3. Complete the R300 checkout on iKhokha's hosted page. Available payment methods depend on the merchant account and checkout.
 4. Return to Loop Secure. A verified payment adds 30 days, clears the finance lock and updates the phone at its next successful sync. **Make a payment → Check online payment** retries confirmation if needed.
 
-If a bank step requires an unsupported app/browser redirect, use **Copy link** and pay from another device. The payment still belongs to the original customer. Do not submit the same iKhokha payment as a separate EFT claim. Direct bank EFT remains available but requires the existing administrator settlement review.
+Checkout includes **Messages / OTP**, **Banking app**, **Check payment** and **Open in browser**. Use Messages to copy a bank verification code and return with Back or Recents. The physical-card flow can use the browser on an unrestricted phone; if a bank step cannot complete on a restricted phone, use **Copy link** and pay from another device. The payment still belongs to the original customer. Do not submit the same iKhokha payment as a separate EFT claim. Direct bank EFT remains available but requires the existing administrator settlement review.
 
 ## Administrator steps
 
@@ -44,3 +44,5 @@ Documentation: [iKhokha overview](https://developer.ikhokha.com/overview), [offi
 Passed: official request-signing fixtures, callback tampering and wrong-intent rejection, exact amount/currency/link checks, redirect rejection, database confirmation and duplicate-credit checks inside an explicit rolled-back transaction, restricted SQL execution privileges, Android checkout/banking unit tests, signed release lint/build, administrator browser and Cloudflare relay tests, live unsigned-callback rejection and public return-page availability.
 
 **A real card payment has not been made.** Before relying on this for customers, use an enrolled test phone to complete one legitimate R300 payment and verify one approved claim, one 30-day extension and the phone's acknowledged unlock. Merchant account activation, actual bank/3-D Secure redirects, provider settlement and handset behavior can only be confirmed by that live test. Do not repeat payment if it appears debited but still pending; reconcile/check with the provider first. Administrator SMS/email delivery is not configured by this integration.
+
+See [payment recovery and protected automatic updates](PAYMENT_RECOVERY_AND_UPDATES.md) for version 0.16.0 fixes, the current UNPAID observation, saved-card limitations and handset acceptance checks.

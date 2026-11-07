@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.15.0).
-- Customer app **0.15.0**, administrator app **1.6.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.16.0).
+- Customer app **0.16.0**, administrator app **1.6.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -35,7 +35,7 @@ For the website, follow `cloudflare-admin/README.md`; dependencies are pinned an
 
 ## Payments and device controls
 
-The customer app now offers **Make a payment → Pay online with iKhokha**. The server creates a R300 hosted payment link and verifies the provider’s paid status, amount and receipt before adding 30 days and clearing the finance lock. Duplicate callbacks cannot add duplicate credit. See [iKhokha customer steps and live acceptance check](docs/IKHOKHA_PAYMENTS.md). A real checkout/card payment still needs to be tested.
+The customer app now offers **Make a payment → Pay online with iKhokha**. The server creates a R300 hosted payment link and verifies the provider’s paid status, amount and receipt before adding 30 days and clearing the finance lock. Duplicate callbacks cannot add duplicate credit. See [iKhokha customer steps and live acceptance check](docs/IKHOKHA_PAYMENTS.md). Complete a provider-confirmed PAID checkout and handset unlock test before relying on automated approval.
 
 Direct bank EFT claims require bank-settlement verification before administrator approval. A submitted reference is not proof of payment. Approved payments, grace periods, manual controls and permanent release produce signed authorizations; requested changes and actual handset acknowledgements are shown separately. Automatic verification of direct bank EFT and outbound payment emails require separately configured providers and credentials. iKhokha online payments use the separately configured private merchant connection.
 
@@ -43,6 +43,8 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer 0.15.0 adds hosted iKhokha checkout, the existing EFT alternative and an online payment check action. The administrator website adds owner-only merchant configuration and per-customer payment links. The public return Worker carries no secrets and never approves payments. This update preserves existing enrollment, device ownership, banking and connectivity policies.
+Customer 0.16.0 fixes unrestricted app access and adds SMS/bank verification controls, exact Tyme bank challenge support, bank pop-up sessions, checkout error recovery and a browser option on unrestricted phones. Account refreshes retain the Payments page, with online payment status and duplicate-payment protection. [Payment recovery guide](docs/PAYMENT_RECOVERY_AND_UPDATES.md).
 
-Verified: six provider signing/transport/receipt checks, transactional database duplicate-credit and released-device checks with explicit rollback, 14 Android checkout/banking tests, release build/lint, signing identity continuity, administrator browser checks, eight Cloudflare authentication/relay checks and live unsigned-callback rejection. A real R300 payment, bank 3-D Secure flow and handset unlock acknowledgement remain the final acceptance test. No real card charge or persistent fixture customer was created.
+Install this version once over the existing customer app. It then supports protected automatic self-updates on unmetered Wi-Fi while idle: device-bound signed manifests, fixed trusted storage, exact SHA-256/size, same APK signing identity and no downgrades. A manual update check is available from the device management status screen. Manufacturer restrictions are reported without replacing the working app. Existing account data and device ownership are retained.
+
+Verified: signed release build/lint, original signing identity, 32 Android regression tests (SDK 30 and 35), eight provider/update-manifest fixture tests and live authentication/installer checks. The stored payment attempt returned UNPAID during diagnosis. Physical-card 3-D Secure, SMS switching and the first silent managed update need handset acceptance testing. No card-number/CVV store or undocumented provider tokenisation was added.

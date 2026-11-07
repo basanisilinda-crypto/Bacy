@@ -45,7 +45,8 @@ public class MainActivity extends AppCompatActivity {
     private Entitlement entitlement;
     private LinearLayout content;
     private TextView daysLabel,timerLabel,connection;
-    private boolean destroyed,syncing,enrolling,bankOpened,pendingInbox;
+    private boolean destroyed,syncing,enrolling,bankOpened,pendingInbox,pendingPaymentCheck;
+    private String currentPage="Home";
     private int ticks;
     private boolean claiming,claimDialogOpen;
     private AccountTiming.Stage renderedStage;
@@ -54,14 +55,14 @@ public class MainActivity extends AppCompatActivity {
     private final BroadcastReceiver updates=new BroadcastReceiver(){
         @Override public void onReceive(Context c,Intent intent){
             if(!LiveConnectionService.UPDATED.equals(intent.getAction()))return;
-            try{entitlement=Entitlement.load(MainActivity.this,store);if(entitlement!=null&&intent.getBooleanExtra("account_verified",false))accountIssue=null;dashboard();}catch(Exception ignored){}
+            try{entitlement=Entitlement.load(MainActivity.this,store);if(entitlement!=null&&intent.getBooleanExtra("account_verified",false))accountIssue=null;renderCurrent();}catch(Exception ignored){}
         }
     };
     private final Runnable ticker=new Runnable(){
-        @Override public void run(){if(destroyed)return;if(entitlement!=null&&entitlement.stage(MainActivity.this)!=renderedStage)dashboard();else updateCountdown();if(++ticks%60==0)refresh();handler.postDelayed(this,1000);}
+        @Override public void run(){if(destroyed)return;if(entitlement!=null&&entitlement.stage(MainActivity.this)!=renderedStage)renderCurrent();else updateCountdown();if(++ticks%60==0)refresh();handler.postDelayed(this,1000);}
     };
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);store=new Store(this);pendingInbox=getIntent().getBooleanExtra("open_messages",false);
+        super.onCreate(state);store=new Store(this);pendingPaymentCheck=getIntent().getBooleanExtra("check_payment",false);ManagedUpdates.schedule(this);ManagedUpdates.checkSoon(this);pendingInbox=getIntent().getBooleanExtra("open_messages",false);
         androidx.core.content.ContextCompat.registerReceiver(this,updates,new IntentFilter(LiveConnectionService.UPDATED),getPackageName()+".permission.INTERNAL",null,androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
         SyncJobService.schedule(this);
         try{
@@ -76,14 +77,19 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();if(store==null)return;
         try{if(!store.get("device_token").isEmpty()){LiveConnectionService.start(this);refresh();}}
         catch(Exception ignored){}
+        if(pendingPaymentCheck){pendingPaymentCheck=false;onlinePayment(true);}
         if(bankOpened){bankOpened=false;if(entitlement==null||entitlement.data.optBoolean("released"))return;new MaterialAlertDialogBuilder(this).setTitle("Have you made your payment?").setMessage("Send a payment claim to your administrator. Your paid time changes after they confirm the EFT funds.").setPositiveButton("I have paid",(dialog,which)->claim()).setNegativeButton("Not yet",null).show();}
     }
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);pendingInbox=intent.getBooleanExtra("open_messages",false);try{if(store.get("device_token").isEmpty()&&!store.get("enrollment_token").isEmpty()&&PolicyController.owns(this)){connectEnrollment();return;}}catch(Exception ignored){}refresh();}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);pendingPaymentCheck=intent.getBooleanExtra("check_payment",false);pendingInbox=intent.getBooleanExtra("open_messages",false);try{if(store.get("device_token").isEmpty()&&!store.get("enrollment_token").isEmpty()&&PolicyController.owns(this)){connectEnrollment();return;}}catch(Exception ignored){}refresh();}
+    @Override protected void onStart(){super.onStart();ManagedUpdates.visible(true);}
+    @Override protected void onStop(){ManagedUpdates.visible(false);super.onStop();}
     @Override protected void onDestroy(){destroyed=true;handler.removeCallbacksAndMessages(null);unregisterReceiver(updates);worker.shutdown();super.onDestroy();}
 
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private void screen(){screen("Home");}
+    private void renderCurrent(){if("Payments".equals(currentPage)&&entitlement!=null){try{status=PolicyController.apply(this,entitlement);}catch(Exception ignored){}history();}else dashboard();}
     private void screen(String selectedTab){
+        currentPage=selectedTab;
         daysLabel=null;timerLabel=null;connection=null;
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(PAPER);
         content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(22),dp(20),dp(22),dp(28));scroll.addView(content);
@@ -197,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
             Entitlement loaded=null;String issue=null;
             try{ManagedPermissions.grant(this);loaded=Sync.run(this);}catch(Exception failure){issue=AccountConnectionError.describe(failure);android.util.Log.w("BacyAccountSync","Account check failed: "+failure.getClass().getSimpleName());try{loaded=Entitlement.load(this,store);}catch(Exception ignored){}}
             final Entitlement result=loaded;final String failureMessage=issue;
-            runOnUiThread(()->{if(destroyed)return;syncing=false;accountIssue=failureMessage;entitlement=result;dashboard();
+            runOnUiThread(()->{if(destroyed)return;syncing=false;accountIssue=failureMessage;entitlement=result;renderCurrent();
                 if(pendingInbox&&entitlement!=null){pendingInbox=false;showInbox();}
                 String applied=status;worker.execute(()->{try{Sync.report(this,result,applied);}catch(Exception ignored){}});
             });
@@ -206,7 +212,19 @@ public class MainActivity extends AppCompatActivity {
     private void copyReference(){if(entitlement==null)return;getSystemService(ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("EFT reference",entitlement.data.optString("reference")));toast("EFT reference copied");}
     private boolean onlinePaymentBusy;
     private void paymentMethods(){if(entitlement==null||entitlement.data.optBoolean("released"))return;new MaterialAlertDialogBuilder(this).setTitle("Make a payment").setItems(new String[]{"Pay online with iKhokha","Pay by bank EFT","Check online payment"},(dialog,index)->{if(index==0)onlinePayment(false);else if(index==1)paymentDetails();else onlinePayment(true);}).setNegativeButton("Close",null).show();}
-    private void onlinePayment(boolean checkOnly){if(onlinePaymentBusy)return;onlinePaymentBusy=true;toast(checkOnly?"Checking payment confirmation…":"Preparing your secure payment link…");worker.execute(()->{try{JSONObject result=new Api(store).post(checkOnly?"/api/device/payments/ikhokha/check":"/api/device/payments/ikhokha",new JSONObject(),true);runOnUiThread(()->{onlinePaymentBusy=false;if(destroyed)return;if(checkOnly){toast(result.optString("state").equals("paid")?"Payment verified. Refreshing your account.":"Payment is not yet confirmed. Keep the phone online.");refresh();return;}String url=result.optString("checkout_url");if(!PaymentActivity.initialUrl(url)){problem("iKhokha did not return a supported checkout address. Bank EFT remains available.");return;}startActivity(new Intent(this,PaymentActivity.class).putExtra("payment_url",url));});}catch(Exception failure){runOnUiThread(()->{onlinePaymentBusy=false;problem("Online payment could not be prepared. "+failure.getMessage()+" Bank EFT remains available.");});}});}
+    private void onlinePayment(boolean checkOnly){
+        if(onlinePaymentBusy||destroyed)return;onlinePaymentBusy=true;toast(checkOnly?"Checking payment confirmation…":"Preparing your secure payment link…");
+        worker.execute(()->{try{
+            JSONObject result=new Api(store).post(checkOnly?"/api/device/payments/ikhokha/check":"/api/device/payments/ikhokha",new JSONObject(),true);
+            store.put("last_online_check",paymentStatus(result.optString("state")));
+            runOnUiThread(()->{onlinePaymentBusy=false;if(destroyed)return;
+                if(checkOnly||result.optString("state").equals("paid")||result.optString("state").equals("review_required")){new MaterialAlertDialogBuilder(this).setTitle("Online payment status").setMessage(paymentStatus(result.optString("state"))).setPositiveButton("OK",null).show();refresh();return;}
+                String url=result.optString("checkout_url");if(!PaymentActivity.initialUrl(url)){problem("iKhokha did not return a supported checkout address. Bank EFT remains available.");return;}
+                startActivity(new Intent(this,PaymentActivity.class).putExtra("payment_url",url));
+            });
+        }catch(Exception failure){runOnUiThread(()->{onlinePaymentBusy=false;problem("Online payment could not complete this check. "+failure.getMessage()+" If your bank has debited you, check payment status before paying again. Bank EFT remains available.");});}});
+    }
+    private String paymentStatus(String value){return switch(value){case "paid"->"iKhokha verified your R300 payment. Your account has been credited once. Keep this phone online to receive its updated access.";case "pending","creating"->"Payment is not yet confirmed. Finish your bank's verification step, or check again shortly. If your bank has debited you, do not pay again while confirmation is pending.";case "review_required"->"This payment needs administrator attention before account credit can be confirmed. Contact support; do not pay again if your bank already debited you.";case "failed"->"A payment link could not be completed. Check with your bank if you were debited before starting another payment.";default->"No online payment link has been recorded for this account yet.";};}
     private void paymentDetails(){
         if(entitlement==null)return;JSONObject data=entitlement.data,bank=data.optJSONObject("eft");
         String details="Amount: R300\nReference: "+data.optString("reference");
@@ -230,9 +248,10 @@ public class MainActivity extends AppCompatActivity {
     private void openSettings(boolean wifi){try{DeviceSettings.open(this,wifi,entitlement==null?null:entitlement.data.optJSONObject("policy"));}catch(Exception unavailable){problem("The phone could not open its system settings. Contact your administrator.");}}
     private void managementStatus(){
         if(entitlement==null)return;
-        try{new MaterialAlertDialogBuilder(this).setTitle("Phone management status").setMessage(DeviceHealth.describe(this,entitlement)).setPositiveButton("Refresh account",(d,w)->refresh()).setNegativeButton("Close",null).show();}
+        try{new MaterialAlertDialogBuilder(this).setTitle("Phone management status").setMessage(DeviceHealth.describe(this,entitlement)+"\n\n"+ManagedUpdates.describe(this)).setNeutralButton("App updates",(d,w)->appUpdates()).setPositiveButton("Refresh account",(d,w)->refresh()).setNegativeButton("Close",null).show();}
         catch(Exception unavailable){problem("The phone could not read its management status. Contact your administrator.");}
     }
+    private void appUpdates(){new MaterialAlertDialogBuilder(this).setTitle("Loop Secure app updates").setMessage(ManagedUpdates.describe(this)+"\n\nAutomatic updates use Wi-Fi while the phone is idle. Checking now may download on your current connection and restart the app after installation; your account and device ownership stay in place.").setPositiveButton("Check and install",(d,w)->{ManagedUpdates.request(this);toast("Update check queued. Keep your phone online.");}).setNegativeButton("Close",null).show();}
     private void claim(){
         if(entitlement==null||entitlement.data.optBoolean("released"))return;
         if(hasPendingClaim()){reviewStatus();return;}
@@ -252,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
         if(entitlement==null){problem("Your payment history is still loading. Banking and emergency access remain available.");return;}
         screen("Payments");brand();text(content,"Payments",27,INK,true);JSONObject data=entitlement.data,summary=data.optJSONObject("payment_summary");
         LinearLayout totals=card(Color.WHITE);detail(totals,"Approved payments",summary==null?"Not available yet":"R"+summary.optLong("approved_total")+" across "+summary.optLong("approved_count")+" payments");
-        if(!data.optBoolean("released")){action(content,"EFT account and reference",true,this::paymentDetails);action(content,hasPendingClaim()?"Payment awaiting review":"I have made an EFT",false,hasPendingClaim()?this::reviewStatus:this::claim);}else text(content,"Your finance plan has been released as fully paid.",15,INK,false);
+        if(!data.optBoolean("released")){action(content,"Pay R300 online with iKhokha",true,()->onlinePayment(false));action(content,"Check online payment",false,()->onlinePayment(true));try{String last=store.get("last_online_check");if(!last.isEmpty())text(content,"Last online check: "+last,14,MUTED,false);}catch(Exception ignored){}action(content,"EFT account and reference",true,this::paymentDetails);action(content,hasPendingClaim()?"Payment awaiting review":"I have made an EFT",false,hasPendingClaim()?this::reviewStatus:this::claim);}else text(content,"Your finance plan has been released as fully paid.",15,INK,false);
         action(content,"Open banking app",false,this::openBank);gap(18);text(content,"Recent payment activity",19,INK,true);JSONArray claims=data.optJSONArray("claims");
         if(claims==null||claims.length()==0)text(content,"Your payment claims will appear here after submission. Only approved payments extend your paid time.",14,MUTED,false);
         else for(int i=0;i<claims.length();i++){JSONObject item=claims.optJSONObject(i);LinearLayout row=card(Color.WHITE);String state=item.optString("state"),label=state.equals("approved")?"Approved":state.equals("pending")?"Awaiting review":state.equals("rejected")?"Not approved":"Recorded";text(row,"R"+item.optInt("amount")+" · "+label,17,INK,true);if(item.optLong("submitted")>0)text(row,date(item.optLong("submitted")),13,MUTED,false);if(!item.optString("reason","").isEmpty())text(row,item.optString("reason"),14,MUTED,false);}

@@ -43,7 +43,7 @@ final class PolicyController {
         if(!owns(c))return d.optBoolean("released")?"released":"unsupported";
         DevicePolicyManager pm=(DevicePolicyManager)c.getSystemService(Context.DEVICE_POLICY_SERVICE);ComponentName admin=admin(c);
         if(d.optBoolean("released")){
-            leave(c,pm,admin);financeProtection(pm,admin,false,c.getPackageName());restriction(pm,admin,UserManager.DISALLOW_CONFIG_WIFI,false);pm.setSystemUpdatePolicy(admin,null);
+            leave(c,pm,admin);pm.setLockTaskPackages(admin,new String[0]);financeProtection(pm,admin,false,c.getPackageName());restriction(pm,admin,UserManager.DISALLOW_CONFIG_WIFI,false);pm.setSystemUpdatePolicy(admin,null);
             pm.clearDeviceOwnerApp(c.getPackageName());
             return "released";
         }
@@ -54,12 +54,13 @@ final class PolicyController {
         if(!enabled){pm.setSystemUpdatePolicy(admin,null);leave(c,pm,admin);return "unrestricted";}
         int updateStart=policy.optInt("update_window_start",120),updateEnd=policy.optInt("update_window_end",240);
         pm.setSystemUpdatePolicy(admin,updateStart==updateEnd?SystemUpdatePolicy.createAutomaticInstallPolicy():SystemUpdatePolicy.createWindowedInstallPolicy(updateStart,updateEnd));
-        BankApps.allowForLock(c,policy);
         if(!entitlement.clockKnown(c)&&!entitlement.manualLock()){
+            if(c.getSystemService(ActivityManager.class).getLockTaskModeState()==ActivityManager.LOCK_TASK_MODE_LOCKED)BankApps.allowForLock(c,policy);
             // No editable wall-clock fallback. Do not newly lock a rebooted phone on an uncertain deadline.
             return "needs_online_check";
         }
         if(!entitlement.shouldRestrict(c)){leave(c,pm,admin);return "unrestricted";}
+        BankApps.allowForLock(c,policy);
         boolean found=!BankApps.installed(c,policy).isEmpty();
         int features=DevicePolicyManager.LOCK_TASK_FEATURE_KEYGUARD|DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS;
         if(!policy.optBoolean("block_navigation",true))features|=DevicePolicyManager.LOCK_TASK_FEATURE_HOME;
@@ -78,7 +79,9 @@ final class PolicyController {
     private static void restriction(DevicePolicyManager p,ComponentName a,String name,boolean enabled){if(enabled)p.addUserRestriction(a,name);else p.clearUserRestriction(a,name);}
     private static void leave(Context c,DevicePolicyManager p,ComponentName a){
         if(c instanceof Activity){ActivityManager am=(ActivityManager)c.getSystemService(Context.ACTIVITY_SERVICE);if(am.getLockTaskModeState()!=ActivityManager.LOCK_TASK_MODE_NONE)((Activity)c).stopLockTask();}
-        p.setLockTaskPackages(a,new String[0]);p.clearPackagePersistentPreferredActivities(a,c.getPackageName());c.getPackageManager().clearPackagePreferredActivities(c.getPackageName());
+        // Removing our own package finishes its task on Android. Keep it permitted;
+        // normal manifest launch mode ensures permission alone never starts kiosk mode.
+        p.setLockTaskPackages(a,new String[]{c.getPackageName()});p.clearPackagePersistentPreferredActivities(a,c.getPackageName());c.getPackageManager().clearPackagePreferredActivities(c.getPackageName());
         p.setStatusBarDisabled(a,false);restriction(p,a,UserManager.DISALLOW_OUTGOING_CALLS,false);
     }
 }

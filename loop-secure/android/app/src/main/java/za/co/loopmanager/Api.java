@@ -14,7 +14,7 @@ final class Api {
         String base=store.get("server_url");URL url=new URL(base+path);
         if(!"https".equals(url.getProtocol())||url.getUserInfo()!=null)throw new SecurityException("A trusted HTTPS server is required");
         HttpsURLConnection c=(HttpsURLConnection)url.openConnection();
-        c.setInstanceFollowRedirects(false);c.setConnectTimeout(12000);c.setReadTimeout(15000);c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json");
+        c.setInstanceFollowRedirects(false);c.setConnectTimeout(12000);c.setReadTimeout(path.startsWith("/api/device/payments/")?30000:15000);c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json");
         if(authenticated)c.setRequestProperty("Authorization","Bearer "+store.get("device_token"));
         try{
             byte[] raw=body.toString().getBytes(StandardCharsets.UTF_8);c.setFixedLengthStreamingMode(raw.length);

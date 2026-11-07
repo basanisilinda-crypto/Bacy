@@ -48,14 +48,15 @@ final class BankApps {
         if(!PolicyController.owns(context))return;
         LinkedHashSet<String> packages=new LinkedHashSet<>();packages.add(context.getPackageName());packages.addAll(approved(policy));
         packages.addAll(DeviceSettings.packages(context));
+        packages.addAll(CheckoutAccess.packages(context));
         TelecomManager telecom=context.getSystemService(TelecomManager.class);
         if(telecom!=null&&telecom.getDefaultDialerPackage()!=null)packages.add(telecom.getDefaultDialerPackage());
         context.getSystemService(DevicePolicyManager.class).setLockTaskPackages(PolicyController.admin(context),packages.toArray(new String[0]));
     }
     static void open(Activity activity,Choice bank,JSONObject policy){
-        allowForLock(activity,policy);
         Intent launch=new Intent(bank.intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         boolean locked=PolicyController.owns(activity)&&activity.getSystemService(ActivityManager.class).getLockTaskModeState()==ActivityManager.LOCK_TASK_MODE_LOCKED;
+        if(locked)allowForLock(activity,policy);
         if(locked){ActivityOptions options=ActivityOptions.makeBasic();options.setLockTaskEnabled(true);activity.startActivity(launch,options.toBundle());}
         else activity.startActivity(launch);
     }
