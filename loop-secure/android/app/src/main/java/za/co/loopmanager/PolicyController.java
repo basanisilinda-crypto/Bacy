@@ -47,6 +47,7 @@ final class PolicyController {
             pm.clearDeviceOwnerApp(c.getPackageName());
             return "released";
         }
+        if(entitlement.clockKnown(c)&&!entitlement.shouldRestrict(c))RestrictionStartup.remember(c,d,false);
         boolean updating=UpdateGate.active(c);boolean enabled=policy.optBoolean("enforcement_enabled")||updating;
         financeProtection(pm,admin,true,c.getPackageName());
         // Connectivity must remain available for payment verification and server recovery.
@@ -54,12 +55,15 @@ final class PolicyController {
         if(!enabled){pm.setSystemUpdatePolicy(admin,null);leave(c,pm,admin);return "unrestricted";}
         int updateStart=policy.optInt("update_window_start",120),updateEnd=policy.optInt("update_window_end",240);
         pm.setSystemUpdatePolicy(admin,updateStart==updateEnd?SystemUpdatePolicy.createAutomaticInstallPolicy():SystemUpdatePolicy.createWindowedInstallPolicy(updateStart,updateEnd));
-        if(!entitlement.clockKnown(c)&&!entitlement.manualLock()&&!updating){
+        if(!entitlement.clockKnown(c)&&!entitlement.manualLock()&&!updating&&!RestrictionStartup.wasRestricted(c,d)){
             if(c.getSystemService(ActivityManager.class).getLockTaskModeState()==ActivityManager.LOCK_TASK_MODE_LOCKED)BankApps.allowForLock(c,policy);
             // No editable wall-clock fallback. Do not newly lock a rebooted phone on an uncertain deadline.
             return "needs_online_check";
         }
-        if(!entitlement.shouldRestrict(c)&&!updating){leave(c,pm,admin);return "unrestricted";}
+        if(!entitlement.shouldRestrict(c)&&!updating&&!RestrictionStartup.wasRestricted(c,d)){leave(c,pm,admin);return "unrestricted";}
+        if(!updating)RestrictionStartup.remember(c,d,true);
+        try{pm.setKeyguardDisabled(admin,true);}catch(RuntimeException unsupported){}
+        if(c instanceof Activity)((Activity)c).getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         BankApps.allowForLock(c,policy);
         boolean found=!BankApps.installed(c,policy).isEmpty();
         int features=DevicePolicyManager.LOCK_TASK_FEATURE_KEYGUARD|DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS;
@@ -78,6 +82,9 @@ final class PolicyController {
     }
     private static void restriction(DevicePolicyManager p,ComponentName a,String name,boolean enabled){if(enabled)p.addUserRestriction(a,name);else p.clearUserRestriction(a,name);}
     private static void leave(Context c,DevicePolicyManager p,ComponentName a){
+        RestrictionStartup.remember(c,new JSONObject(),false);
+        try{p.setKeyguardDisabled(a,false);}catch(RuntimeException unsupported){}
+        if(c instanceof Activity)((Activity)c).getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if(c instanceof Activity){ActivityManager am=(ActivityManager)c.getSystemService(Context.ACTIVITY_SERVICE);if(am.getLockTaskModeState()!=ActivityManager.LOCK_TASK_MODE_NONE)((Activity)c).stopLockTask();}
         // Removing our own package finishes its task on Android. Keep it permitted;
         // normal manifest launch mode ensures permission alone never starts kiosk mode.

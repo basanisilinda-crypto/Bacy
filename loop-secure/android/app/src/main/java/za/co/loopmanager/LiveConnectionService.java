@@ -31,6 +31,7 @@ public class LiveConnectionService extends Service {
     private ConnectivityManager.NetworkCallback networkCallback;
     private Network validatedNetwork;
     private void requestCloudSync(){syncRequested.set(true);synchronized(reconnectWake){networkGeneration++;reconnectWake.notifyAll();}}
+    private final android.content.BroadcastReceiver wakeReceiver=new android.content.BroadcastReceiver(){public void onReceive(Context c,Intent i){RestrictionStartup.resume(c,true);}};
     private void watchConnectivity(){
         connectivity=getSystemService(ConnectivityManager.class);
         networkCallback=new ConnectivityManager.NetworkCallback(){
@@ -80,6 +81,7 @@ public class LiveConnectionService extends Service {
         try{if(android.os.Build.VERSION.SDK_INT>=34)startForeground(400,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED);else startForeground(400,n);}
         catch(RuntimeException unavailable){SyncJobService.schedule(this);stopSelf();return;}
         enforcementHandler.post(enforcementCheck);
+        androidx.core.content.ContextCompat.registerReceiver(this,wakeReceiver,new android.content.IntentFilter(Intent.ACTION_SCREEN_ON),androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
         watchConnectivity();
         worker.execute(this::connect);
     }
@@ -114,7 +116,7 @@ public class LiveConnectionService extends Service {
         }
     }
     @Override public int onStartCommand(Intent intent,int flags,int startId){return START_STICKY;}
-    @Override public void onDestroy(){stopped=true;enforcementHandler.removeCallbacksAndMessages(null);
+    @Override public void onDestroy(){try{unregisterReceiver(wakeReceiver);}catch(RuntimeException ignored){}stopped=true;enforcementHandler.removeCallbacksAndMessages(null);
         if(connectivity!=null&&networkCallback!=null)try{connectivity.unregisterNetworkCallback(networkCallback);}catch(RuntimeException ignored){}
         synchronized(reconnectWake){reconnectWake.notifyAll();}worker.shutdownNow();stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy();}
     @Override public IBinder onBind(Intent intent){return null;}

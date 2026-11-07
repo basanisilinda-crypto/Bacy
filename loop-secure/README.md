@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.4).
-- Customer app **0.18.4**, administrator app **1.7.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.19.0).
+- Customer app **0.19.0**, administrator app **1.8.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,8 +43,10 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.18.4/code 31** adds **My plan → Copy payment summary** with the verified total, amount paid, balance, percentage and next payment. It also shows the exact signed amount in manual bank-transfer details and removes the fixed-R300 description from fresh-link guidance.
+Customer **0.19.0/code 32**, native administrator **1.8.0/code 14** and the private website use a rebuilt ivory/coral/burgundy visual system. Charcoal was explicitly rejected and is not used as the art direction. New bundled Manrope/Outfit typography, payment-first customer Home, verified repayment readings/meter, compact tools, light navigation and redesigned sheets replace the old green layout. Admin has a receipt-first overview, action queue and desktop sidebar workspace. [Design and behaviour guide](docs/IVORY_CORAL_REDESIGN.md).
 
-Keep 0.18.3 installed and enrolled, and leave the phone online to test discovery/download/installation without opening the app. Confirm v0.18.4 on Home afterwards and try the new copy button. Android can delay background scheduling or require approval. Do not install the APK manually first if testing the automatic channel. [Test instructions](docs/TEST_UPDATE_0184.md).
+Already-confirmed restrictions resume from cached signed state at boot/wake rather than waiting for a cloud request. The payment screen stays awake only while restricted; normal screen-lock behaviour returns after unlock. Existing secure Android PINs and hardware controls remain OS-controlled. No new overdue deadline is invented from the wall clock. Active checkout is preserved.
 
-Administrator stays 1.7.1; the R1,700 plan, approved-payment rules, signing identity and account/device ownership are retained. Release build/lint, existing native UI/updater regressions and hosted-byte checks passed. Handset confirmation is still needed for actual unattended download/installation.
+Make a payment opens secure hosted checkout directly. Provider-required details/3-D Secure remain; online settlement still requires authenticated verification. R1,700 totals, approved balances, exact final payments and existing accounts are retained. The server updater operates independently of ChatGPT/Codex credits; Android controls actual background timing and install approval.
+
+Validation passed: release builds/lint for customer/admin, 34 native regression cases on SDK 30/35, two native rendering/navigation checks, 14 gateway fixtures, website authentication/relay and responsive browser checks, original APK signing identity and hosted-byte verification. Preview images use test data; production account data is not fabricated. Actual boot/keyguard/payment/provider/OTA behaviour still needs handset confirmation.

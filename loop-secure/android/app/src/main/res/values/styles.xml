@@ -1,26 +1,26 @@
 <resources>
     <style name="LoopTheme" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">#315E48</item>
+        <item name="colorPrimary">#B83E32</item>
         <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorSecondary">#315E48</item>
+        <item name="colorSecondary">#B83E32</item>
         <item name="colorOnSecondary">#FFFFFF</item>
         <item name="colorSurface">#FFFFFF</item>
-        <item name="colorSurfaceVariant">#E5EDDF</item>
-        <item name="colorOnSurface">#1C2C24</item>
-        <item name="colorOnSurfaceVariant">#6C766D</item>
-        <item name="colorOutline">#DCE1D6</item>
-        <item name="android:colorAccent">#315E48</item>
-        <item name="android:textColorPrimary">#1C2C24</item>
-        <item name="android:textColorSecondary">#6C766D</item>
-        <item name="fontFamily">@font/dm_sans_regular</item>
-        <item name="android:fontFamily">@font/dm_sans_regular</item>
+        <item name="colorSurfaceVariant">#FFE8DE</item>
+        <item name="colorOnSurface">#54223D</item>
+        <item name="colorOnSurfaceVariant">#805F70</item>
+        <item name="colorOutline">#EAD7DC</item>
+        <item name="android:colorAccent">#B83E32</item>
+        <item name="android:textColorPrimary">#54223D</item>
+        <item name="android:textColorSecondary">#805F70</item>
+        <item name="fontFamily">@font/manrope</item>
+        <item name="android:fontFamily">@font/manrope</item>
         <item name="shapeAppearanceCornerSmall">@style/LoopControlShape</item>
         <item name="shapeAppearanceCornerMedium">@style/LoopControlShape</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#F4F4EE</item>
+        <item name="android:statusBarColor">#FFFAF5</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:windowBackground">#F4F4EE</item>
+        <item name="android:windowBackground">#FFFAF5</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:forceDarkAllowed">false</item>
     </style>

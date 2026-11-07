@@ -59,8 +59,11 @@ public final class PaymentActivity extends AppCompatActivity {
  private void failed(String text){if(isFinishing()||errorPanel==null)return;errorText.setText(text);errorPanel.setVisibility(View.VISIBLE);errorPanel.bringToFront();}
  private void notice(String text){AccountSheets.panel(this,"Payment help","Your checkout stays protected").note("Please check",text,AccountSheets.GOLD,"help").show();}
  private void closePopup(){if(popup!=null){pages.removeView(popup);popup.stopLoading();popup.destroy();popup=null;}}
- @Override protected void onStart(){super.onStart();ManagedUpdates.visible(true);}
+ private final android.content.BroadcastReceiver screenPolicy=new android.content.BroadcastReceiver(){public void onReceive(android.content.Context c,Intent i){updateAwake();}};
+ private boolean screenReceiver;
+ private void updateAwake(){try{Entitlement e=Entitlement.load(this,new Store(this));boolean restricted=e!=null&&PolicyController.owns(this)&&(e.shouldRestrict(this)||RestrictionStartup.wasRestricted(this,e.data));if(restricted)getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);}catch(Exception ignored){}}
+ @Override protected void onStart(){super.onStart();ManagedUpdates.visible(true);updateAwake();if(!screenReceiver){androidx.core.content.ContextCompat.registerReceiver(this,screenPolicy,new android.content.IntentFilter(LiveConnectionService.UPDATED),getPackageName()+".permission.INTERNAL",null,androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);screenReceiver=true;}}
  @Override protected void onStop(){ManagedUpdates.visible(false);super.onStop();}
 
- @Override protected void onDestroy(){closePopup();if(web!=null){web.stopLoading();web.destroy();web=null;}if(leased){CheckoutAccess.end();try{Entitlement e=Entitlement.load(this,new Store(this));if(e!=null)PolicyController.apply(getApplicationContext(),e);}catch(Exception ignored){}}super.onDestroy();}
+ @Override protected void onDestroy(){if(screenReceiver){unregisterReceiver(screenPolicy);screenReceiver=false;}closePopup();if(web!=null){web.stopLoading();web.destroy();web=null;}if(leased){CheckoutAccess.end();try{Entitlement e=Entitlement.load(this,new Store(this));if(e!=null)PolicyController.apply(getApplicationContext(),e);}catch(Exception ignored){}}super.onDestroy();}
 }
