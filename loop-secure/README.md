@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.16.1).
-- Customer app **0.16.1**, administrator app **1.6.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.18.0).
+- Customer app **0.18.0**, administrator app **1.7.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,10 +43,12 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer 0.16.1 fixes failed payment-link reuse. Matching provider-confirmed UNPAID or ATTEMPTS_EXCEEDED links can be replaced after a live status check; paid or ambiguous attempts cannot silently create a replacement checkout. Old intents remain reconcilable for late callbacks. Stale cached unpaid links refresh after 15 minutes, and the app and website now offer explicit fresh-link recovery.
+Customer **0.18.0/code 27** and administrator **1.7.0/code 12** check on opening and Wi-Fi connection, download verified updates automatically and show installation approval controls. The native admin updater never restricts its phone. Android can require installation permission/confirmation. Existing clients need this updater-capable release once; update in place to retain accounts and device ownership.
 
-The payment menu separates card/online checkout, Instant EFT/Ozow, manual bank transfer details, payment status and fresh links. The Instant EFT shortcut opens iKhokha's hosted method selector; provider availability and the Ozow bank list remain outside this app's control. Payment outcomes improve status messages but never grant credit without provider PAID verification.
+Signed required customer updates have a ten-minute maintenance recovery deadline, preserve bank/emergency/Wi-Fi access, do not interrupt payment checkout, clear on failure and never alter financial approval. See [automatic update and dashboard guide](docs/AUTOMATIC_APP_UPDATES.md) for scheduling and recovery limits.
 
-[Fresh payment link guide](docs/FRESH_PAYMENT_LINKS.md). A fresh link is not a completed payment. A new checkout was created for the affected customer only after directly confirming the old provider attempt-limit status; no charge was initiated. Device-owner phones on 0.16 receive this release through the protected automatic-update channel on a scheduled Wi-Fi/idle check. Handset scheduling and silent installation still need acceptance testing.
+The dashboard adds per-phone version/state reports, an older-version filter, update readiness/retry counts, recent iKhokha reconciliation and displayed-claim CSV export. Unknown or stale phone reports remain labelled; installation requests are not proof of installation.
 
-Validated: 11 provider/update fixtures, 16 Android payment/access/update regression cases on SDK 30/35, signed release build/lint, signing continuity, website browser recovery checks and live installer-byte verification. Existing account and enrollment data are retained. No provider/card fraud controls or verification steps are bypassed, and saved-card tokenisation is not configured.
+This release also replaces all remaining app-controlled customer dialogs/buttons with colourful custom sheets and actions, uses a new folded-loop L/check logo throughout, and retains DM Sans/Fraunces. Six usability additions cover last-used bank ordering, payment-history filters, per-value EFT copying, a connection-check panel, dismissible notices and duplicate-send protection for support. [Complete customer UI guide](docs/COMPLETE_CUSTOMER_UI.md).
+
+Validated: same-signer release builds/lint, 38 native regression/rendering cases on SDK 30/35, 12 gateway/update manifest fixtures, website authentication/relay checks, browser acceptance fixtures, live signed administrator manifest, authentication rejection and hosted APK byte verification. Real handset update prompts, network scheduling and bank authentication still require handset checks. No merchant/signing secrets or customer enrollment tokens are included. Direct bank EFT remains reviewed; hosted Instant EFT/Ozow bank availability is controlled by iKhokha.

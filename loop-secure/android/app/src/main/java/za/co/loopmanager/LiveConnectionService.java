@@ -35,7 +35,7 @@ public class LiveConnectionService extends Service {
         connectivity=getSystemService(ConnectivityManager.class);
         networkCallback=new ConnectivityManager.NetworkCallback(){
             @Override public void onCapabilitiesChanged(Network network,NetworkCapabilities capabilities){
-                if(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)&&!network.equals(validatedNetwork)){validatedNetwork=network;requestCloudSync();}
+                if(capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)&&!network.equals(validatedNetwork)){validatedNetwork=network;requestCloudSync();ManagedUpdates.checkSoon(LiveConnectionService.this);}
             }
             @Override public void onLost(Network network){if(network.equals(validatedNetwork))validatedNetwork=null;}
         };

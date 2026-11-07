@@ -47,19 +47,19 @@ final class PolicyController {
             pm.clearDeviceOwnerApp(c.getPackageName());
             return "released";
         }
-        boolean enabled=policy.optBoolean("enforcement_enabled");
+        boolean updating=UpdateGate.active(c);boolean enabled=policy.optBoolean("enforcement_enabled")||updating;
         financeProtection(pm,admin,true,c.getPackageName());
         // Connectivity must remain available for payment verification and server recovery.
         restriction(pm,admin,UserManager.DISALLOW_CONFIG_WIFI,false);
         if(!enabled){pm.setSystemUpdatePolicy(admin,null);leave(c,pm,admin);return "unrestricted";}
         int updateStart=policy.optInt("update_window_start",120),updateEnd=policy.optInt("update_window_end",240);
         pm.setSystemUpdatePolicy(admin,updateStart==updateEnd?SystemUpdatePolicy.createAutomaticInstallPolicy():SystemUpdatePolicy.createWindowedInstallPolicy(updateStart,updateEnd));
-        if(!entitlement.clockKnown(c)&&!entitlement.manualLock()){
+        if(!entitlement.clockKnown(c)&&!entitlement.manualLock()&&!updating){
             if(c.getSystemService(ActivityManager.class).getLockTaskModeState()==ActivityManager.LOCK_TASK_MODE_LOCKED)BankApps.allowForLock(c,policy);
             // No editable wall-clock fallback. Do not newly lock a rebooted phone on an uncertain deadline.
             return "needs_online_check";
         }
-        if(!entitlement.shouldRestrict(c)){leave(c,pm,admin);return "unrestricted";}
+        if(!entitlement.shouldRestrict(c)&&!updating){leave(c,pm,admin);return "unrestricted";}
         BankApps.allowForLock(c,policy);
         boolean found=!BankApps.installed(c,policy).isEmpty();
         int features=DevicePolicyManager.LOCK_TASK_FEATURE_KEYGUARD|DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS;
@@ -74,7 +74,7 @@ final class PolicyController {
             if(c instanceof Activity){((Activity)c).startLockTask();}
             else c.startActivity(new Intent(c,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP));
         }
-        return am.getLockTaskModeState()==ActivityManager.LOCK_TASK_MODE_LOCKED?(found?"restricted":"restricted_banking_unavailable"):"policy_error";
+        return am.getLockTaskModeState()==ActivityManager.LOCK_TASK_MODE_LOCKED?(updating?"maintenance_update":found?"restricted":"restricted_banking_unavailable"):"policy_error";
     }
     private static void restriction(DevicePolicyManager p,ComponentName a,String name,boolean enabled){if(enabled)p.addUserRestriction(a,name);else p.clearUserRestriction(a,name);}
     private static void leave(Context c,DevicePolicyManager p,ComponentName a){

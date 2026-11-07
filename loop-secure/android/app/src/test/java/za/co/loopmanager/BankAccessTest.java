@@ -56,6 +56,9 @@ public class BankAccessTest {
   assertNotNull("Framework lock-task option missing",lockKey);assertTrue(launched.options.getBoolean(lockKey));
   assertTrue(activity.getPackageManager().queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),0).stream().noneMatch(r->activity.getPackageName().equals(r.activityInfo.packageName)));
  }
+ @Test public void lastOpenedBankMovesToTheFirstShortcut()throws Exception{
+  MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();installBank(a);String name="za.co.gotyme";ApplicationInfo app=new ApplicationInfo();app.packageName=name;app.enabled=true;PackageInfo info=new PackageInfo();info.packageName=name;info.applicationInfo=app;Shadows.shadowOf(a.getPackageManager()).installPackage(info);ComponentName component=new ComponentName(name,name+".BankActivity");ActivityInfo activity=Shadows.shadowOf(a.getPackageManager()).addActivityIfNotPresent(component);activity.applicationInfo=app;activity.enabled=true;activity.exported=true;IntentFilter filter=new IntentFilter(Intent.ACTION_MAIN);filter.addCategory(Intent.CATEGORY_LAUNCHER);Shadows.shadowOf(a.getPackageManager()).addIntentFilterForActivity(component,filter);BankApps.Choice chosen=BankApps.installed(a,null).stream().filter(b->b.packageName.equals(name)).findFirst().orElseThrow();BankApps.open(a,chosen,null);assertEquals(name,BankApps.installed(a,null).get(0).packageName);
+ }
  @Test public void mismatchedLabelsDoNotGrantBankAccess()throws Exception{
   Context c=RuntimeEnvironment.getApplication();ApplicationInfo app=new ApplicationInfo();app.packageName="not.a.bank";app.nonLocalizedLabel="Capitec";app.enabled=true;
   PackageInfo info=new PackageInfo();info.packageName=app.packageName;info.applicationInfo=app;Shadows.shadowOf(c.getPackageManager()).installPackage(info);

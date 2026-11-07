@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import org.json.JSONObject;
 import java.net.URL;
 import javax.net.ssl.HttpsURLConnection;
@@ -25,10 +24,8 @@ public class AdbEnrollmentActivity extends AppCompatActivity {
             if(getIntent().getBooleanExtra("administrator_confirmed",false)){
                 android.widget.LinearLayout progress=new android.widget.LinearLayout(this);progress.setOrientation(android.widget.LinearLayout.VERTICAL);progress.setGravity(android.view.Gravity.CENTER);progress.setPadding(32,32,32,32);progress.setBackgroundColor(za.co.bacy.ui.CustomerHome.PAPER);progress.addView(new za.co.bacy.ui.CustomerHome.Logo(this),new android.widget.LinearLayout.LayoutParams(96,96));android.widget.TextView message=new android.widget.TextView(this);message.setText("Connecting customer account…\nKeep this phone connected to the internet.");message.setTextSize(17);message.setTextColor(za.co.bacy.ui.CustomerHome.INK);message.setTypeface(za.co.bacy.ui.BrandFonts.sans(this,false));message.setGravity(android.view.Gravity.CENTER);message.setPadding(0,32,0,32);progress.addView(message);progress.addView(new android.widget.ProgressBar(this));setContentView(progress);connect(token);return;
             }
-            new MaterialAlertDialogBuilder(this).setTitle("Connect this managed phone?")
-                .setMessage("Your administrator supplied a one-time customer enrollment code over USB. Continue only for the intended customer. This connects the phone to Loop Secure and applies the agreed finance-management policy.")
-                .setPositiveButton("Connect customer account",(dialog,which)->connect(token))
-                .setNegativeButton("Cancel",(dialog,which)->finish()).setOnCancelListener(dialog->finish()).show();
+            final boolean[] accepted={false};AccountSheets sheet=AccountSheets.panel(this,"Connect this phone?","Administrator-provided customer enrollment").note("Review this customer","Your administrator supplied a one-time customer code over USB. Continue only for the intended customer. This connects the phone to Loop Secure and applies the agreed finance-management policy.",AccountSheets.GOLD,"shield");sheet.formAction("Connect customer account",()->{accepted[0]=true;sheet.dialog.dismiss();connect(token);});sheet.dialog.setOnDismissListener(d->{if(!accepted[0])finish();});sheet.show();
+
         }catch(Exception error){fail(error);}
     }
     private void connect(String token){
@@ -53,5 +50,5 @@ public class AdbEnrollmentActivity extends AppCompatActivity {
             }catch(Exception error){runOnUiThread(()->fail(error));}
         },"BacyUsbEnrollment").start();
     }
-    private void fail(Exception error){if(!isFinishing())new MaterialAlertDialogBuilder(this).setTitle("USB enrollment").setMessage(error.getMessage()).setPositiveButton("Close",(dialog,which)->finish()).show();}
+    private void fail(Exception error){if(!isFinishing())AccountSheets.panel(this,"USB enrollment","Your current phone setup").note("Setup needs attention",error.getMessage(),AccountSheets.CORAL,"help").option("Close","Return to your phone","home",AccountSheets.MINT,this::finish).show();}
 }

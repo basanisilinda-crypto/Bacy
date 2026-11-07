@@ -42,7 +42,7 @@ final class BankApps {
             try{result.add(new Choice(name,packages.getApplicationLabel(packages.getApplicationInfo(name,0)).toString(),launch));}
             catch(PackageManager.NameNotFoundException unavailable){/* Recheck on the next open. */}
         }
-        return result;
+        String recent=context.getSharedPreferences("loop.ui",0).getString("last_bank","");result.sort(java.util.Comparator.comparingInt(choice->choice.packageName.equals(recent)?0:1));return result;
     }
     static void allowForLock(Context context,JSONObject policy){
         if(!PolicyController.owns(context))return;
@@ -59,5 +59,6 @@ final class BankApps {
         if(locked)allowForLock(activity,policy);
         if(locked){ActivityOptions options=ActivityOptions.makeBasic();options.setLockTaskEnabled(true);activity.startActivity(launch,options.toBundle());}
         else activity.startActivity(launch);
+        activity.getSharedPreferences("loop.ui",0).edit().putString("last_bank",bank.packageName).apply();
     }
 }

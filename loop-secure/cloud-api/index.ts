@@ -5,7 +5,7 @@ import usbReadme from './READ-ME.txt.ts';
 import prepareTools from './Prepare-Tools.ps1.ts';
 import {provisioningPayload} from './provisioning.ts';
 import {IkPayGateway} from './ikpay-gateway.ts';
-import {clientUpdateManifest} from './app-update.ts';
+import {clientUpdateManifest,adminUpdateManifest} from './app-update.ts';
 import {createClient} from 'npm:@supabase/supabase-js@2.57.0';
 import {z} from 'npm:zod@3.25.76';
 import QRCode from 'npm:qrcode@1.5.4';
@@ -55,7 +55,7 @@ function checkedPolicy(value:any){const p=policy.parse(value);if(p.enforcement_e
 const keySchema=text(16,100);
 async function currentInstaller(){return await configuration('installer_current')||{available:true,version:'0.3.0',apk_url:baseUrl+'/downloads/client.apk',apk_sha256:APK_SHA256};}
 async function activationToken(code:string,nonce:string){const key=await crypto.subtle.importKey('raw',enc.encode(serviceKey),{name:'HMAC',hash:'SHA-256'},false,['sign']);return b64(new Uint8Array(await crypto.subtle.sign('HMAC',key,enc.encode('loop-enrollment:'+code+':'+nonce)))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');}
-const acknowledgment=z.object({revision:z.number().int().min(0),status:z.enum(['unrestricted','restricted','released','unsupported','needs_online_check','policy_error','restricted_banking_unavailable'])});
+const acknowledgment=z.object({revision:z.number().int().min(0),status:z.enum(['unrestricted','restricted','released','unsupported','needs_online_check','policy_error','restricted_banking_unavailable','maintenance_update']),app_version:z.object({code:z.number().int().min(1).max(2147483647),name:text(1,32),update_state:z.enum(['checking','current','downloading','ready','installing','failed','idle']),progress:z.number().int().min(0).max(100)}).optional()});
 const identifiers=z.object({imeis:z.array(z.string().regex(/^\d{14,17}$/)).max(4).default([]),sim_operator:text(0,100).default(''),sim_country:text(0,10).default(''),status:z.enum(['available','permission_denied','unsupported']).default('unsupported')});
 function json(value:any,status=200){return new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});}
 const ikpay=new IkPayGateway(db,configuration,encrypt,decrypt,baseUrl);
@@ -113,7 +113,7 @@ async function route(req:Request,path:string){
   if(path==='/api/device/payments/ikhokha'&&method==='POST'){const data=z.object({fresh:z.boolean().default(false)}).parse(await body(req));return json(await ikpay.create(dev.id,data.fresh));}
   if(path==='/api/device/payments/ikhokha/check'&&method==='POST'){const data=z.object({checkout_outcome:z.enum(['failure','attempt_limit','cancel','success']).optional()}).parse(await body(req));await ikpay.reconcile(dev.id);if(data.checkout_outcome)await ikpay.reportOutcome(dev.id,data.checkout_outcome);return json(await ikpay.current(dev.id));}
   if(path==='/api/device/sync'||path==='/api/device/events')queuePaymentCheck(dev.id);
-  if(path==='/api/device/sync'&&method==='POST')return json(await signed(await rpc('sync',acknowledgment.parse(await body(req)),dev.id,'device')));
+  if(path==='/api/device/sync'&&method==='POST'){const data=acknowledgment.parse(await body(req));if(data.app_version){const key='device-version:'+dev.id,old=await configuration(key),v=data.app_version;if(!old||old.code!==v.code||old.update_state!==v.update_state||now()-old.reported_at>900){const saved=await db.from('loop_config').upsert({key,value:{...v,reported_at:now()}});check(saved.error);}}return json(await signed(await rpc('sync',data,dev.id,'device')));}
   if(path==='/api/device/claims'&&method==='POST'){const data=z.object({request_key:keySchema,bank_reference:text(3,100)}).parse(await body(req));return json(await rpc('claim',data,dev.id,'device'));}
   if(path==='/api/device/support'&&method==='POST')return json(await rpc('support',z.object({message:text(5,2000)}).parse(await body(req)),dev.id,'device'));
   if(path==='/api/device/messages/receipt'&&method==='POST')return json(await rpc('receipt',z.object({ids:z.array(z.number().int().positive()).min(1).max(100),state:z.enum(['delivered','read'])}).parse(await body(req)),dev.id,'device'));
@@ -130,6 +130,8 @@ async function route(req:Request,path:string){
   if(path==='/api/admin/payments/ikhokha'){if(method==='GET')return json(await ikpay.status());if(method==='PUT'){if(actor!=='site-owner')fail(403,'Only the website owner can configure payment credentials');return json(await ikpay.configure(await body(req)));}}
   const paymentDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/payment-link$/i);if(paymentDevice&&method==='POST'){const data=z.object({fresh:z.boolean().default(false)}).parse(await body(req));return json(await ikpay.create(paymentDevice[1],data.fresh));}
   if(path==='/api/admin/overview')queuePaymentCheck();
+  if(path==='/api/admin/mobile/app-update'&&method==='POST'){const data=z.object({version_code:z.number().int().min(1).max(2147483647),installation_id:z.string().uuid()}).parse(await body(req));return json(await signed(adminUpdateManifest(await configuration('admin_installer_current'),data.installation_id,data.version_code,now())));}
+  if(path==='/api/admin/payments/ikhokha/reconcile'&&method==='POST'){await ikpay.reconcile();return json({checked:true});}
   if(path==='/api/admin/site'){
    if(actor!=='site-owner')fail(403,'Only the website owner can change its hosting address');
    if(method==='GET')return json({url:await administratorSite()});
@@ -171,7 +173,7 @@ async function route(req:Request,path:string){
    const uploaded=await db.storage.from(bucket).upload(object,bytes,{contentType:'application/vnd.android.package-archive',cacheControl:'31536000',upsert:false});
    if(uploaded.error&&!String(uploaded.error.message).toLowerCase().includes('already exists'))check(uploaded.error);
    const apkUrl=db.storage.from(bucket).getPublicUrl(object).data.publicUrl;
-   const tag=version+'-'+checksum.slice(0,12);const metadata={available:true,version,...(!isPreview&&!isAdmin?{version_code:versionCode}:{}),apk_url:apkUrl,apk_sha256:checksum,bytes:size,...(!isPreview&&!isAdmin?{download_url:baseUrl+'/a/'+tag+'.apk'}:{})};
+   const tag=version+'-'+checksum.slice(0,12);const metadata={available:true,version,...(versionCode>0?{version_code:versionCode}:{}),apk_url:apkUrl,apk_sha256:checksum,bytes:size,...(!isPreview&&!isAdmin?{download_url:baseUrl+'/a/'+tag+'.apk'}:{})};
    if(!isPreview&&!isAdmin){const release=await db.from('loop_config').upsert({key:'apk_release:'+tag,value:metadata});check(release.error);}
    const stored=await db.from('loop_config').upsert({key:isAdmin?'admin_installer_current':isPreview?'preview_installer_current':'installer_current',value:metadata});check(stored.error);
    return json(metadata);
@@ -188,7 +190,7 @@ async function route(req:Request,path:string){
    const zip=zipSync({'Bacy-Client.apk':apk,'Prepare-Tools.ps1':strToU8(prepareTools),'START-HERE.cmd':strToU8('@echo off\r\ncall "%~dp0Enroll-Windows.cmd"\r\n'),'Enroll-Windows.cmd':strToU8(windowsEnroll.replaceAll('\r\n','\n').replaceAll('\n','\r\n')),'enrollment-code.txt':strToU8(data.enrollment_token+'\r\n'),'READ-ME.txt':strToU8(usbReadme)},{level:0});
    return new Response(zip,{headers:{'content-type':'application/zip','cache-control':'no-store','content-disposition':'attachment; filename="Bacy-Windows-Enrollment.zip"'}});
   }
-  if(path==='/api/admin/overview'&&method==='GET')return json(await rpc('overview',{},null,actor));
+  if(path==='/api/admin/overview'&&method==='GET'){const overview=await rpc('overview',{},null,actor);const ids=(overview.devices||[]).map((d:any)=>'device-version:'+d.id);const reports=ids.length?await db.from('loop_config').select('key,value').in('key',ids):{data:[],error:null};check(reports.error);const versions=new Map((reports.data||[]).map((r:any)=>[r.key.slice(15),r.value]));for(const d of overview.devices||[])d.app_version=versions.get(d.id)||null;const release=await currentInstaller();overview.client_release={version:release.version,version_code:release.version_code||null};return json(overview);}
   if(path==='/api/admin/enrollments'&&method==='POST'){
    const data=z.object({name:text(3,150),identity:text(0,40).default(''),phone:text(8,25),consent:z.literal(true).default(true),identity_verified:z.boolean().default(false),verification_note:text(0,1000).default('Identity not collected or verified'),policy:z.unknown().optional()}).parse(await body(req));
    if(data.identity_verified&&(data.identity.length<3||data.verification_note.length<10))fail(422,'Evidence is required to mark identity verified');

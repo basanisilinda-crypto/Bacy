@@ -6,7 +6,8 @@ ROOT=Path(__file__).resolve().parents[1]
 t=int(time.time())
 def device(name,ref,due,status):
  return dict(id=ref,name=name,phone='0600000000',reference=ref,due=due,revision=1,acknowledged_revision=1,released=False,policy='{}',model='Test handset' if status!='not_enrolled' else None,last_seen=t,enforcement_status=status,approved_total=300,approved_count=1)
-records=dict(devices=[device('Alpha fixture','TEST-A',t+1000,'unrestricted'),device('Beta fixture','TEST-B',t-1000,'not_enrolled')],claims=[dict(id='1',name='Alpha fixture',reference='TEST-A',bank_reference='BANK-TEST-1',amount=300,state='pending',submitted=t),dict(id='2',name='Beta fixture',reference='TEST-B',bank_reference='BANK-TEST-2',amount=300,state='approved',submitted=t)],audit=[],support=[],messages=[],server_time=t,payment_summary=dict(approved_total=300,approved_count=1,pending_count=1))
+records=dict(client_release=dict(version='0.18.0',version_code=27),devices=[device('Alpha fixture','TEST-A',t+1000,'unrestricted'),device('Beta fixture','TEST-B',t-1000,'not_enrolled')],claims=[dict(id='1',name='Alpha fixture',reference='TEST-A',bank_reference='BANK-TEST-1',amount=300,state='pending',submitted=t),dict(id='2',name='Beta fixture',reference='TEST-B',bank_reference='BANK-TEST-2',amount=300,state='approved',submitted=t)],audit=[],support=[],messages=[],server_time=t,payment_summary=dict(approved_total=300,approved_count=1,pending_count=1))
+records['devices'][0]['app_version']=dict(code=26,name='0.17.1',update_state='ready',progress=100,reported_at=t)
 with sync_playwright() as p:
  browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
  context=browser.new_context(viewport={'width':1440,'height':1050})
@@ -54,6 +55,17 @@ with sync_playwright() as p:
   else: assert request.method=='GET'
   route.fulfill(status=200,content_type='application/json',body=json.dumps({'configured':True,'enabled':True,'app_id_hint':'…TEST','callback_url':'https://fixture.invalid/callback','return_url':'https://fixture.invalid/return'}))
  context.route('https://loop-ui.test/api/admin/payments/ikhokha',gateway_route)
+ page.locator('nav [data-view="devices"]').click()
+ page.locator('#show-update-needed').click()
+ assert page.locator('#devices-table tr').count()==1
+ assert '0.17.1' in page.locator('#devices-table').inner_text()
+ assert '1 ready to install' in page.locator('#update-fleet-summary').inner_text()
+ page.locator('#customer-filter').select_option('all')
+ page.locator('nav [data-view="payments"]').click()
+ assert page.get_by_role('button',name='Export displayed claims').is_visible()
+ context.route('https://loop-ui.test/api/admin/payments/ikhokha/reconcile',lambda r:r.fulfill(status=200,content_type='application/json',body=json.dumps({'checked':True})))
+ page.get_by_role('button',name='Verify recent online payments').click()
+ page.wait_for_function("document.querySelector('#notice').textContent.includes('checked against iKhokha')")
  page.locator('#open-ikpay-settings').click()
  page.locator('#ikpay-settings-dialog').wait_for(state='visible')
  assert page.locator('#ikpay-settings-form input[name="app_secret"]').input_value()==''

@@ -16,7 +16,6 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import za.co.bacy.ui.BrandFonts;
 import za.co.bacy.ui.CustomerHome;
 
@@ -48,17 +47,17 @@ public final class PaymentActivity extends AppCompatActivity {
   });
   view.setWebChromeClient(new WebChromeClient(){@Override public boolean onCreateWindow(WebView parent,boolean dialog,boolean gesture,Message message){if(popup!=null)return false;popup=createWeb();pages.addView(popup,new FrameLayout.LayoutParams(-1,-1));WebView.WebViewTransport transport=(WebView.WebViewTransport)message.obj;transport.setWebView(popup);message.sendToTarget();return true;}@Override public void onCloseWindow(WebView window){closePopup();}});return view;
  }
- private void button(LinearLayout parent,String text,Runnable action){TextView v=label(text,12);v.setPadding(dp(10),dp(12),dp(10),dp(12));v.setTextColor(CustomerHome.BLUE);v.setOnClickListener(w->action.run());if(parent.getOrientation()==LinearLayout.HORIZONTAL)parent.addView(v,new LinearLayout.LayoutParams(0,-2,1));else parent.addView(v);}
+ private void button(LinearLayout parent,String text,Runnable action){TextView v=label(text,12);v.setPadding(dp(10),dp(12),dp(10),dp(12));v.setTextColor(AccountSheets.TEAL);v.setBackground(AppControls.surface(this,text.toLowerCase(java.util.Locale.ROOT).contains("fresh")||text.contains("Copy")?AccountSheets.CORAL:text.contains("Banking")?AccountSheets.GOLD:AccountSheets.MINT,12));v.setOnClickListener(w->action.run());if(parent.getOrientation()==LinearLayout.HORIZONTAL)parent.addView(v,new LinearLayout.LayoutParams(0,-2,1));else parent.addView(v);}
  private TextView label(String text,int size){TextView v=new TextView(this);v.setText(text);v.setTextSize(size);v.setTextColor(CustomerHome.INK);v.setTypeface(BrandFonts.sans(this,true));v.setMinHeight(dp(48));v.setGravity(Gravity.CENTER_VERTICAL);return v;}
  private org.json.JSONObject policy(){try{Entitlement e=Entitlement.load(this,new Store(this));return e==null?null:e.data.optJSONObject("policy");}catch(Exception unavailable){return null;}}
- private void messages(){try{CheckoutAccess.openMessages(this,policy());android.widget.Toast.makeText(this,"Copy your code, then use Back or Recents to return to payment.",android.widget.Toast.LENGTH_LONG).show();}catch(Exception e){notice(e.getMessage());}}
- private void bank(){var banks=BankApps.installed(this,policy());if(banks.isEmpty()){notice("No supported banking app is installed. You can still enter your SMS code or pay from another device.");return;}String[] names=new String[banks.size()];for(int i=0;i<names.length;i++)names[i]=banks.get(i).label;new MaterialAlertDialogBuilder(this).setTitle("Approve payment in your bank").setItems(names,(d,i)->{try{BankApps.open(this,banks.get(i),policy());}catch(Exception e){notice("The banking app could not open. Try SMS verification or another device.");}}).setNegativeButton("Close",null).show();}
+ private void messages(){try{CheckoutAccess.openMessages(this,policy());AppControls.notice(this,"Copy your code, then use Back or Recents to return to payment.");}catch(Exception e){notice(e.getMessage());}}
+ private void bank(){var banks=BankApps.installed(this,policy());if(banks.isEmpty()){notice("No supported banking app is installed. Use SMS verification or pay from another device.");return;}AccountSheets.banks(this,banks,bank->{try{BankApps.open(this,bank,policy());}catch(Exception e){notice("The banking app could not open. Try SMS verification or another device.");}});}
  private void fresh(){Intent i=new Intent(this,MainActivity.class).putExtra("fresh_payment",true).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);startActivity(i);finish();}
  private void check(){setResult(RESULT_OK);Intent i=new Intent(this,MainActivity.class).putExtra("check_payment",true).putExtra("payment_outcome",checkoutOutcome).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);startActivity(i);finish();}
  private void copy(){getSystemService(ClipboardManager.class).setPrimaryClip(ClipData.newPlainText("iKhokha payment link",paymentUrl));notice("Payment link copied. Use the same link on another device; check payment status before paying again.");}
  private void browser(){if(getSystemService(ActivityManager.class).getLockTaskModeState()!=ActivityManager.LOCK_TASK_MODE_NONE){notice("This phone is restricted. Copy the link and pay on another device, or use the Messages and Banking app buttons here.");return;}try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(paymentUrl)).addCategory(Intent.CATEGORY_BROWSABLE));}catch(Exception e){notice("No browser is available. Copy this link to another device.");}}
  private void failed(String text){if(isFinishing()||errorPanel==null)return;errorText.setText(text);errorPanel.setVisibility(View.VISIBLE);errorPanel.bringToFront();}
- private void notice(String text){new MaterialAlertDialogBuilder(this).setMessage(text).setPositiveButton("OK",null).show();}
+ private void notice(String text){AccountSheets.panel(this,"Payment help","Your checkout stays protected").note("Please check",text,AccountSheets.GOLD,"help").show();}
  private void closePopup(){if(popup!=null){pages.removeView(popup);popup.stopLoading();popup.destroy();popup=null;}}
  @Override protected void onStart(){super.onStart();ManagedUpdates.visible(true);}
  @Override protected void onStop(){ManagedUpdates.visible(false);super.onStop();}
