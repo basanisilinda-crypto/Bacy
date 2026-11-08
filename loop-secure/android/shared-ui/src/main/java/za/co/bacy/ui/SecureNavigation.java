@@ -1,32 +1,10 @@
 package za.co.bacy.ui;
-
-import android.content.Context;
-import android.content.res.ColorStateList;
-import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.RippleDrawable;
-import android.view.Gravity;
-import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-
-/** Shared native navigation rail, including readable names for every destination. */
+import android.content.Context;import android.content.res.ColorStateList;import android.graphics.drawable.GradientDrawable;import android.graphics.drawable.RippleDrawable;import android.view.Gravity;import android.view.View;import android.widget.LinearLayout;import android.widget.TextView;
+/** Compact, labelled destinations with a single unmistakable active tab. */
 public final class SecureNavigation {
-    public interface Select { void open(int index); }
-    private SecureNavigation() {}
-    private static int dp(Context c,int n){return Math.round(n*c.getResources().getDisplayMetrics().density);}
-    public static View create(Context c,String[] names,String[] icons,int selected,Select select){
-        LinearLayout outer=new LinearLayout(c);outer.setPadding(dp(c,8),dp(c,6),dp(c,8),dp(c,6));outer.setBackgroundColor(CustomerHome.SURFACE);
-        LinearLayout rail=new LinearLayout(c);rail.setPadding(dp(c,6),dp(c,6),dp(c,6),dp(c,6));GradientDrawable background=new GradientDrawable();background.setColor(CustomerHome.SURFACE);background.setCornerRadius(0);background.setStroke(dp(c,1),CustomerHome.RULE);rail.setBackground(background);rail.setElevation(0);
-        for(int i=0;i<names.length;i++){
-            final int index=i;boolean active=i==selected;int color=active?CustomerHome.BLUE:CustomerHome.MUTED;
-            LinearLayout item=new LinearLayout(c);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);item.setPadding(dp(c,3),dp(c,10),dp(c,3),dp(c,10));
-            GradientDrawable tile=new GradientDrawable();tile.setColor(CustomerHome.SURFACE);tile.setCornerRadius(dp(c,8));item.setBackground(new RippleDrawable(ColorStateList.valueOf(0x30ffffff),tile,null));
-            View marker=new View(c);marker.setBackgroundColor(active?CustomerHome.BLUE:CustomerHome.SURFACE);LinearLayout.LayoutParams markerParams=new LinearLayout.LayoutParams(dp(c,22),dp(c,3));markerParams.bottomMargin=dp(c,6);item.addView(marker,markerParams);
-            item.addView(new InstrumentIcon(c,icons[i],color),new LinearLayout.LayoutParams(dp(c,21),dp(c,21)));
-            TextView label=new TextView(c);label.setText(names[i]);label.setTextSize(10);label.setTextColor(color);label.setTypeface(BrandFonts.sans(c,active));label.setGravity(Gravity.CENTER);label.setPadding(0,dp(c,5),0,0);item.addView(label);
-            item.setMinimumHeight(dp(c,60));item.setContentDescription(names[i]+(active?", current screen":""));item.setSelected(active);item.setFocusable(true);item.setOnClickListener(v->select.open(index));
-            LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.setMargins(dp(c,2),0,dp(c,2),0);rail.addView(item,p);
-        }
-        outer.addView(rail,new LinearLayout.LayoutParams(-1,-2));return outer;
-    }
+ public interface Select{void open(int index);}private SecureNavigation(){}private static int dp(Context c,int n){return Math.round(n*c.getResources().getDisplayMetrics().density);}
+ public static View create(Context c,String[] names,String[] icons,int selected,Select select){
+  LinearLayout outer=new LinearLayout(c);outer.setOrientation(LinearLayout.VERTICAL);outer.setBackgroundColor(0xffffffff);View rule=new View(c);rule.setBackgroundColor(0xffdddddd);outer.addView(rule,new LinearLayout.LayoutParams(-1,dp(c,1)));LinearLayout row=new LinearLayout(c);row.setPadding(dp(c,8),dp(c,8),dp(c,8),dp(c,8));
+  for(int i=0;i<names.length;i++){final int which=i;boolean active=i==selected;LinearLayout item=new LinearLayout(c);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);item.setPadding(dp(c,2),dp(c,8),dp(c,2),dp(c,8));GradientDrawable bg=new GradientDrawable();bg.setColor(active?0xff000000:0xffffffff);bg.setCornerRadius(dp(c,5));item.setBackground(new RippleDrawable(ColorStateList.valueOf(0x22000000),bg,null));int color=active?0xffffffff:0xff555555;item.addView(new InstrumentIcon(c,icons[i],color),new LinearLayout.LayoutParams(dp(c,21),dp(c,21)));TextView label=new TextView(c);label.setText(names[i]);label.setTextSize(10);label.setTextColor(color);label.setTypeface(BrandFonts.sans(c,active));label.setPadding(0,dp(c,5),0,0);item.addView(label);item.setMinimumHeight(dp(c,58));item.setSelected(active);item.setFocusable(true);item.setContentDescription(names[i]+(active?", current screen":""));item.setOnClickListener(v->select.open(which));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.setMargins(dp(c,3),0,dp(c,3),0);row.addView(item,p);}outer.addView(row);return outer;
+ }
 }

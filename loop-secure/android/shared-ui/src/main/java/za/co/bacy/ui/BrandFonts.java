@@ -10,15 +10,15 @@ public final class BrandFonts {
 
     public static synchronized Typeface sans(Context context, boolean strong) {
         if (strong) {
-            if (medium == null) medium = load(context, "manrope_semibold", "sans-serif", Typeface.NORMAL);
+            if (medium == null) medium = load(context, "lato_bold", "sans-serif", Typeface.NORMAL);
             return medium;
         }
-        if (regular == null) regular = load(context, "manrope", "sans-serif", Typeface.NORMAL);
+        if (regular == null) regular = load(context, "lato_regular", "sans-serif", Typeface.NORMAL);
         return regular;
     }
 
     public static synchronized Typeface heading(Context context) {
-        if (heading == null) heading = load(context, "outfit", "sans-serif", Typeface.BOLD);
+        if (heading == null) heading = load(context, "barlow_condensed", "sans-serif", Typeface.BOLD);
         return heading;
     }
 

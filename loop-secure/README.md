@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.20.0).
-- Customer app **0.20.0**, administrator app **1.9.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.21.0).
+- Customer app **0.21.0**, administrator app **1.9.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -35,7 +35,7 @@ For the website, follow `cloudflare-admin/README.md`; dependencies are pinned an
 
 ## Payments and device controls
 
-The customer app now offers **Make a payment → Pay online with iKhokha**. The server creates a R300 hosted payment link and verifies the provider’s paid status, amount and receipt before adding 30 days and clearing the finance lock. Duplicate callbacks cannot add duplicate credit. See [iKhokha customer steps and live acceptance check](docs/IKHOKHA_PAYMENTS.md). Complete a provider-confirmed PAID checkout and handset unlock test before relying on automated approval.
+The customer app now offers **Make a payment → Pay online with iKhokha**. The server creates a hosted payment link for the verified amount due (including the smaller final balance) and verifies the provider’s paid status, amount and receipt before adding 30 days and clearing the finance lock. Duplicate callbacks cannot add duplicate credit. See [iKhokha customer steps and live acceptance check](docs/IKHOKHA_PAYMENTS.md). Complete a provider-confirmed PAID checkout and handset unlock test before relying on automated approval.
 
 Direct bank EFT claims require bank-settlement verification before administrator approval. A submitted reference is not proof of payment. Approved payments, grace periods, manual controls and permanent release produce signed authorizations; requested changes and actual handset acknowledgements are shown separately. Automatic verification of direct bank EFT and outbound payment emails require separately configured providers and credentials. iKhokha online payments use the separately configured private merchant connection.
 
@@ -43,12 +43,10 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.20.0/code 33**, native administrator **1.9.0/code 15** and the private website add one-use paid-access recovery codes. Open a customer record and choose Generate unlock code after actual settlement is approved. Copy the code or open a WhatsApp composer for that customer. The customer enters it under Support → Enter unlock code with internet connected.
+Customer **0.21.0/code 34** replaces the purple customer design with a white-and-black Swiss grid, Lato body text and Barlow Condensed display figures. Home, payment activity, banking, plan details, phone status, support, messages, update screens and confirmations use the new hierarchy and controls. Repayment values remain server-verified, and installed bank icons identify banking choices.
 
-The ten-digit PIN is specific to one phone, expires within 30 minutes, allows five incorrect attempts and cannot override a newer control/payment revision. Only a server-secret HMAC is stored, with atomic consumption and idempotent network retry. It clears a manual lock only for existing recorded paid access; it never adds a payment or extends a deadline. Code generation is limited to five per phone per hour. [Recovery and support guide](docs/UNLOCK_CODES_AND_SUPPORT.md).
+Five additions: bank search, locally encrypted support drafts, individual copyable payment records, a user-confirmed calendar reminder draft for the next payment (unrestricted phones only), and a Home payment-confirmation shortcut. See [customer redesign and update details](docs/MONOCHROME_CUSTOMER_REBUILD.md).
 
-Support is **063 724 6209** (+27 63 724 6209), available by Call or WhatsApp. On a restricted phone, contact uses a three-minute lease for the installed WhatsApp/default dialer, restored on return/expiry; no default-phone role is changed and no call/message is sent automatically. Android does not enforce a per-number dialer policy, so other numbers can be entered during that brief dialer session. Codes require customer app 0.20.0+.
+The native admin app remains **1.9.0/code 15** and the admin website is unchanged. Existing recovery codes, support at **063 724 6209**, the R1,700 repayment contract, verified payment handling, banking access and background updates remain available. There are no firmware or partition changes. Update in place; keep the enrolled account and device owner.
 
-The latest visual request is implemented with white/violet branding, a balance-first customer layout, slim marked navigation and horizontal administrator website navigation. Red/burgundy branding is replaced; existing Outfit/Manrope typography and the phone-padlock logo remain. R1,700 repayment rules and background updates are preserved. Runtime does not depend on ChatGPT/Codex credits.
-
-Validated: customer/admin same-signer builds/lint, 38 native SDK 30/35 cases plus two rendering/navigation checks, 17 server fixtures, browser/authentication checks and explicit rollback SQL for expiry/replay/phone/revision/attempt/issuance/payment invariants. No fixture customer/code records remain committed. Handset call/WhatsApp, actual redemption and background installation still require device confirmation.
+Validation includes same-signer customer release build/lint, native payment/banking/device-policy/update tests on SDK 30 and 35, new bank-search and calendar-restriction cases, and rendered layout checks. Physical-phone payment, background installation and banking handoff remain handset acceptance checks.

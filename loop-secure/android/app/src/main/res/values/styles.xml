@@ -1,31 +1,31 @@
 <resources>
     <style name="LoopTheme" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">#6441AC</item>
+        <item name="colorPrimary">#000000</item>
         <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorSecondary">#6441AC</item>
+        <item name="colorSecondary">#000000</item>
         <item name="colorOnSecondary">#FFFFFF</item>
         <item name="colorSurface">#FFFFFF</item>
-        <item name="colorSurfaceVariant">#F0EBFA</item>
-        <item name="colorOnSurface">#38275C</item>
-        <item name="colorOnSurfaceVariant">#766987</item>
-        <item name="colorOutline">#E3DEEE</item>
-        <item name="android:colorAccent">#6441AC</item>
-        <item name="android:textColorPrimary">#38275C</item>
-        <item name="android:textColorSecondary">#766987</item>
-        <item name="fontFamily">@font/manrope</item>
-        <item name="android:fontFamily">@font/manrope</item>
+        <item name="colorSurfaceVariant">#F4F4F4</item>
+        <item name="colorOnSurface">#000000</item>
+        <item name="colorOnSurfaceVariant">#595959</item>
+        <item name="colorOutline">#DDDDDD</item>
+        <item name="android:colorAccent">#000000</item>
+        <item name="android:textColorPrimary">#000000</item>
+        <item name="android:textColorSecondary">#595959</item>
+        <item name="fontFamily">@font/lato_regular</item>
+        <item name="android:fontFamily">@font/lato_regular</item>
         <item name="shapeAppearanceCornerSmall">@style/LoopControlShape</item>
         <item name="shapeAppearanceCornerMedium">@style/LoopControlShape</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#FCFBFF</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:windowBackground">#FCFBFF</item>
+        <item name="android:windowBackground">#FFFFFF</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:forceDarkAllowed">false</item>
     </style>
     <style name="LoopControlShape" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">15dp</item>
+        <item name="cornerSize">4dp</item>
     </style>
 </resources>
