@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.25.0).
-- Customer app **0.25.0**, administrator app **1.13.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.26.0).
+- Customer app **0.26.0**, administrator app **1.14.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,8 +43,8 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.25.0/code 38** adds oldest/newest payment ordering, a copyable statement of verified totals and available records, and editable support-message starters that preserve existing drafts. A statement never treats a pending claim as payment or exposes device credentials.
+Customer **0.26.0/code 39** adds saved Light, Dark and Follow phone appearance controls under Support, plus Android-reported manufacturer/model on Home. Payment record tools remain available. A statement never treats a pending claim as payment or exposes device credentials.
 
-Native admin **1.13.0/code 19** adds payment-status filters with loaded-record counts, oldest/newest ordering and an oldest-first pending review shortcut. Refresh keeps payment search focus and text selection. [Feature and update guide](docs/PAYMENT_RECORD_TOOLS.md).
+Native admin **1.14.0/code 20** adds saved Light, Dark and Follow phone appearance controls under More. The admin phone remains unrestricted. Previous payment search and ordering remain available. [Feature and update guide](docs/NATIVE_APPEARANCE.md).
 
 Device protection, offline timers, five-minute codes, the R1,700 plan and signed updates remain. No database or website change is required. Install updates in place without clearing data. The admin phone is never restricted. Handset installation and banking handoffs still require device verification.

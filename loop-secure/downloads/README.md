@@ -1,8 +1,8 @@
 # Loop Secure downloads
 
-Customer **0.25.0/code 38**, administrator **1.13.0/code 19**. Android 11+.
+Customer **0.26.0/code 39**, administrator **1.14.0/code 20**. Android 11+.
 
-New: payment ordering, copyable account statements, support starters, admin status filters and uninterrupted payment searching. See ../docs/PAYMENT_RECORD_TOOLS.md.
+New: native Light, Dark and Follow phone controls and reported phone identity. Website appearance and automatic storage cleanup are already live. Custom finance plans and expanded online orders remain staged pending migration approval. See ../docs/NATIVE_APPEARANCE.md.
 
 - **Loop-Secure-Client.apk**: signed customer update. Install over the existing app; do not uninstall or clear data.
 - **Loop-Secure-Admin.apk**: signed administrator update. Installation may need approval; the admin phone is never restricted.

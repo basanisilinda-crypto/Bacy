@@ -59,4 +59,34 @@
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">#000000</item>
     </style>
+    <style name="LoopDarkTheme" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#F0F2F4</item>
+        <item name="colorOnPrimary">#111827</item>
+        <item name="colorSecondary">#F0F2F4</item>
+        <item name="colorOnSecondary">#111827</item>
+        <item name="colorSurface">#111827</item>
+        <item name="colorSurfaceVariant">#26354C</item>
+        <item name="colorOnSurface">#F0F2F4</item>
+        <item name="colorOnSurfaceVariant">#B5BDC7</item>
+        <item name="colorOutline">#42516A</item>
+        <item name="android:colorAccent">#F0F2F4</item>
+        <item name="android:textColorPrimary">#F0F2F4</item>
+        <item name="android:textColorSecondary">#B5BDC7</item>
+        <item name="fontFamily">@font/lato_regular</item>
+        <item name="android:fontFamily">@font/lato_regular</item>
+        <item name="materialAlertDialogTheme">@style/LoopDarkInstrumentDialog</item>
+        <item name="shapeAppearanceCornerSmall">@style/LoopControlShape</item>
+        <item name="shapeAppearanceCornerMedium">@style/LoopControlShape</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#111827</item>
+        <item name="android:navigationBarColor">#111827</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">#111827</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+    <style name="LoopDarkInstrumentDialog" parent="LoopInstrumentDialog"><item name="colorSurface">#1C2636</item><item name="colorOnSurface">#F0F2F4</item><item name="colorPrimary">#F0F2F4</item><item name="materialAlertDialogTitleTextStyle">@style/LoopDarkDialogTitle</item><item name="materialAlertDialogBodyTextStyle">@style/LoopDarkDialogBody</item><item name="buttonBarPositiveButtonStyle">@style/LoopDarkDialogButton</item><item name="buttonBarNegativeButtonStyle">@style/LoopDarkDialogButton</item><item name="buttonBarNeutralButtonStyle">@style/LoopDarkDialogButton</item></style>
+    <style name="LoopDarkDialogTitle" parent="LoopDialogTitle"><item name="android:textColor">#F0F2F4</item></style>
+    <style name="LoopDarkDialogBody" parent="LoopDialogBody"><item name="android:textColor">#B5BDC7</item></style>
+    <style name="LoopDarkDialogButton" parent="LoopDialogButton"><item name="android:textColor">#F0F2F4</item></style>
 </resources>

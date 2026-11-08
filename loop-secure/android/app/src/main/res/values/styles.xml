@@ -28,4 +28,29 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">4dp</item>
     </style>
+    <style name="LoopDarkTheme" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#F0F2F4</item>
+        <item name="colorOnPrimary">#111827</item>
+        <item name="colorSecondary">#F0F2F4</item>
+        <item name="colorOnSecondary">#111827</item>
+        <item name="colorSurface">#111827</item>
+        <item name="colorSurfaceVariant">#26354C</item>
+        <item name="colorOnSurface">#F0F2F4</item>
+        <item name="colorOnSurfaceVariant">#B5BDC7</item>
+        <item name="colorOutline">#42516A</item>
+        <item name="android:colorAccent">#F0F2F4</item>
+        <item name="android:textColorPrimary">#F0F2F4</item>
+        <item name="android:textColorSecondary">#B5BDC7</item>
+        <item name="fontFamily">@font/lato_regular</item>
+        <item name="android:fontFamily">@font/lato_regular</item>
+        <item name="shapeAppearanceCornerSmall">@style/LoopControlShape</item>
+        <item name="shapeAppearanceCornerMedium">@style/LoopControlShape</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#111827</item>
+        <item name="android:navigationBarColor">#111827</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">#111827</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
 </resources>
