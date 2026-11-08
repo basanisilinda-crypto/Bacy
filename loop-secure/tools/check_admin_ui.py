@@ -23,6 +23,17 @@ with sync_playwright() as p:
  context.route('https://loop-ui.test/**',route)
  page=context.new_page();errors=[];page.on('pageerror',lambda err:errors.append(str(err)))
  page.goto('https://loop-ui.test/');page.locator('#workspace').wait_for(state='visible')
+ page.locator('#theme-choice').select_option('dark')
+ assert page.evaluate("document.documentElement.dataset.theme")=='dark'
+ assert page.evaluate("getComputedStyle(document.body).backgroundColor")=='rgb(17, 24, 39)'
+ page.reload();page.locator('#workspace').wait_for(state='visible')
+ assert page.locator('#theme-choice').input_value()=='dark'
+ page.locator('#theme-choice').select_option('system');page.emulate_media(color_scheme='dark')
+ page.wait_for_function("document.documentElement.dataset.theme==='dark'")
+ page.emulate_media(color_scheme='light')
+ page.wait_for_function("document.documentElement.dataset.theme==='light'")
+ page.locator('#theme-choice').select_option('light')
+
  page.keyboard.press('Control+k');assert page.locator('#search').evaluate('(el)=>el===document.activeElement')
  page.select_option('#customer-sort','due');assert 'Beta fixture' in page.locator('#devices-table tr').first.inner_text()
  page.get_by_role('button',name='Setup pending · 1',exact=True).click();assert page.locator('#devices-table tr').count()==1

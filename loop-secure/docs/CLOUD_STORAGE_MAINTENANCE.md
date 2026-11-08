@@ -18,10 +18,10 @@ The endpoint is restricted to the website/deployment owner and defaults to dry-r
 
 ## Deployment status
 
-The database helper was installed and its permissions verified; anon/authenticated cannot execute it. The storage selection tests passed (4 tests). The new maintenance endpoint and automatic background hooks are **not deployed**: automatic approval review rejected replacement of the shared production Edge Function, citing outage and payment/device-management risk without full end-to-end validation. No installer storage deletion has been performed and no freed-storage claim is made. Current apps remain customer 0.25.0 and native admin 1.13.0.
+Live Edge Function version 30 was deployed after the user's explicit approval. Its dry-run selected 42 superseded installers, and cleanup removed those 42 files, reclaiming 585,003,886 bytes. One expired temporary credential was removed. Storage now contains 23 objects totaling 423,776,607 bytes. All 15 customer/device records and 4 payment claims remain.
 
-Enrollment custom-plan fields, the expanded online order dashboard and phone-name display are separate unfinished work, paused at the user's request to prioritise cloud costs. Their local sources must not be included in the maintenance deployment without separate validation.
+Current customer 0.25.0 and admin 1.13.0 downloads were retrieved successfully; signed client bytes, provisioning checksum, cloud health, admin authentication and invalid enrollment rejection passed. A second cleanup request was skipped by the daily throttle. No handset reinstall is required.
 
-## Next action
+The larger per-customer plan/order migration remains staged: automatic approval review rejected replacing core enrollment, sync, payment-confirmation and recovery functions despite successful transactional rollback tests. It is not live. Native light/dark controls are also unfinished. Website light/dark/system selection is a separate deployed appearance update.
 
-Review and approve the concrete 14-file Edge Function update prepared with maintenance.ts and the two background hooks, then run the protected dry-run before deletion. Recheck current downloads, update manifests, cloud health and storage totals after cleanup. Keep provider spending caps enabled and monitor request/bandwidth quotas as the fleet grows. Storage cleanup cannot prevent all possible Cloudflare or Supabase limits.
+Cleanup cannot guarantee that request, bandwidth or storage limits will never be reached. Keep provider usage and spending limits under review as device numbers increase.
