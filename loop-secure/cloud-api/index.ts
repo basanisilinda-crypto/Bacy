@@ -4,7 +4,7 @@ import windowsUpdate from './Update-Windows.cmd.ts';
 import usbReadme from './READ-ME.txt.ts';
 import prepareTools from './Prepare-Tools.ps1.ts';
 import {provisioningPayload} from './provisioning.ts';
-import {newUnlockCode,normalizeUnlockCode,unlockCodeHash} from './unlock-codes.ts';
+import {newUnlockCode,normalizeUnlockCode,unlockCodeHash,temporaryCodeHash} from './unlock-codes.ts';
 import {IkPayGateway} from './ikpay-gateway.ts';
 import {clientUpdateManifest,adminUpdateManifest} from './app-update.ts';
 import {createClient} from 'npm:@supabase/supabase-js@2.57.0';
@@ -110,6 +110,7 @@ async function route(req:Request,path:string){
  }
  if(path.startsWith('/api/device/')){
   const dev=await device(req);
+  if(path==='/api/device/temporary-unlock-code'&&method==='POST'){const data=z.object({code:text(1,30),request_key:keySchema}).parse(await body(req));const result=await db.rpc('loop_redeem_temporary_code',{p_device:dev.id,p_hash:await temporaryCodeHash(serviceKey,dev.id,normalizeUnlockCode(data.code)),p_request:data.request_key});check(result.error);if(!result.data?.ok)fail(409,'Five-minute code is invalid, expired or already used. Ask your administrator for a fresh code.');return json(await signed(await rpc('sync',{revision:0,status:'needs_online_check'},dev.id,'device')));}
   if(path==='/api/device/unlock-code'&&method==='POST'){const data=z.object({code:text(1,30),request_key:keySchema}).parse(await body(req));const code=normalizeUnlockCode(data.code);const result=await db.rpc('loop_redeem_unlock_code',{p_device:dev.id,p_hash:await unlockCodeHash(serviceKey,dev.id,code),p_request:data.request_key});check(result.error);if(!result.data?.ok)fail(409,'Code is invalid, expired, already used or no longer matches this phone. Ask your administrator for a fresh code.');return json(await signed(await rpc('sync',{revision:0,status:'needs_online_check'},dev.id,'device')));}
   if(path==='/api/device/app-update'&&method==='POST'){const data=z.object({version_code:z.number().int().min(1).max(2147483647)}).parse(await body(req));const row=await db.from('loop_devices').select('released').eq('id',dev.id).single();check(row.error);return json(await signed(clientUpdateManifest(row.data.released?null:await currentInstaller(),dev.id,data.version_code,now())));}
   if(path==='/api/device/payments/ikhokha'&&method==='POST'){const data=z.object({fresh:z.boolean().default(false)}).parse(await body(req));return json(await ikpay.create(dev.id,data.fresh));}
@@ -130,6 +131,7 @@ async function route(req:Request,path:string){
  if(path.startsWith('/api/admin/')){
   const actor=await administrator(req);
   if(path==='/api/admin/payments/ikhokha'){if(method==='GET')return json(await ikpay.status());if(method==='PUT'){if(actor!=='site-owner')fail(403,'Only the website owner can configure payment credentials');return json(await ikpay.configure(await body(req)));}}
+  const temporaryDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/temporary-unlock-code$/i);if(temporaryDevice&&method==='POST'){const code=newUnlockCode();const result=await db.rpc('loop_issue_temporary_code',{p_device:temporaryDevice[1],p_hash:await temporaryCodeHash(serviceKey,temporaryDevice[1],code),p_actor:actor});check(result.error);return json({...result.data,code});}
   const codeDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/unlock-code$/i);if(codeDevice&&method==='POST'){await ikpay.reconcile(codeDevice[1]);const code=newUnlockCode();const result=await db.rpc('loop_issue_unlock_code',{p_device:codeDevice[1],p_hash:await unlockCodeHash(serviceKey,codeDevice[1],code),p_actor:actor});check(result.error);return json({...result.data,code});}
   const paymentDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/payment-link$/i);if(paymentDevice&&method==='POST'){const data=z.object({fresh:z.boolean().default(false)}).parse(await body(req));return json(await ikpay.create(paymentDevice[1],data.fresh));}
   if(path==='/api/admin/overview')queuePaymentCheck();

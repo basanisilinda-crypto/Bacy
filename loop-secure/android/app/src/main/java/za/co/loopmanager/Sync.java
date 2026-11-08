@@ -10,8 +10,8 @@ final class Sync {
         String previousStatus=store.get("last_status");if(previousStatus.isEmpty())previousStatus="needs_online_check";
         JSONObject request=new JSONObject().put("revision",previous==null?0:previous.data.optLong("revision")).put("status",previousStatus);
         request.put("app_version",version(c));
-        JSONObject envelope=new Api(store).post("/api/device/sync",request,true);
-        Entitlement accepted=Entitlement.accept(c,store,envelope);
+        long requestedAt=android.os.SystemClock.elapsedRealtime();JSONObject envelope=new Api(store).post("/api/device/sync",request,true);
+        Entitlement accepted=Entitlement.accept(c,store,envelope,requestedAt);
         PaymentReminders.check(c,accepted);
         try{Inbox.receive(c,accepted);}catch(Exception delayedReceipt){/* durable signed inbox is retried on the next sync */}
         return accepted;

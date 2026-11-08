@@ -1,3 +1,7 @@
+# Current administrator behaviour: 1.10.0
+
+Administrator 1.10.0 checks/downloads automatically on unmetered Wi-Fi, including a persisted 15-minute Android scheduling backstop. Installation approval can still be required and the admin phone is never restricted. Android controls exact background timing. See [five-minute access and offline clock guide](FIVE_MINUTE_ACCESS_AND_OFFLINE_LOCK.md).
+
 # Current customer behaviour: 0.18.3
 
 Customer 0.18.3 supersedes the customer Wi-Fi/manual-install instructions below: it checks and downloads in the background on Wi-Fi or mobile data, and attempts unattended installation only as device owner with explicit signed server permission. Older clients need one installation approval to receive this behaviour. Android may still require approval or delay background work. See [background customer update guide](BACKGROUND_CUSTOMER_UPDATES.md). Administrator behaviour is unchanged.

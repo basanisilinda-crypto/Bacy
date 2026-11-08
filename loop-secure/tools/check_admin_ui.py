@@ -85,6 +85,27 @@ with sync_playwright() as p:
  page.locator('#unlock-code-result').wait_for(state='visible')
  assert page.locator('#unlock-code-value').inner_text()=='01234 56789'
  assert 'wa.me/27600000000' in page.locator('#share-unlock-whatsapp').get_attribute('href')
+ assert 'Only restores recorded paid access' in page.locator('#unlock-code-expiry').inner_text()
+ # Temporary access is a separate fixture endpoint; no production customer/code is changed.
+ def temporary_route(route):
+  assert route.request.method=='POST'
+  route.fulfill(status=200,content_type='application/json',body=json.dumps({'code':'9876543210','expires':t+1800,'duration_seconds':300,'one_use':True,'requires_internet':True}))
+ context.route('https://loop-ui.test/api/admin/devices/TEST-A/temporary-unlock-code',temporary_route)
+ page.locator('#generate-temporary-code').click()
+ page.wait_for_function("document.querySelector('#unlock-code-value').textContent==='98765 43210'")
+ assert 'Five minutes starts when the code is verified online' in page.locator('#unlock-code-expiry').inner_text()
+ assert 'even offline' in page.locator('#unlock-code-expiry').inner_text()
+ from urllib.parse import unquote
+ assert 'Support → Five-minute access code' in unquote(page.locator('#share-unlock-whatsapp').get_attribute('href'))
+ assert not page.evaluate("Object.values(localStorage).some(value=>value.includes('9876543210'))"),'Codes must not enter browser storage'
+ page.keyboard.press('Escape')
+ assert page.locator('#unlock-code-value').inner_text()==''
+ assert page.locator('#share-unlock-whatsapp').get_attribute('href') is None
+ page.get_by_role('button',name='Manage Alpha fixture',exact=True).click()
+ assert page.locator('#unlock-code-result').is_hidden()
+ page.locator('#generate-unlock-code').click()
+ page.wait_for_function("document.querySelector('#unlock-code-value').textContent==='01234 56789'")
+ assert 'Only restores recorded paid access' in page.locator('#unlock-code-expiry').inner_text()
  assert page.locator('a[href="tel:+27637246209"]').count()>0
  page.locator('#create-ikpay-link').click()
  page.locator('#ikpay-link-url').wait_for(state='visible')
@@ -96,4 +117,4 @@ with sync_playwright() as p:
  page.keyboard.press('Escape')
  assert not errors,errors
  browser.close()
- print('Browser checks passed: sorting, filters, saved density/navigation, payment search/counts, help, dismissible status, refresh feedback, offline banner and mobile cards without horizontal overflow.')
+ print('Browser checks passed: sorting, filters, saved density/navigation, payment search/counts, help, status, offline/mobile layout, paid recovery and separate five-minute codes with correct sharing text and close cleanup.')

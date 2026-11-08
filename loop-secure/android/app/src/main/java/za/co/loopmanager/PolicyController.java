@@ -39,7 +39,7 @@ final class PolicyController {
             if(owns(c)&&c.getSystemService(ActivityManager.class).getLockTaskModeState()==ActivityManager.LOCK_TASK_MODE_LOCKED)BankApps.allowForLock(c,null);
             return "needs_online_check";
         }
-        JSONObject d=entitlement.data,policy=d.getJSONObject("policy");
+        JSONObject d=entitlement.data,policy=d.getJSONObject("policy");LocalDeadline.schedule(c,entitlement);
         if(!owns(c))return d.optBoolean("released")?"released":"unsupported";
         DevicePolicyManager pm=(DevicePolicyManager)c.getSystemService(Context.DEVICE_POLICY_SERVICE);ComponentName admin=admin(c);
         if(d.optBoolean("released")){
@@ -55,11 +55,6 @@ final class PolicyController {
         if(!enabled){pm.setSystemUpdatePolicy(admin,null);leave(c,pm,admin);return "unrestricted";}
         int updateStart=policy.optInt("update_window_start",120),updateEnd=policy.optInt("update_window_end",240);
         pm.setSystemUpdatePolicy(admin,updateStart==updateEnd?SystemUpdatePolicy.createAutomaticInstallPolicy():SystemUpdatePolicy.createWindowedInstallPolicy(updateStart,updateEnd));
-        if(!entitlement.clockKnown(c)&&!entitlement.manualLock()&&!updating&&!RestrictionStartup.wasRestricted(c,d)){
-            if(c.getSystemService(ActivityManager.class).getLockTaskModeState()==ActivityManager.LOCK_TASK_MODE_LOCKED)BankApps.allowForLock(c,policy);
-            // No editable wall-clock fallback. Do not newly lock a rebooted phone on an uncertain deadline.
-            return "needs_online_check";
-        }
         if(!entitlement.shouldRestrict(c)&&!updating&&!RestrictionStartup.wasRestricted(c,d)){leave(c,pm,admin);return "unrestricted";}
         if(!updating)RestrictionStartup.remember(c,d,true);
         try{pm.setKeyguardDisabled(admin,true);}catch(RuntimeException unsupported){}

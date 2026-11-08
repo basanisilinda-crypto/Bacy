@@ -43,6 +43,9 @@ public class LiveConnectionService extends Service {
         };
         try{connectivity.registerDefaultNetworkCallback(networkCallback);}catch(RuntimeException unavailable){networkCallback=null;}
     }
+    private android.os.PowerManager.WakeLock temporaryWake;
+    private long awakeUntil;
+    private void temporaryAwake(Entitlement e){long seconds=e==null?0:e.temporarySecondsLeft(this),until=seconds>0?e.temporaryUntil():0;if(until==awakeUntil&&temporaryWake!=null&&temporaryWake.isHeld())return;if(temporaryWake!=null&&temporaryWake.isHeld())temporaryWake.release();awakeUntil=until;if(seconds>0){temporaryWake=getSystemService(android.os.PowerManager.class).newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK,"LoopSecure:temporaryAccess");temporaryWake.setReferenceCounted(false);temporaryWake.acquire(Math.min(301000,seconds*1000+1000));}}
     private final Handler enforcementHandler=new Handler(Looper.getMainLooper());
     // Local enforcement must not wait behind network timeouts or reconnect backoff.
     private final Runnable enforcementCheck=new Runnable(){
@@ -53,7 +56,7 @@ public class LiveConnectionService extends Service {
                 Store store=new Store(LiveConnectionService.this);
                 Entitlement cached=Entitlement.load(LiveConnectionService.this,store);
                 if(cached!=null){
-                    String applied=PolicyController.apply(LiveConnectionService.this,cached);
+                    temporaryAwake(cached);String applied=PolicyController.apply(LiveConnectionService.this,cached);
                     PaymentReminders.check(LiveConnectionService.this,cached);
                     if(!applied.equals(store.get("last_status"))){
                         store.put("last_status",applied);
@@ -65,7 +68,7 @@ public class LiveConnectionService extends Service {
                 // Keep retrying locally. Never mark a failed restriction as applied.
                 try{Store store=new Store(LiveConnectionService.this);if(!"policy_error".equals(store.get("last_status"))){store.put("last_status","policy_error");sendBroadcast(new Intent(UPDATED).setPackage(getPackageName()),getPackageName()+".permission.INTERNAL");}}catch(Exception ignored){}
             }
-            if(!stopped)enforcementHandler.postDelayed(this,5000);
+            if(!stopped)enforcementHandler.postDelayed(this,temporaryWake!=null&&temporaryWake.isHeld()?1000:5000);
         }
     };
     static void start(Context c){
@@ -115,8 +118,8 @@ public class LiveConnectionService extends Service {
             }
         }
     }
-    @Override public int onStartCommand(Intent intent,int flags,int startId){return START_STICKY;}
-    @Override public void onDestroy(){try{unregisterReceiver(wakeReceiver);}catch(RuntimeException ignored){}stopped=true;enforcementHandler.removeCallbacksAndMessages(null);
+    @Override public int onStartCommand(Intent intent,int flags,int startId){enforcementHandler.removeCallbacks(enforcementCheck);enforcementHandler.post(enforcementCheck);return START_STICKY;}
+    @Override public void onDestroy(){try{unregisterReceiver(wakeReceiver);}catch(RuntimeException ignored){}stopped=true;enforcementHandler.removeCallbacksAndMessages(null);if(temporaryWake!=null&&temporaryWake.isHeld())temporaryWake.release();
         if(connectivity!=null&&networkCallback!=null)try{connectivity.unregisterNetworkCallback(networkCallback);}catch(RuntimeException ignored){}
         synchronized(reconnectWake){reconnectWake.notifyAll();}worker.shutdownNow();stopForeground(STOP_FOREGROUND_REMOVE);super.onDestroy();}
     @Override public IBinder onBind(Intent intent){return null;}

@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.21.0).
-- Customer app **0.21.0**, administrator app **1.9.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.22.0).
+- Customer app **0.22.0**, administrator app **1.10.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,10 +43,12 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.21.0/code 34** replaces the purple customer design with a white-and-black Swiss grid, Lato body text and Barlow Condensed display figures. Home, payment activity, banking, plan details, phone status, support, messages, update screens and confirmations use the new hierarchy and controls. Repayment values remain server-verified, and installed bank icons identify banking choices.
+Customer **0.22.0/code 35**, native admin **1.10.0/code 16** and the administrator website add separate five-minute courtesy access codes. Open the intended restricted customer and choose **Generate five-minute code**. The client enters it under **Support → Five-minute access code**. It needs online validation once, then a local elapsed-time timer restores the original finance restriction without a cloud request. No payment or paid deadline is added. Paid-access recovery codes remain separate.
 
-Five additions: bank search, locally encrypted support drafts, individual copyable payment records, a user-confirmed calendar reminder draft for the next payment (unrestricted phones only), and a Home payment-confirmation shortcut. See [customer redesign and update details](docs/MONOCHROME_CUSTOMER_REBUILD.md).
+The Home screen now shows a live restriction countdown, including existing grace. Local elapsed-realtime alarms, an independent foreground enforcement loop and screen-on recovery enforce verified deadlines offline. Editable date/time/timezone cannot extend access. A bounded partial wake lock keeps temporary-access checks responsive. Exact alarms are used where Android permits; the fallback is inexact.
 
-The native admin app remains **1.9.0/code 15** and the admin website is unchanged. Existing recovery codes, support at **063 724 6209**, the R1,700 repayment contract, verified payment handling, banking access and background updates remain available. There are no firmware or partition changes. Update in place; keep the enrolled account and device owner.
+After reboot, an unverifiable clock requires a fresh signed time check before normal access; this does not claim a new debt. Banking, Wi-Fi/settings, support and emergency access remain available. Permanently released and enforcement-disabled accounts are excluded. New remote commands still require delivery. Existing real payment dates and R1,700 contract rules are preserved. [Full guide, testing and platform limits](docs/FIVE_MINUTE_ACCESS_AND_OFFLINE_LOCK.md).
 
-Validation includes same-signer customer release build/lint, native payment/banking/device-policy/update tests on SDK 30 and 35, new bank-search and calendar-restriction cases, and rendered layout checks. Physical-phone payment, background installation and banking handoff remain handset acceptance checks.
+Admin background updates use a persisted 15-minute Wi-Fi scheduling backstop and installation approval where Android requires it; the admin phone is never restricted. Customer background updates continue through the existing signed managed channel. Install updates in place, without clearing enrollment/account data.
+
+Validated: customer/admin release builds and lint, Android monotonic-expiry/alarm/restart/payment/banking/update tests, browser fixtures for both code types, server signature/gateway fixtures and rollback-only SQL for one-use codes, revocation, unchanged financial records and rate/attempt limits. Handset sleep/wake, updates and banking handoff still require physical-device acceptance checks. No firmware or partition changes are included.

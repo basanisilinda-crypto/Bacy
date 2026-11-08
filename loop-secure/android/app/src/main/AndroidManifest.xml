@@ -2,6 +2,8 @@
     <permission android:name="za.co.loopmanager.permission.INTERNAL" android:protectionLevel="signature"/>
     <uses-permission android:name="za.co.loopmanager.permission.INTERNAL"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED"/>
@@ -21,6 +23,7 @@
         <intent><action android:name="android.settings.WIFI_SETTINGS"/></intent>
     </queries>
     <application android:label="Loop Secure" android:icon="@drawable/loop_secure_mark" android:dataExtractionRules="@xml/data_extraction_rules" android:theme="@style/LoopTheme" android:allowBackup="false" android:usesCleartextTraffic="false" android:supportsRtl="true">
+        <receiver android:name=".DeadlineReceiver" android:exported="false"/>
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:lockTaskMode="normal">
             <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
         </activity>
