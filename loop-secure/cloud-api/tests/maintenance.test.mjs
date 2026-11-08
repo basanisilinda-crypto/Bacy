@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {installerCleanupPlan} from '../maintenance.ts';
+const now=Date.now(),name=(type,n)=>`${type}-${n}.0.0-${'a'.repeat(64)}.apk`,obj=(type,n,age)=>({name:name(type,n),created_at:new Date(now-age*86400000).toISOString()});
+test('current pointer remains protected even if older than latest three',()=>{let rows=[1,2,3,4,5].map(n=>obj('client',n,10-n));let out=installerCleanupPlan(rows,['https://host/'+name('client',1)],now);assert.deepEqual(out.map(x=>x.name),[name('client',2)]);});
+test('independent retention per type and one-day in-flight grace',()=>{let rows=['client','admin','preview'].flatMap(type=>[1,2,3,4].map(n=>obj(type,n,10-n)));rows.push(obj('client',0,.5));let out=installerCleanupPlan(rows,[],now);assert.equal(out.length,4);assert(!out.some(x=>x.name===name('client',0)));});
+test('unknown names and missing/invalid dates are never removed',()=>{let rows=[{name:'customer-photo.png',created_at:new Date(0).toISOString()},{name:name('client',1),created_at:'bad'}];assert.equal(installerCleanupPlan(rows,[],now).length,0);});
+test('empty inventory does nothing',()=>assert.deepEqual(installerCleanupPlan([],[],now),[]));

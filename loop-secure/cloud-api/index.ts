@@ -1,3 +1,4 @@
+import {maintainStorage} from './maintenance.ts';
 import {zipSync,strToU8} from 'npm:fflate@0.8.2';
 import windowsEnroll from './Enroll-Windows.cmd.ts';
 import windowsUpdate from './Update-Windows.cmd.ts';
@@ -134,7 +135,8 @@ async function route(req:Request,path:string){
   const temporaryDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/temporary-unlock-code$/i);if(temporaryDevice&&method==='POST'){const code=newUnlockCode();const result=await db.rpc('loop_issue_temporary_code',{p_device:temporaryDevice[1],p_hash:await temporaryCodeHash(serviceKey,temporaryDevice[1],code),p_actor:actor});check(result.error);return json({...result.data,code});}
   const codeDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/unlock-code$/i);if(codeDevice&&method==='POST'){await ikpay.reconcile(codeDevice[1]);const code=newUnlockCode();const result=await db.rpc('loop_issue_unlock_code',{p_device:codeDevice[1],p_hash:await unlockCodeHash(serviceKey,codeDevice[1],code),p_actor:actor});check(result.error);return json({...result.data,code});}
   const paymentDevice=path.match(/^\/api\/admin\/devices\/([0-9a-f-]{36})\/payment-link$/i);if(paymentDevice&&method==='POST'){const data=z.object({fresh:z.boolean().default(false)}).parse(await body(req));return json(await ikpay.create(paymentDevice[1],data.fresh));}
-  if(path==='/api/admin/overview')queuePaymentCheck();
+  if(path==='/api/admin/maintenance'&&method==='POST'){if(actor!=='site-owner')fail(403,'Only the website owner can run storage maintenance');const data=z.object({dry_run:z.boolean().default(true)}).parse(await body(req));return json(await maintainStorage(db,data.dry_run));}
+  if(path==='/api/admin/overview'){queuePaymentCheck();{const task=maintainStorage(db).catch(()=>console.error('Storage maintenance deferred'));const runtime=(globalThis as any).EdgeRuntime;if(runtime?.waitUntil)runtime.waitUntil(task);else await task;}}
   if(path==='/api/admin/mobile/app-update'&&method==='POST'){const data=z.object({version_code:z.number().int().min(1).max(2147483647),installation_id:z.string().uuid()}).parse(await body(req));return json(await signed(adminUpdateManifest(await configuration('admin_installer_current'),data.installation_id,data.version_code,now())));}
   if(path==='/api/admin/payments/ikhokha/reconcile'&&method==='POST'){await ikpay.reconcile();return json({checked:true});}
   if(path==='/api/admin/site'){
@@ -181,7 +183,7 @@ async function route(req:Request,path:string){
    const tag=version+'-'+checksum.slice(0,12);const metadata={available:true,version,...(versionCode>0?{version_code:versionCode}:{}),apk_url:apkUrl,apk_sha256:checksum,bytes:size,...(!isPreview&&!isAdmin?{download_url:baseUrl+'/a/'+tag+'.apk'}:{})};
    if(!isPreview&&!isAdmin){const release=await db.from('loop_config').upsert({key:'apk_release:'+tag,value:metadata});check(release.error);}
    const stored=await db.from('loop_config').upsert({key:isAdmin?'admin_installer_current':isPreview?'preview_installer_current':'installer_current',value:metadata});check(stored.error);
-   return json(metadata);
+   {const task=maintainStorage(db).catch(()=>console.error('Storage maintenance deferred'));const runtime=(globalThis as any).EdgeRuntime;if(runtime?.waitUntil)runtime.waitUntil(task);else await task;}return json(metadata);
   }
   if(path==='/api/admin/provisioning/usb-bundle'&&method==='POST'){
    const data=z.object({enrollment_token:text(20,100)}).parse(await body(req));
