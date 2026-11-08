@@ -1,6 +1,8 @@
 # Loop Secure downloads
 
-Customer **0.23.0/code 36**, administrator **1.11.0/code 17**. Android 11+.
+Customer **0.24.0/code 37**, administrator **1.12.0/code 18**. Android 11+.
+
+This release adds a verified repayment-plan view, offline help, local payment search, customer dialer and reference-copy shortcuts. See ../docs/PRACTICAL_ACCOUNT_TOOLS.md.
 
 - **Loop-Secure-Client.apk**: signed customer update. Install over the existing app; do not clear data or uninstall.
 - **Loop-Secure-Client-Update.zip**: extract, connect one enrolled phone, then double-click START-HERE.cmd. Account and device ownership stay in place.

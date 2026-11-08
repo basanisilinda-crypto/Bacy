@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.23.0).
-- Customer app **0.23.0**, administrator app **1.11.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.24.0).
+- Customer app **0.24.0**, administrator app **1.12.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,10 +43,8 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.23.0/code 36** adds Android Device Owner protection against Developer options and ADB during financing. New customer USB enrollment is allowed before activation; subsequent updates use the signed managed channel. ADB may disconnect when protection applies. Permanent finance release clears our debugging restriction.
+Customer **0.24.0/code 37** adds a single verified repayment-plan view and offline payment/phone help. The plan shows approved payments, balance, progress, dates and the next amount without inventing missing figures. Rejected claims are labelled Not approved rather than implying a bank card decline.
 
-Direct-boot protection uses a minimal non-sensitive local marker, then cached policy is reapplied on USER_UNLOCKED/BOOT_COMPLETED before network work and on customer-app resume. Android's initial PIN/credential screen and platform scheduling remain outside the app's control. This does not change recovery/BROM firmware or make installation reset-proof.
+Native admin **1.12.0/code 18** adds local payment-queue search by customer/reference/receipt/state, a validated dialer shortcut and exact-reference copying on customer records. A call is never placed automatically. Searches do not approve payments or send queries to an external service. [Feature and update guide](docs/PRACTICAL_ACCOUNT_TOOLS.md).
 
-Additional client features: a live protection checklist and copyable support diagnostics. Native admin **1.11.0/code 17** adds needs-attention/stale-contact filters and a matching monochrome theme. Stale contact is not proof that a phone is offline. Existing offline countdowns, five-minute codes, R1,700 payment rules, bank/Wi-Fi/settings/support/emergency access and automatic updates remain. [Details and handset checks](docs/DEBUG_AND_STARTUP_PROTECTION.md).
-
-Both APKs retain their package identity and release signer. Install in place without clearing account data. The admin phone is never restricted. Native builds, lint and regression checks are run before publication; physical ADB shutdown, startup timing and managed installation require handset confirmation.
+Developer-options/ADB protection, boot recovery, offline timers, five-minute codes, the R1,700 plan and signed background updates remain. The admin phone is never restricted. Install updates in place; keep customer enrollment/account data. No database or website change is required for this native release. Physical phone installation/banking tests remain necessary.
