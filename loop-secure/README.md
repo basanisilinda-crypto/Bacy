@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.24.0).
-- Customer app **0.24.0**, administrator app **1.12.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.25.0).
+- Customer app **0.25.0**, administrator app **1.13.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -12,7 +12,7 @@ Create or reopen the intended customer in the dashboard and download its fresh W
 
 Android can refuse ownership when accounts or another device owner exist. Back up/sync phone data and confirm credentials before changing accounts. The helper never resets the phone or removes accounts. If ownership cannot be verified, inspect `Ownership-check.txt`; repeated downloads do not repair an unreadable local account or a permission failure.
 
-Already-enrolled phones use the Windows **update** ZIP, preserving the signing identity, customer connection and device owner. A released test handset requires completed release and removal of the old local app before a new enrollment record; preserve the old payment and audit history.
+Enrolled financed phones use signed in-app updates because Developer options/ADB are restricted. The Windows **update** ZIP preserves the customer connection and device owner only where USB debugging is still available. A released test handset requires completed release and removal of the old local app before a new enrollment record; preserve the old payment and audit history.
 
 ## Structure
 
@@ -43,8 +43,8 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.24.0/code 37** adds a single verified repayment-plan view and offline payment/phone help. The plan shows approved payments, balance, progress, dates and the next amount without inventing missing figures. Rejected claims are labelled Not approved rather than implying a bank card decline.
+Customer **0.25.0/code 38** adds oldest/newest payment ordering, a copyable statement of verified totals and available records, and editable support-message starters that preserve existing drafts. A statement never treats a pending claim as payment or exposes device credentials.
 
-Native admin **1.12.0/code 18** adds local payment-queue search by customer/reference/receipt/state, a validated dialer shortcut and exact-reference copying on customer records. A call is never placed automatically. Searches do not approve payments or send queries to an external service. [Feature and update guide](docs/PRACTICAL_ACCOUNT_TOOLS.md).
+Native admin **1.13.0/code 19** adds payment-status filters with loaded-record counts, oldest/newest ordering and an oldest-first pending review shortcut. Refresh keeps payment search focus and text selection. [Feature and update guide](docs/PAYMENT_RECORD_TOOLS.md).
 
-Developer-options/ADB protection, boot recovery, offline timers, five-minute codes, the R1,700 plan and signed background updates remain. The admin phone is never restricted. Install updates in place; keep customer enrollment/account data. No database or website change is required for this native release. Physical phone installation/banking tests remain necessary.
+Device protection, offline timers, five-minute codes, the R1,700 plan and signed updates remain. No database or website change is required. Install updates in place without clearing data. The admin phone is never restricted. Handset installation and banking handoffs still require device verification.

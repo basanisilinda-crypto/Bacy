@@ -1,15 +1,15 @@
 # Loop Secure downloads
 
-Customer **0.24.0/code 37**, administrator **1.12.0/code 18**. Android 11+.
+Customer **0.25.0/code 38**, administrator **1.13.0/code 19**. Android 11+.
 
-This release adds a verified repayment-plan view, offline help, local payment search, customer dialer and reference-copy shortcuts. See ../docs/PRACTICAL_ACCOUNT_TOOLS.md.
+New: payment ordering, copyable account statements, support starters, admin status filters and uninterrupted payment searching. See ../docs/PAYMENT_RECORD_TOOLS.md.
 
-- **Loop-Secure-Client.apk**: signed customer update. Install over the existing app; do not clear data or uninstall.
-- **Loop-Secure-Client-Update.zip**: extract, connect one enrolled phone, then double-click START-HERE.cmd. Account and device ownership stay in place.
-- **Loop-Secure-Admin.apk**: signed administrator update, including separate five-minute access-code controls and a 15-minute Wi-Fi background update backstop.
-- **Loop-Secure-Source.zip**: sanitized public source and bundled-font licenses.
-- **Loop-Secure-USB-Helper.zip**: helper sources. New enrollment still requires the private customer-specific dashboard bundle.
+- **Loop-Secure-Client.apk**: signed customer update. Install over the existing app; do not uninstall or clear data.
+- **Loop-Secure-Admin.apk**: signed administrator update. Installation may need approval; the admin phone is never restricted.
+- **Loop-Secure-Client-Update.zip**: Windows update helper for phones where USB debugging remains available. Financed phones with ADB protection use the managed update channel instead.
+- **Loop-Secure-Source.zip**: sanitized source and bundled-font licenses.
+- **Loop-Secure-USB-Helper.zip**: generic helper sources. New enrollment needs the private customer-specific bundle from the dashboard.
 
-[Five-minute codes and offline locking](../docs/FIVE_MINUTE_ACCESS_AND_OFFLINE_LOCK.md): online verification once, then local monotonic expiry. Developer options/ADB are restricted during financing. Use managed updates after activation. No payment is credited by courtesy access. Restarting with an unverifiable clock requires a time check. Banking, Wi-Fi/settings, support and emergency remain available. Exact alarm/installation timing depends on Android. The admin phone is never restricted.
+Customer apps check published updates in the background and can install verified packages automatically where Android permits. Admin apps check on Wi-Fi and may require installation approval. Android scheduling and active checkout can delay installation. Connect the phone to the internet; Support / Your phone includes the manual update check. Runtime does not depend on ChatGPT/Codex credits. The separate preview APK is an older disconnected preview.
 
-Enrolled customers and connected admin apps can receive published updates through their existing update channels where Android permits. Older admin releases use the older background interval until this update is installed. Installation approval may be required. Runtime does not depend on ChatGPT/Codex credits. The separate preview APK is an older disconnected design preview.
+Developer-options/ADB protection and offline finance deadlines remain. Five-minute codes verify online once, then expire on the local monotonic timer. An unverifiable clock after restart requires a time check. Banking, Wi-Fi/settings, support and emergency access remain available. Recovery/firmware resets are not blocked by ordinary device-owner policy.
