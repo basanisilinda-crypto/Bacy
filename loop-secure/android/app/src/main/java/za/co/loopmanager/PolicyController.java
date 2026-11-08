@@ -18,9 +18,10 @@ final class PolicyController {
     static ComponentName admin(Context c){return new ComponentName(c,LoopAdminReceiver.class);}
     static boolean owns(Context c){return ((DevicePolicyManager)c.getSystemService(Context.DEVICE_POLICY_SERVICE)).isDeviceOwnerApp(c.getPackageName());}
     static void protectFinancedDevice(Context c){
-        if(owns(c))financeProtection(c.getSystemService(DevicePolicyManager.class),admin(c),true,c.getPackageName());
+        if(owns(c)){StartupProtection.record(c,true);financeProtection(c.getSystemService(DevicePolicyManager.class),admin(c),true,c.getPackageName());}
     }
     private static void financeProtection(DevicePolicyManager pm,ComponentName admin,boolean protectedDevice,String packageName){
+        restriction(pm,admin,UserManager.DISALLOW_DEBUGGING_FEATURES,protectedDevice);
         restriction(pm,admin,UserManager.DISALLOW_FACTORY_RESET,protectedDevice);
         restriction(pm,admin,UserManager.DISALLOW_SAFE_BOOT,protectedDevice);
         restriction(pm,admin,UserManager.DISALLOW_ADD_USER,protectedDevice);
@@ -43,13 +44,13 @@ final class PolicyController {
         if(!owns(c))return d.optBoolean("released")?"released":"unsupported";
         DevicePolicyManager pm=(DevicePolicyManager)c.getSystemService(Context.DEVICE_POLICY_SERVICE);ComponentName admin=admin(c);
         if(d.optBoolean("released")){
-            leave(c,pm,admin);pm.setLockTaskPackages(admin,new String[0]);financeProtection(pm,admin,false,c.getPackageName());restriction(pm,admin,UserManager.DISALLOW_CONFIG_WIFI,false);pm.setSystemUpdatePolicy(admin,null);
+            StartupProtection.record(c,false);leave(c,pm,admin);pm.setLockTaskPackages(admin,new String[0]);financeProtection(pm,admin,false,c.getPackageName());restriction(pm,admin,UserManager.DISALLOW_CONFIG_WIFI,false);pm.setSystemUpdatePolicy(admin,null);
             pm.clearDeviceOwnerApp(c.getPackageName());
             return "released";
         }
         if(entitlement.clockKnown(c)&&!entitlement.shouldRestrict(c))RestrictionStartup.remember(c,d,false);
         boolean updating=UpdateGate.active(c);boolean enabled=policy.optBoolean("enforcement_enabled")||updating;
-        financeProtection(pm,admin,true,c.getPackageName());
+        StartupProtection.record(c,true);financeProtection(pm,admin,true,c.getPackageName());
         // Connectivity must remain available for payment verification and server recovery.
         restriction(pm,admin,UserManager.DISALLOW_CONFIG_WIFI,false);
         if(!enabled){pm.setSystemUpdatePolicy(admin,null);leave(c,pm,admin);return "unrestricted";}

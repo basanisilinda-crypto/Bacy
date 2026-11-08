@@ -37,6 +37,8 @@ final class DeviceHealth {
             try{
                 Bundle restrictions=manager.getUserRestrictions(PolicyController.admin(context));
                 result.append("\nSettings factory reset restriction: ").append(restrictions.getBoolean(UserManager.DISALLOW_FACTORY_RESET)?"Applied":"Not applied");
+                result.append("\nDeveloper options / ADB restriction: ").append(restrictions.getBoolean(UserManager.DISALLOW_DEBUGGING_FEATURES)?"Applied":"Not applied");
+                result.append("\nUSB debugging: ").append(android.provider.Settings.Global.getInt(context.getContentResolver(),android.provider.Settings.Global.ADB_ENABLED,0)==0?"Off":"On");
                 result.append("\nSafe boot restriction: ").append(restrictions.getBoolean(UserManager.DISALLOW_SAFE_BOOT)?"Applied":"Not applied");
                 result.append("\nWi-Fi configuration: ").append(restrictions.getBoolean(UserManager.DISALLOW_CONFIG_WIFI)?"Restricted":"Available");
                 result.append("\nManagement app clear-data / force-stop protection: ").append(manager.getUserControlDisabledPackages(PolicyController.admin(context))!=null&&manager.getUserControlDisabledPackages(PolicyController.admin(context)).contains(context.getPackageName())?"Applied":"Not applied");

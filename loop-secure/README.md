@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.22.0).
-- Customer app **0.22.0**, administrator app **1.10.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.23.0).
+- Customer app **0.23.0**, administrator app **1.11.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,12 +43,10 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.22.0/code 35**, native admin **1.10.0/code 16** and the administrator website add separate five-minute courtesy access codes. Open the intended restricted customer and choose **Generate five-minute code**. The client enters it under **Support → Five-minute access code**. It needs online validation once, then a local elapsed-time timer restores the original finance restriction without a cloud request. No payment or paid deadline is added. Paid-access recovery codes remain separate.
+Customer **0.23.0/code 36** adds Android Device Owner protection against Developer options and ADB during financing. New customer USB enrollment is allowed before activation; subsequent updates use the signed managed channel. ADB may disconnect when protection applies. Permanent finance release clears our debugging restriction.
 
-The Home screen now shows a live restriction countdown, including existing grace. Local elapsed-realtime alarms, an independent foreground enforcement loop and screen-on recovery enforce verified deadlines offline. Editable date/time/timezone cannot extend access. A bounded partial wake lock keeps temporary-access checks responsive. Exact alarms are used where Android permits; the fallback is inexact.
+Direct-boot protection uses a minimal non-sensitive local marker, then cached policy is reapplied on USER_UNLOCKED/BOOT_COMPLETED before network work and on customer-app resume. Android's initial PIN/credential screen and platform scheduling remain outside the app's control. This does not change recovery/BROM firmware or make installation reset-proof.
 
-After reboot, an unverifiable clock requires a fresh signed time check before normal access; this does not claim a new debt. Banking, Wi-Fi/settings, support and emergency access remain available. Permanently released and enforcement-disabled accounts are excluded. New remote commands still require delivery. Existing real payment dates and R1,700 contract rules are preserved. [Full guide, testing and platform limits](docs/FIVE_MINUTE_ACCESS_AND_OFFLINE_LOCK.md).
+Additional client features: a live protection checklist and copyable support diagnostics. Native admin **1.11.0/code 17** adds needs-attention/stale-contact filters and a matching monochrome theme. Stale contact is not proof that a phone is offline. Existing offline countdowns, five-minute codes, R1,700 payment rules, bank/Wi-Fi/settings/support/emergency access and automatic updates remain. [Details and handset checks](docs/DEBUG_AND_STARTUP_PROTECTION.md).
 
-Admin background updates use a persisted 15-minute Wi-Fi scheduling backstop and installation approval where Android requires it; the admin phone is never restricted. Customer background updates continue through the existing signed managed channel. Install updates in place, without clearing enrollment/account data.
-
-Validated: customer/admin release builds and lint, Android monotonic-expiry/alarm/restart/payment/banking/update tests, browser fixtures for both code types, server signature/gateway fixtures and rollback-only SQL for one-use codes, revocation, unchanged financial records and rate/attempt limits. Handset sleep/wake, updates and banking handoff still require physical-device acceptance checks. No firmware or partition changes are included.
+Both APKs retain their package identity and release signer. Install in place without clearing account data. The admin phone is never restricted. Native builds, lint and regression checks are run before publication; physical ADB shutdown, startup timing and managed installation require handset confirmation.

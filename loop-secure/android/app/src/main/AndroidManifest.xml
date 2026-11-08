@@ -39,7 +39,7 @@
             <meta-data android:name="android.app.device_admin" android:resource="@xml/device_admin"/>
             <intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED"/><action android:name="android.app.action.PROFILE_PROVISIONING_COMPLETE"/></intent-filter>
         </receiver>
-        <receiver android:name=".BootReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/><action android:name="android.intent.action.MY_PACKAGE_REPLACED"/></intent-filter></receiver>
+        <receiver android:name=".BootReceiver" android:exported="false" android:directBootAware="true"><intent-filter><action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/><action android:name="android.intent.action.USER_UNLOCKED"/><action android:name="android.intent.action.BOOT_COMPLETED"/><action android:name="android.intent.action.MY_PACKAGE_REPLACED"/></intent-filter></receiver>
         <!-- Device Owner is a documented systemExempted prerequisite alternative to exact-alarm permissions. The service checks actual ownership before starting. -->
         <service tools:ignore="ForegroundServicePermission" android:name=".LiveConnectionService" android:exported="false" android:foregroundServiceType="systemExempted"/>
         <activity android:name=".UpdateApprovalActivity" android:exported="false" android:excludeFromRecents="true"/>
