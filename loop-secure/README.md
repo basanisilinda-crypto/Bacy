@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.19.0).
-- Customer app **0.19.0**, administrator app **1.8.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.20.0).
+- Customer app **0.20.0**, administrator app **1.9.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -43,10 +43,12 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 ## This publication
 
-Customer **0.19.0/code 32**, native administrator **1.8.0/code 14** and the private website use a rebuilt ivory/coral/burgundy visual system. Charcoal was explicitly rejected and is not used as the art direction. New bundled Manrope/Outfit typography, payment-first customer Home, verified repayment readings/meter, compact tools, light navigation and redesigned sheets replace the old green layout. Admin has a receipt-first overview, action queue and desktop sidebar workspace. [Design and behaviour guide](docs/IVORY_CORAL_REDESIGN.md).
+Customer **0.20.0/code 33**, native administrator **1.9.0/code 15** and the private website add one-use paid-access recovery codes. Open a customer record and choose Generate unlock code after actual settlement is approved. Copy the code or open a WhatsApp composer for that customer. The customer enters it under Support → Enter unlock code with internet connected.
 
-Already-confirmed restrictions resume from cached signed state at boot/wake rather than waiting for a cloud request. The payment screen stays awake only while restricted; normal screen-lock behaviour returns after unlock. Existing secure Android PINs and hardware controls remain OS-controlled. No new overdue deadline is invented from the wall clock. Active checkout is preserved.
+The ten-digit PIN is specific to one phone, expires within 30 minutes, allows five incorrect attempts and cannot override a newer control/payment revision. Only a server-secret HMAC is stored, with atomic consumption and idempotent network retry. It clears a manual lock only for existing recorded paid access; it never adds a payment or extends a deadline. Code generation is limited to five per phone per hour. [Recovery and support guide](docs/UNLOCK_CODES_AND_SUPPORT.md).
 
-Make a payment opens secure hosted checkout directly. Provider-required details/3-D Secure remain; online settlement still requires authenticated verification. R1,700 totals, approved balances, exact final payments and existing accounts are retained. The server updater operates independently of ChatGPT/Codex credits; Android controls actual background timing and install approval.
+Support is **063 724 6209** (+27 63 724 6209), available by Call or WhatsApp. On a restricted phone, contact uses a three-minute lease for the installed WhatsApp/default dialer, restored on return/expiry; no default-phone role is changed and no call/message is sent automatically. Android does not enforce a per-number dialer policy, so other numbers can be entered during that brief dialer session. Codes require customer app 0.20.0+.
 
-Validation passed: release builds/lint for customer/admin, 34 native regression cases on SDK 30/35, two native rendering/navigation checks, 14 gateway fixtures, website authentication/relay and responsive browser checks, original APK signing identity and hosted-byte verification. Preview images use test data; production account data is not fabricated. Actual boot/keyguard/payment/provider/OTA behaviour still needs handset confirmation.
+The latest visual request is implemented with white/violet branding, a balance-first customer layout, slim marked navigation and horizontal administrator website navigation. Red/burgundy branding is replaced; existing Outfit/Manrope typography and the phone-padlock logo remain. R1,700 repayment rules and background updates are preserved. Runtime does not depend on ChatGPT/Codex credits.
+
+Validated: customer/admin same-signer builds/lint, 38 native SDK 30/35 cases plus two rendering/navigation checks, 17 server fixtures, browser/authentication checks and explicit rollback SQL for expiry/replay/phone/revision/attempt/issuance/payment invariants. No fixture customer/code records remain committed. Handset call/WhatsApp, actual redemption and background installation still require device confirmation.

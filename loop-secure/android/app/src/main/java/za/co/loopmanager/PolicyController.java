@@ -72,7 +72,7 @@ final class PolicyController {
         pm.setLockTaskFeatures(admin,features);
         pm.setStatusBarDisabled(admin,policy.optBoolean("block_notification_center",true));
         // Android explicitly preserves emergency calls under this restriction.
-        restriction(pm,admin,UserManager.DISALLOW_OUTGOING_CALLS,policy.optBoolean("block_outgoing_calls",true));
+        restriction(pm,admin,UserManager.DISALLOW_OUTGOING_CALLS,policy.optBoolean("block_outgoing_calls",true)&&!SupportAccess.callsAllowed(c));
         ActivityManager am=(ActivityManager)c.getSystemService(Context.ACTIVITY_SERVICE);
         if(am.getLockTaskModeState()!=ActivityManager.LOCK_TASK_MODE_LOCKED){
             if(c instanceof Activity){((Activity)c).startLockTask();}

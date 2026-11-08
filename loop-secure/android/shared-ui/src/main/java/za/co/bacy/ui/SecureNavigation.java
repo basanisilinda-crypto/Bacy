@@ -20,7 +20,8 @@ public final class SecureNavigation {
         for(int i=0;i<names.length;i++){
             final int index=i;boolean active=i==selected;int color=active?CustomerHome.BLUE:CustomerHome.MUTED;
             LinearLayout item=new LinearLayout(c);item.setOrientation(LinearLayout.VERTICAL);item.setGravity(Gravity.CENTER);item.setPadding(dp(c,3),dp(c,10),dp(c,3),dp(c,10));
-            GradientDrawable tile=new GradientDrawable();tile.setColor(active?0xffffe8de:CustomerHome.SURFACE);tile.setCornerRadius(dp(c,8));item.setBackground(new RippleDrawable(ColorStateList.valueOf(0x30ffffff),tile,null));
+            GradientDrawable tile=new GradientDrawable();tile.setColor(CustomerHome.SURFACE);tile.setCornerRadius(dp(c,8));item.setBackground(new RippleDrawable(ColorStateList.valueOf(0x30ffffff),tile,null));
+            View marker=new View(c);marker.setBackgroundColor(active?CustomerHome.BLUE:CustomerHome.SURFACE);LinearLayout.LayoutParams markerParams=new LinearLayout.LayoutParams(dp(c,22),dp(c,3));markerParams.bottomMargin=dp(c,6);item.addView(marker,markerParams);
             item.addView(new InstrumentIcon(c,icons[i],color),new LinearLayout.LayoutParams(dp(c,21),dp(c,21)));
             TextView label=new TextView(c);label.setText(names[i]);label.setTextSize(10);label.setTextColor(color);label.setTypeface(BrandFonts.sans(c,active));label.setGravity(Gravity.CENTER);label.setPadding(0,dp(c,5),0,0);item.addView(label);
             item.setMinimumHeight(dp(c,60));item.setContentDescription(names[i]+(active?", current screen":""));item.setSelected(active);item.setFocusable(true);item.setOnClickListener(v->select.open(index));

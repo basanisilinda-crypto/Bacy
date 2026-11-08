@@ -32,3 +32,8 @@ The owner-authenticated managed-installer upload now requires `X-App-Version-Cod
 ## R1,700 repayment plan migration
 
 After the base schema and existing migrations, apply `plan-1700.sql` with the migration tool. It includes the current dispatch function, service-role plan-summary/payoff helpers and updated online confirmation function. Do not reapply an older dispatch/confirmation function afterwards. Run `check_plan_1700.sql` and `check_ikpay_transactions.sql` as explicit rollback acceptance checks. The merchant owner authorized the R1,700 total for all customers; existing released accounts remain released. See `../docs/PLAN_R1700.md`.
+
+
+## One-use paid-access recovery codes
+
+Apply `unlock-codes.sql` and deploy the Edge Function with `unlock-codes.ts`. Run `check_unlock_codes.sql` in its explicit rollback transaction. The functions are service-role only and do not alter payment amounts or due dates. Customer 0.20.0+ redeems the ten-digit code online. Administrator 1.9.0 and the private website generate it only for recorded paid access. See `../docs/UNLOCK_CODES_AND_SUPPORT.md`.

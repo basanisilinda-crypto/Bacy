@@ -77,6 +77,15 @@ with sync_playwright() as p:
  context.route('https://loop-ui.test/api/admin/devices/TEST-A/payment-link',link_route)
  page.locator('nav [data-view="devices"]').click()
  page.get_by_role('button',name='Manage Alpha fixture',exact=True).click()
+ def unlock_route(route):
+  assert route.request.method=='POST'
+  route.fulfill(status=200,content_type='application/json',body=json.dumps({'code':'0123456789','expires':t+1800,'one_use':True,'requires_internet':True}))
+ context.route('https://loop-ui.test/api/admin/devices/TEST-A/unlock-code',unlock_route)
+ page.locator('#generate-unlock-code').click()
+ page.locator('#unlock-code-result').wait_for(state='visible')
+ assert page.locator('#unlock-code-value').inner_text()=='01234 56789'
+ assert 'wa.me/27600000000' in page.locator('#share-unlock-whatsapp').get_attribute('href')
+ assert page.locator('a[href="tel:+27637246209"]').count()>0
  page.locator('#create-ikpay-link').click()
  page.locator('#ikpay-link-url').wait_for(state='visible')
  assert page.locator('#ikpay-link-url').input_value()=='https://securepay.ikhokha.red/fixture-only'

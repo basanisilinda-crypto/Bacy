@@ -1,27 +1,27 @@
 <resources>
     <style name="PreviewTheme" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">#B83E32</item>
+        <item name="colorPrimary">#6441AC</item>
         <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorSecondary">#B83E32</item>
+        <item name="colorSecondary">#6441AC</item>
         <item name="colorOnSecondary">#FFFFFF</item>
         <item name="colorSurface">#FFFFFF</item>
-        <item name="colorSurfaceVariant">#FFE8DE</item>
-        <item name="colorOnSurface">#54223D</item>
-        <item name="colorOnSurfaceVariant">#805F70</item>
-        <item name="colorOutline">#EAD7DC</item>
-        <item name="android:colorAccent">#B83E32</item>
-        <item name="android:textColorPrimary">#54223D</item>
-        <item name="android:textColorSecondary">#805F70</item>
+        <item name="colorSurfaceVariant">#F0EBFA</item>
+        <item name="colorOnSurface">#38275C</item>
+        <item name="colorOnSurfaceVariant">#766987</item>
+        <item name="colorOutline">#E3DEEE</item>
+        <item name="android:colorAccent">#6441AC</item>
+        <item name="android:textColorPrimary">#38275C</item>
+        <item name="android:textColorSecondary">#766987</item>
         <item name="fontFamily">@font/manrope</item>
         <item name="android:fontFamily">@font/manrope</item>
         <item name="materialAlertDialogTheme">@style/LoopInstrumentDialog</item>
         <item name="shapeAppearanceCornerSmall">@style/LoopControlShape</item>
         <item name="shapeAppearanceCornerMedium">@style/LoopControlShape</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#FFFAF5</item>
+        <item name="android:statusBarColor">#FCFBFF</item>
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:windowBackground">#FFFAF5</item>
+        <item name="android:windowBackground">#FCFBFF</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:forceDarkAllowed">false</item>
     </style>
@@ -31,8 +31,8 @@
     </style>
     <style name="LoopInstrumentDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="colorSurface">#FFFFFF</item>
-        <item name="colorOnSurface">#54223D</item>
-        <item name="colorPrimary">#B83E32</item>
+        <item name="colorOnSurface">#38275C</item>
+        <item name="colorPrimary">#6441AC</item>
         <item name="shapeAppearance">@style/LoopControlShape</item>
         <item name="materialAlertDialogTitleTextStyle">@style/LoopDialogTitle</item>
         <item name="materialAlertDialogBodyTextStyle">@style/LoopDialogBody</item>
@@ -43,13 +43,13 @@
     <style name="LoopDialogTitle" parent="MaterialAlertDialog.Material3.Title.Text">
         <item name="fontFamily">@font/outfit</item>
         <item name="android:fontFamily">@font/outfit</item>
-        <item name="android:textColor">#54223D</item>
+        <item name="android:textColor">#38275C</item>
         <item name="android:textSize">24sp</item>
     </style>
     <style name="LoopDialogBody" parent="MaterialAlertDialog.Material3.Body.Text">
         <item name="fontFamily">@font/manrope</item>
         <item name="android:fontFamily">@font/manrope</item>
-        <item name="android:textColor">#805F70</item>
+        <item name="android:textColor">#766987</item>
         <item name="android:textSize">14sp</item>
     </style>
     <style name="LoopDialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
@@ -57,6 +57,6 @@
         <item name="android:fontFamily">@font/manrope</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:textSize">13sp</item>
-        <item name="android:textColor">#B83E32</item>
+        <item name="android:textColor">#6441AC</item>
     </style>
 </resources>

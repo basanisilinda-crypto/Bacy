@@ -1,6 +1,6 @@
 # Loop Secure downloads
 
-Managed client 0.19.0, native administrator 1.8.0 and optional disconnected preview 1.3.0.
+Managed client 0.20.0, native administrator 1.9.0 and optional disconnected preview 1.3.0.
 
 Install signed updates over the matching existing app. Do not uninstall an enrolled client to update it. The Windows update ZIP retains the customer account and does not assign ownership again.
 
@@ -27,3 +27,5 @@ Customer 0.18.3 adds background Wi-Fi/mobile downloads and signed device-owner u
 Customer 0.18.4 adds Copy payment summary in My plan and exact final-payment wording. Keep 0.18.3 installed and enrolled to test background updating while the phone remains online. See [test instructions](../docs/TEST_UPDATE_0184.md).
 
 Customer 0.19.0 and Admin 1.8.0 introduce the ivory/coral/burgundy layouts, new Manrope/Outfit fonts, clearer payment access and restricted-only awake/startup handling. Background updates remain active independently of ChatGPT credits. See ../docs/IVORY_CORAL_REDESIGN.md. Tap Install after download; Android may need installation approval. Admin updates never restrict the admin phone. Update in place; keep account data and existing ownership. [Update guide](../docs/AUTOMATIC_APP_UPDATES.md).
+
+Customer 0.20.0 and Admin 1.9.0 add one-use paid-access codes, support Call/WhatsApp at 063 724 6209, and new white/violet layouts with no red/burgundy branding. See ../docs/UNLOCK_CODES_AND_SUPPORT.md. Existing 0.18.3+ enrolled clients can receive background updates where Android permits. Tap Install after download; Android may need installation approval. Admin updates never restrict the admin phone. Update in place; keep account data and existing ownership. [Update guide](../docs/AUTOMATIC_APP_UPDATES.md).

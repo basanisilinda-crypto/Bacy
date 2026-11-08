@@ -1,0 +1,4 @@
+/** The server stores only an HMAC, never a plaintext recovery PIN. */
+export function newUnlockCode(){let code='';while(code.length<10){for(const value of crypto.getRandomValues(new Uint8Array(16))){if(value<250)code+=String(value%10);if(code.length===10)break;}}return code;}
+export function normalizeUnlockCode(value:string){const code=value.replace(/[\s-]/g,'');if(!/^\d{10}$/.test(code))throw Object.assign(new Error('Enter the 10-digit code supplied by your administrator'),{status:422});return code;}
+export async function unlockCodeHash(secret:string,deviceId:string,code:string){const enc=new TextEncoder();const key=await crypto.subtle.importKey('raw',enc.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',key,enc.encode('loop-paid-unlock:v1:'+deviceId.toLowerCase()+':'+normalizeUnlockCode(code))))).map(v=>v.toString(16).padStart(2,'0')).join('');}

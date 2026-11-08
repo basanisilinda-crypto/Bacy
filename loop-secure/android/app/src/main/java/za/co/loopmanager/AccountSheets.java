@@ -17,7 +17,7 @@ import za.co.bacy.ui.InstrumentIcon;
 
 /** Colour-coded native payment sheets. Financial actions remain with the enrolled account controller. */
 final class AccountSheets {
- static final int INK=0xff54223d,MUTED=0xff805f70,TEAL=0xffb83e32,CORAL=0xffffe0d4,GOLD=0xfff6e6bf,MINT=0xfff4e7ed,PAPER=0xfffffcf8,LINE=0xffead7dc;
+ static final int INK=0xff38275c,MUTED=0xff766987,TEAL=0xff6441ac,CORAL=0xffeee7fa,GOLD=0xfff6e6bf,MINT=0xfff2eef9,PAPER=0xfffffcf8,LINE=0xffe3deee;
  private final Activity activity;final BottomSheetDialog dialog;final LinearLayout body;
  private int dp(int n){return Math.round(n*activity.getResources().getDisplayMetrics().density);}
  private AccountSheets(Activity a,String title,String subtitle){

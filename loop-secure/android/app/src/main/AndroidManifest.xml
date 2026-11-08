@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <queries>
+        <package android:name="com.whatsapp"/><package android:name="com.whatsapp.w4b"/>
         <intent><action android:name="android.content.pm.action.CONFIRM_INSTALL"/></intent>
         <intent><action android:name="android.intent.action.SENDTO"/><data android:scheme="smsto"/></intent>
         <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
