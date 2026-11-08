@@ -18,7 +18,7 @@ export class IkPayGateway {
  private publicIntent(p:any){return {id:p.id,state:p.state,amount_minor:p.amount_minor,currency:p.currency,checkout_url:p.state==='pending'?p.checkout_url||null:null,created:p.created,confirmed_at:p.confirmed_at||null,needs_new_link:p.state==='pending'&&['failure','attempt_limit'].includes(p.last_checkout_outcome)};}
  async create(deviceId:string,fresh=false){
   const cfg=await this.config(),now=Math.floor(Date.now()/1000);const pointerKey='ikpay-active:'+deviceId;
-  let next:number|undefined;const nextAmount=async()=>{if(next!==undefined)return next;const summary=await this.db.rpc('loop_plan_summary',{p_device:deviceId});this.checked(summary.error);next=summary.data?.next_payment;if(!Number.isSafeInteger(next)||(next as number)<=0||(next as number)>300)this.failure(409,'The plan has no further payment due, or its balance could not be confirmed.');return next!;};
+  let next:number|undefined;const nextAmount=async()=>{if(next!==undefined)return next;const summary=await this.db.rpc('loop_plan_summary',{p_device:deviceId});this.checked(summary.error);next=summary.data?.next_payment;if(!Number.isSafeInteger(next)||(next as number)<=0||(next as number)>1000000)this.failure(409,'The plan has no further payment due, or its balance could not be confirmed.');return next!;};
   const pointer=await this.read(pointerKey);
   if(pointer){
    const p=await this.read('ikpay-intent:'+pointer.id);

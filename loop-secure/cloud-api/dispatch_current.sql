@@ -13,7 +13,7 @@ begin
  if p_action='enroll_create' then
   if coalesce(p_data->>'consent','false')<>'true' then raise exception '422:Administrator confirmation of customer agreement is required'; end if;
   insert into public.loop_customers(name,identity,phone,reference,verified,verification_note,consent,created) values(p_data->>'name',p_data->>'identity',p_data->>'phone',p_data->>'reference',coalesce((p_data->>'identity_verified')::boolean,false),p_data->>'verification_note',true,t) returning * into c;
-  insert into public.loop_devices(customer_id,enrollment,enrollment_expires,due,policy) values(c.id,p_data->>'enrollment_hash',t+1800,t+2592000,p_data->'policy') returning * into d;
+  insert into public.loop_devices(customer_id,enrollment,enrollment_expires,due,policy,contract_total,monthly_payment) values(c.id,p_data->>'enrollment_hash',t+1800,t+2592000,p_data->'policy',coalesce((p_data->>'contract_total')::integer,1700),coalesce((p_data->>'monthly_payment')::integer,300)) returning * into d;
   result:=jsonb_build_object('device_id',d.id,'reference',c.reference);
  elsif p_action='enroll_exchange' then
   if p_data ? 'request_key' then
@@ -178,4 +178,4 @@ begin
  end if;
  insert into public.loop_audit(at,actor,action,subject,detail) values(t,coalesce(nullif(p_actor,''),p_device::text,'device'),p_action,coalesce(p_data->>'id',p_device::text,result->>'device_id',result->>'id','fleet'),coalesce(p_data->>'reason',p_data->>'verification_note',p_data->>'consent_source',''));
  return result;
-end;$function$;
+end;$function$

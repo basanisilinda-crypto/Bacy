@@ -5,7 +5,7 @@ android {
     compileSdk 36
     buildFeatures { buildConfig true }
     testOptions { unitTests.includeAndroidResources = true }
-    defaultConfig { applicationId 'za.co.bacy.admin'; minSdk 30; targetSdk 36; versionCode 19; versionName '1.13.0' }
+    defaultConfig { applicationId 'za.co.bacy.admin'; minSdk 30; targetSdk 36; versionCode 20; versionName '1.14.0' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     signingConfigs {
         if (System.getenv('LOOP_SIGNING_STORE_FILE')) {
