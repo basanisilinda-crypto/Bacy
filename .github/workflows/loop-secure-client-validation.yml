@@ -1,0 +1,43 @@
+name: Validate Loop Secure Client Pay@ and Updates
+on:
+  push:
+    branches:
+      - 'loop-secure/payat-client-auto-updates'
+    paths:
+      - 'loop-secure/android/**'
+      - '.github/workflows/loop-secure-client-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Check out candidate source
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android 36 platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Test new payment and automatic update code
+        working-directory: loop-secure/android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
+      - name: Upload test APK (debug signed, not a production update)
+        uses: actions/upload-artifact@v4
+        with:
+          name: loop-secure-client-payat-TEST-ONLY
+          path: loop-secure/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
