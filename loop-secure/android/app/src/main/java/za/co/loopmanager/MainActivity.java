@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private boolean onlinePaymentBusy;
     private String preferredPaymentMethod;
-    private void paymentMethods(){if(entitlement==null||entitlement.data.optBoolean("released"))return;AccountSheets.payments(this,"R"+entitlement.data.optLong("amount",300),()->{preferredPaymentMethod=null;onlinePayment(false);},()->{preferredPaymentMethod="eft";onlinePayment(false);},this::paymentDetails,()->onlinePayment(true),this::requestFreshLink);}
+    private void paymentMethods(){if(entitlement==null||entitlement.data.optBoolean("released"))return;AccountSheets.payments(this,"R"+entitlement.data.optLong("amount",300),()->{preferredPaymentMethod=null;onlinePayment(false);},()->{preferredPaymentMethod="eft";onlinePayment(false);},this::paymentDetails,()->onlinePayment(true),this::requestFreshLink,()->payAtPayment(false));}
     private void requestFreshLink(){AccountSheets.fresh(this,()->onlinePayment(false,true),()->onlinePayment(true));}
     private void accountDetails(){if(entitlement==null)return;JSONObject d=entitlement.data,plan=d.optJSONObject("payment_summary");AccountSheets panel=AccountSheets.panel(this,"Your repayment plan","Only approved payments count towards your phone").line("Phone price",summaryMoney(plan,"contract_total")).line("Approved payments",summaryMoney(plan,"approved_total")).line("Balance remaining",summaryMoney(plan,"remaining_balance")).line("Progress",plan!=null&&plan.opt("progress_percent") instanceof Number?plan.opt("progress_percent")+"%":"Not available").line("Payments still needed",plan!=null&&plan.opt("payments_remaining") instanceof Number?plan.opt("payments_remaining").toString():"Not available").line("Next payment",d.optBoolean("released")?"No more payments due":"R"+d.optLong("amount",300)).line("Payment date",dateTime(d.optLong("due"))).line("Restriction date",dateTime(entitlement.restrictionDue())).line("Reference",d.optString("reference"));if(!d.optBoolean("released"))panel.option("Make a payment","Choose a payment method","payment",AccountSheets.CORAL,this::paymentMethods);panel.option("Copy plan summary","Keep a copy of your verified figures","copy",AccountSheets.PAPER,this::copyPaymentSummary).option("Copy reference",d.optString("reference"),"copy",AccountSheets.PAPER,this::copyReference).option("Payment help","Understand your plan and payment status","help",AccountSheets.PAPER,this::paymentHelp).show();}
 
@@ -219,6 +219,51 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this,PaymentActivity.class).putExtra("payment_url",url).putExtra("preferred_method",preferredPaymentMethod));preferredPaymentMethod=null;
             });
         }catch(Exception failure){runOnUiThread(()->{onlinePaymentBusy=false;problem("Online payment could not complete this check. "+failure.getMessage()+" If your bank has debited you, check payment status before paying again. Bank EFT remains available.");});}});
+    }
+
+    private boolean payatBusy;
+    private void payAtPayment(boolean checkOnly){
+        if(payatBusy||destroyed||entitlement==null||entitlement.data.optBoolean("released"))return;
+        payatBusy=true;
+        toast(checkOnly?"Checking Pay@ payment status…":"Creating your Pay@ payment number…");
+        worker.execute(()->{
+            try{
+                JSONObject result=new Api(store).post(checkOnly?"/api/device/payments/payat/check":"/api/device/payments/payat",new JSONObject(),true);
+                runOnUiThread(()->{
+                    payatBusy=false;
+                    if(destroyed)return;
+                    String state=result.optString("state","none"),number=result.optString("source_reference",""),link=result.optString("checkout_url","");
+                    if("paid".equals(state))refresh();
+                    AccountSheets panel=AccountSheets.panel(this,"Pay@ payment","Use your Pay@ number or online link")
+                        .note("Payment status",PayAtPayment.stateMessage(state),AccountSheets.MINT,"payment")
+                        .line("Amount","R"+(result.optLong("amount_minor")/100));
+                    if(PayAtPayment.validNumber(number)){
+                        panel.line("Pay@ payment number",number)
+                            .option("Copy Pay@ number","Use this number at supported payment points","copy",AccountSheets.CORAL,()->copyPayAt("Pay@ payment number",number));
+                    }
+                    if(PayAtPayment.trustedLink(link)){
+                        panel.option("Copy online payment link","Pay on another phone or browser","copy",AccountSheets.PAPER,()->copyPayAt("Pay@ checkout link",link));
+                        panel.option("Open secure Pay@ link","Continue on payat.io","payment",AccountSheets.GOLD,()->{
+                            if(getSystemService(ActivityManager.class).getLockTaskModeState()!=ActivityManager.LOCK_TASK_MODE_NONE){
+                                copyPayAt("Pay@ checkout link",link);
+                                toast("Phone restricted: link copied. Open it on another device.");
+                                return;
+                            }
+                            try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(link)).addCategory(Intent.CATEGORY_BROWSABLE));}
+                            catch(Exception e){copyPayAt("Pay@ checkout link",link);toast("No browser found. Secure link copied.");}
+                        });
+                    }
+                    panel.option("Check Pay@ payment","Verify directly with Pay@","refresh",AccountSheets.MINT,()->payAtPayment(true));
+                    panel.option("Other payment methods","Use iKhokha or bank transfer","bank",AccountSheets.PAPER,this::paymentMethods).show();
+                });
+            }catch(Exception failure){
+                runOnUiThread(()->{payatBusy=false;if(!destroyed)problem("Pay@ could not complete this request. "+failure.getMessage()+" iKhokha and bank transfer remain available.");});
+            }
+        });
+    }
+    private void copyPayAt(String label,String value){
+        getSystemService(ClipboardManager.class).setPrimaryClip(ClipData.newPlainText(label,value));
+        toast("Copied. Check payment status before paying again.");
     }
     private String paymentStatus(String value){return switch(value){case "paid"->"Your payment is verified. Paid time has been added once. Keep the phone online to refresh access.";case "pending","creating"->"iKhokha has not confirmed this payment. If checkout failed, get a fresh link. If your bank debited you, check again before paying again.";case "review_required"->"This payment needs administrator attention before account credit can be confirmed. Contact support; do not pay again if your bank already debited you.";case "failed"->"A payment link could not be completed. Check with your bank if you were debited before starting another payment.";default->"No online payment link has been recorded for this account yet.";};}
     private void paymentDetails(){if(entitlement==null)return;AccountSheets.eft(this,entitlement.data.optJSONObject("eft"),entitlement.data.optString("reference"),"R"+entitlement.data.optLong("amount",300),this::openBank,this::copyReference);}
