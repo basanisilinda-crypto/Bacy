@@ -46,3 +46,60 @@ jobs:
           path: loop-secure/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
           if-no-files-found: error
+      - name: Check for private production signing configuration
+        id: signing
+        shell: bash
+        env:
+          STORE_B64: ${{ secrets.LOOP_SIGNING_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.LOOP_SIGNING_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.LOOP_SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.LOOP_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$STORE_B64" && -n "$STORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Existing private signing environment is configured."
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Production signing keystore/passwords are not configured as Actions secrets. Do not publish a debug APK for over-the-air update."
+          fi
+      - name: Build properly signed update and verify signing identity
+        if: steps.signing.outputs.ready == 'true'
+        working-directory: loop-secure/android
+        shell: bash
+        env:
+          STORE_B64: ${{ secrets.LOOP_SIGNING_KEYSTORE_B64 }}
+          LOOP_SIGNING_STORE_PASSWORD: ${{ secrets.LOOP_SIGNING_STORE_PASSWORD }}
+          LOOP_SIGNING_KEY_ALIAS: ${{ secrets.LOOP_SIGNING_KEY_ALIAS }}
+          LOOP_SIGNING_KEY_PASSWORD: ${{ secrets.LOOP_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          export LOOP_SIGNING_STORE_FILE="$RUNNER_TEMP/loop-client-release.keystore"
+          umask 077
+          printf '%s' "$STORE_B64" | base64 --decode > "$LOOP_SIGNING_STORE_FILE"
+          unset STORE_B64
+          chmod 600 "$LOOP_SIGNING_STORE_FILE"
+          ./gradlew :app:assembleRelease --no-daemon
+          CURRENT="../downloads/Loop-Secure-Client.apk"
+          CANDIDATE="app/build/outputs/apk/release/app-release.apk"
+          test -s "$CURRENT"
+          test -s "$CANDIDATE"
+          VERIFY="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          old="$("$VERIFY" verify --print-certs "$CURRENT" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)"
+          new="$("$VERIFY" verify --print-certs "$CANDIDATE" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)"
+          test -n "$old" && test "$old" = "$new"
+          "$VERIFY" verify "$CANDIDATE"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          "$AAPT" dump badging "$CANDIDATE" | grep -E "package: name='za.co.loopmanager' versionCode='40'"
+          sha256sum "$CANDIDATE" > "$CANDIDATE.sha256"
+          echo "Signed update candidate verified against the installed-release certificate."
+      - name: Upload signed release candidate for manual approval
+        if: steps.signing.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: loop-secure-client-0.27.0-SIGNED-CANDIDATE
+          path: |
+            loop-secure/android/app/build/outputs/apk/release/app-release.apk
+            loop-secure/android/app/build/outputs/apk/release/app-release.apk.sha256
+          retention-days: 14
+          if-no-files-found: error
