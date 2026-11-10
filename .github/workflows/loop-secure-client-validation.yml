@@ -29,11 +29,16 @@ jobs:
           test -n "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0'
-      - name: Test new payment and automatic update code
+      - name: Build candidate client test APK
         working-directory: loop-secure/android
         run: |
           chmod +x gradlew
-          ./gradlew :app:testDebugUnitTest :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Test payment and update code
+        working-directory: loop-secure/android
+        run: |
+          mkdir -p /tmp/loop-build/robolectric-home
+          ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace
       - name: Upload test APK (debug signed, not a production update)
         uses: actions/upload-artifact@v4
         with:
