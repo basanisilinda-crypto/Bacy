@@ -3,8 +3,8 @@
 Native Android customer and administrator apps, a Cloudflare-hosted administrator website, and an existing Supabase cloud backend for consented device-owner enrollment and phone-finance management.
 
 - [Administrator website](https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev) — Cloudflare Access sign-in with the configured owner email.
-- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.26.0).
-- Customer app **0.26.0**, administrator app **1.14.0**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
+- [APK and Windows update downloads](https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.26.1).
+- Customer app **0.26.0**, administrator app **1.14.1**. Android 11/API 30 minimum; target/compile Android 16/API 36. Compatibility on each handset still needs testing.
 
 ## Phone setup
 
@@ -45,6 +45,6 @@ Banking, Wi-Fi, system Settings and emergency access remain part of the managed 
 
 Customer **0.26.0/code 39** adds saved Light, Dark and Follow phone appearance controls under Support, plus Android-reported manufacturer/model on Home. Payment record tools remain available. A statement never treats a pending claim as payment or exposes device credentials.
 
-Native admin **1.14.0/code 20** adds saved Light, Dark and Follow phone appearance controls under More. The admin phone remains unrestricted. Previous payment search and ordering remain available. [Feature and update guide](docs/NATIVE_APPEARANCE.md).
+Native admin **1.14.1/code 21** adds online order IDs and reported failed, cancelled, pending and verified payment outcomes under Payments, plus copying an order ID. Saved appearance controls remain under More. The admin phone remains unrestricted. Previous payment search and ordering remain available. [Feature and update guide](docs/ONLINE_ORDER_HISTORY.md).
 
-Device protection, offline timers, five-minute codes, the R1,700 plan and signed updates remain. No database or website change is required. Install updates in place without clearing data. The admin phone is never restricted. Handset installation and banking handoffs still require device verification.
+Device protection, offline timers, five-minute codes, the R1,700 plan and signed updates remain. Online order reporting uses the separate read-only loop-order-history service and the updated website relay. Core financial database functions are unchanged. Install updates in place without clearing data. The admin phone is never restricted. Handset installation and banking handoffs still require device verification.

@@ -2,7 +2,7 @@
 
 Open https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev and sign in using the configured owner email and Cloudflare email code.
 
-Download the signed customer/admin APKs or Windows update ZIP at https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.26.0 . The update ZIP preserves the customer link where USB debugging is still available; active financed phones use signed in-app updates because ADB is restricted. New enrollments require a private customer-specific ZIP generated in the dashboard; no public download contains an enrollment code.
+Download the signed customer/admin APKs or Windows update ZIP at https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.26.1 . The update ZIP preserves the customer link where USB debugging is still available; active financed phones use signed in-app updates because ADB is restricted. New enrollments require a private customer-specific ZIP generated in the dashboard; no public download contains an enrollment code.
 
 For a new enrollment: customer name and phone number → Setup QR / Windows USB → download fresh ZIP → extract into its own folder → run START-HERE.cmd → approve USB debugging → keep internet connected while the helper verifies ownership and starts the customer connection.
 

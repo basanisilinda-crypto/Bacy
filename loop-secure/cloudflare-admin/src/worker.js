@@ -71,7 +71,7 @@ export function createWorker(outbound=globalThis.fetch.bind(globalThis)){
    try{
     const headers={Authorization:'Bearer '+env.LOOP_ADMIN_TOKEN};
     if(request.headers.has('content-type'))headers['Content-Type']=request.headers.get('content-type');
-    const upstream=await outbound(API_URL+url.pathname+url.search,{method:request.method,headers,body:['GET','HEAD'].includes(request.method)?undefined:request.body,redirect:'manual'});
+    const upstream=await outbound((url.pathname==='/api/admin/orders'?API_URL.replace('loop-manager','loop-order-history'):API_URL)+url.pathname+url.search,{method:request.method,headers,body:['GET','HEAD'].includes(request.method)?undefined:request.body,redirect:'manual'});
     if(upstream.status>=300&&upstream.status<400)return json({detail:'The cloud service returned an unexpected redirect. Your administrator sign-in remains active.'},502);
     if(upstream.status===401||upstream.status===403)return json({detail:'The cloud service connection needs administrator attention. Your sign-in remains active.'},502);
     if(request.method==='GET'&&url.pathname==='/api/admin/overview'&&upstream.status===200&&(upstream.headers.get('content-type')||'').includes('application/json')){

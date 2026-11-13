@@ -7,6 +7,7 @@ t=int(time.time())
 def device(name,ref,due,status):
  return dict(id=ref,name=name,phone='0600000000',reference=ref,due=due,revision=1,acknowledged_revision=1,released=False,policy='{}',model='Test handset' if status!='not_enrolled' else None,last_seen=t,enforcement_status=status,approved_total=300,approved_count=1)
 records=dict(client_release=dict(version='0.18.0',version_code=27),devices=[device('Alpha fixture','TEST-A',t+1000,'unrestricted'),device('Beta fixture','TEST-B',t-1000,'not_enrolled')],claims=[dict(id='1',name='Alpha fixture',reference='TEST-A',bank_reference='BANK-TEST-1',amount=300,state='pending',submitted=t),dict(id='2',name='Beta fixture',reference='TEST-B',bank_reference='BANK-TEST-2',amount=300,state='approved',submitted=t)],audit=[],support=[],messages=[],server_time=t,payment_summary=dict(approved_total=300,approved_count=1,pending_count=1))
+records['transactions']=[dict(order_id='11111111-1111-4111-8111-111111111111',name='Alpha fixture',reference='TEST-A',amount_minor=30000,currency='ZAR',state='pending',checkout_outcome='failure',created=t),dict(order_id='22222222-2222-4222-8222-222222222222',name='Beta fixture',reference='TEST-B',amount_minor=30000,currency='ZAR',state='paid',checkout_outcome=None,created=t)]
 records['devices'][0]['app_version']=dict(code=26,name='0.17.1',update_state='ready',progress=100,reported_at=t)
 with sync_playwright() as p:
  browser=p.chromium.launch(headless=True,args=['--no-sandbox'])
@@ -15,7 +16,7 @@ with sync_playwright() as p:
   path=req.request.url.split('loop-ui.test',1)[-1].split('?',1)[0]
   if path.startswith('/api/'):
    assert req.request.method=='GET','UI checks must never write customer data'
-   value=records if path=='/api/admin/overview' else {'email':'owner@fixture.invalid','role':'owner'} if path=='/api/auth/me' else {'requests':[]}
+   value={'transactions':records['transactions']} if path=='/api/admin/orders' else records if path=='/api/admin/overview' else {'email':'owner@fixture.invalid','role':'owner'} if path=='/api/auth/me' else {'requests':[]}
    req.fulfill(status=200,content_type='application/json',body=json.dumps(value));return
   f=ROOT/'backend/static'/('index.html' if path=='/' else path.removeprefix('/static/'))
   kind='text/html' if f.suffix=='.html' else 'text/javascript' if f.suffix=='.js' else 'text/css' if f.suffix=='.css' else 'image/png' if f.suffix=='.png' else 'font/woff2'
@@ -42,7 +43,7 @@ with sync_playwright() as p:
  page.reload();page.locator('#workspace').wait_for(state='visible');assert page.locator('html').get_attribute('data-density')=='compact';assert page.locator('#devices-view').is_visible()
  page.evaluate("notice('Fixture status message')");page.get_by_role('button',name='Dismiss message').click();assert page.locator('#notice').is_hidden()
  page.get_by_role('button',name='Setup help',exact=True).click();assert page.locator('#workspace-help').is_visible();page.keyboard.press('Escape')
- page.locator('nav [data-view="payments"]').click();page.locator('#payment-search').fill('BANK-TEST-1');assert page.locator('#payments-list .payment-card').count()==1
+ page.locator('nav [data-view="payments"]').click();assert '11111111-1111-4111-8111-111111111111' in page.locator('#online-transactions').inner_text();assert 'Checkout reported failed' in page.locator('#online-transactions').inner_text();assert 'Payment verified' in page.locator('#online-transactions').inner_text();page.locator('#payment-search').fill('BANK-TEST-1');assert page.locator('#payments-list .payment-card').count()==1
  assert page.locator('[data-payment-filter="approved"]').last.inner_text()=='Approved (1)'
  page.locator('nav [data-view="devices"]').click();page.set_viewport_size({'width':390,'height':844});assert page.locator('#devices-table tr').first.evaluate('(el)=>getComputedStyle(el).display')=='block'
  assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Mobile page overflows horizontally'

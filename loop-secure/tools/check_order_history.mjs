@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {orderHistory} from '../cloud-api/order-history.ts';
+const id='12345678-1234-1234-1234-123456789012',device={id:'device-a',name:'Fixture',reference:'LOOP-TEST'};
+const row=(state,outcome)=>({value:{id,device_id:device.id,state,last_checkout_outcome:outcome,amount_minor:30000,currency:'ZAR',created:123,checkout_url:'private-url',token:'private-token',secret:'private-secret'}});
+test('read-only projection retains the unique order ID and excludes private fields',()=>{const p=orderHistory([row('pending','failure')],[device])[0];assert.equal(p.order_id,id);assert.equal(p.checkout_outcome,'failure');assert.equal(p.state,'pending');assert(!JSON.stringify(p).includes('private-'));});
+test('reported success never becomes paid and only stored paid state is confirmed',()=>{assert.equal(orderHistory([row('pending','success')],[device])[0].state,'pending');assert.equal(orderHistory([row('paid','failure')],[device])[0].state,'paid');});
+test('unknown customer and malformed order IDs are omitted',()=>{assert.deepEqual(orderHistory([row('paid','success')],[]),[]);const r=row('paid','success');r.value.id='malformed';assert.deepEqual(orderHistory([r],[device]),[]);});
