@@ -10,6 +10,7 @@ import javax.net.ssl.HttpsURLConnection;
 
 /** DUMP-protected bootstrap for an already device-owned handset. Does not grant ownership itself. */
 public class AdbEnrollmentActivity extends AppCompatActivity {
+    private String retryToken;
     private static final String SERVER="https://ourxezawbfclmhbggskv.supabase.co/functions/v1/loop-manager";
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
@@ -21,6 +22,7 @@ public class AdbEnrollmentActivity extends AppCompatActivity {
             }
             String token=getIntent().getStringExtra("enrollment_token");
             if(token==null||!token.matches("[A-Za-z0-9_-]{20,100}"))throw new IllegalArgumentException("Invalid or missing one-time enrollment code.");
+            retryToken=token;
             if(getIntent().getBooleanExtra("administrator_confirmed",false)){
                 android.widget.LinearLayout progress=new android.widget.LinearLayout(this);progress.setOrientation(android.widget.LinearLayout.VERTICAL);progress.setGravity(android.view.Gravity.CENTER);progress.setPadding(32,32,32,32);progress.setBackgroundColor(za.co.bacy.ui.CustomerHome.PAPER);progress.addView(new za.co.bacy.ui.CustomerHome.Logo(this),new android.widget.LinearLayout.LayoutParams(96,96));android.widget.TextView message=new android.widget.TextView(this);message.setText("Connecting customer account…\nKeep this phone connected to the internet.");message.setTextSize(17);message.setTextColor(za.co.bacy.ui.CustomerHome.INK);message.setTypeface(za.co.bacy.ui.BrandFonts.sans(this,false));message.setGravity(android.view.Gravity.CENTER);message.setPadding(0,32,0,32);progress.addView(message);progress.addView(new android.widget.ProgressBar(this));setContentView(progress);connect(token);return;
             }
@@ -50,5 +52,5 @@ public class AdbEnrollmentActivity extends AppCompatActivity {
             }catch(Exception error){runOnUiThread(()->fail(error));}
         },"BacyUsbEnrollment").start();
     }
-    private void fail(Exception error){if(!isFinishing())AccountSheets.panel(this,"USB enrollment","Your current phone setup").note("Setup needs attention",error.getMessage(),AccountSheets.CORAL,"help").option("Close","Return to your phone","home",AccountSheets.MINT,this::finish).show();}
+    private void fail(Exception error){if(!isFinishing())AccountSheets.panel(this,"USB enrollment","Your current phone setup").note("Setup needs attention",error.getMessage(),AccountSheets.CORAL,"help").option("Try again","Reconnect after restoring Wi-Fi or mobile data","refresh",AccountSheets.PAPER,()->{if(retryToken!=null)connect(retryToken);else finish();}).option("Close","Return to your phone","home",AccountSheets.MINT,this::finish).show();}
 }

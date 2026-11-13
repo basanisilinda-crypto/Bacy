@@ -1,3 +1,7 @@
+# Design continuity
+
+The following describes a historical production baseline. Runtime styles have drifted; inspect the live UI before changing them. This reliability review does not redesign the production apps. The separate evaluation uses an understated white/black interface with labelled actions and actual device reports. The owner rejects purple/gold and generic gradients; do not apply the historical palette to new screens by default.
+
 # Loop Secure design direction
 
 ## Standing guardrails from the owner

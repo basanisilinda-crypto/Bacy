@@ -1,3 +1,5 @@
+> Deployment drift (13 November 2026): live loop-manager was v39. This directory contains older baseline source; compare deployment/runtime-reference/loop-manager-v39 and current provider configuration before deploying. Do not apply historical finance migrations blindly.
+
 # Deployed cloud API
 
 The installed customer app uses a real Supabase Edge Function and isolated Postgres tables. The private administrator Site proxies authenticated owner requests to that API. Native device calls use one-time enrollment codes and per-device credentials; they do not require ChatGPT sign-in or a private-Site bypass token.

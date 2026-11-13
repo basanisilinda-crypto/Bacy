@@ -1,0 +1,1 @@
+Read PRODUCTION-CONTINUATION.md, AGENTS.md, STATUS.md and DESIGN-CONTINUITY.md to continue the original production customer/admin/website. Keep the independent Rain evaluation separate. Credentials and encrypted backups are not source files.

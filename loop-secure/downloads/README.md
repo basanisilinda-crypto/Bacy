@@ -1,15 +1,9 @@
-# Loop Secure downloads
+# Production downloads
 
-Customer **0.26.0/code 39**, administrator **1.14.1/code 21**. Android 11+.
+Customer Loop-Secure-Client.apk is published version0.27.0/code40 with the original signer. Loop-Secure-Client-Update.zip contains that same APK and retains linked account data. Native admin remains1.14.1/code21. Public downloads contain no customer-specific enrollment code. New enrollments must use the protected dashboard for a fresh customer-specific QR or Windows bundle.
 
-New: native Light, Dark and Follow phone controls and reported phone identity. Website appearance and automatic storage cleanup are already live. Online order reporting is live through a separate read-only service. Custom finance plans remain staged pending migration approval. See ../docs/ONLINE_ORDER_HISTORY.md.
+Loop-Secure-Source.zip is the complete production Loop Secure source/handoff, inside production-handoff/loop-secure, plus continuation/design/update instructions. It excludes unrelated projects from the multi-project Bacy repository. The independent Rain evaluation is not included.
 
-- **Loop-Secure-Client.apk**: signed customer update. Install over the existing app; do not uninstall or clear data.
-- **Loop-Secure-Admin.apk**: signed administrator update. Installation may need approval; the admin phone is never restricted.
-- **Loop-Secure-Client-Update.zip**: Windows update helper for phones where USB debugging remains available. Financed phones with ADB protection use the managed update channel instead.
-- **Loop-Secure-Source.zip**: sanitized source and bundled-font licenses.
-- **Loop-Secure-USB-Helper.zip**: generic helper sources. New enrollment needs the private customer-specific bundle from the dashboard.
+Other preview/Cloudflare/USB archives are historical baseline artifacts. Do not deploy a historical website/backend archive over the drifted live service. The source handoff records the required comparison. The source includes a read-only runtime function reference; it does not reconstruct all live website/database configuration automatically.
 
-Customer apps check published updates in the background and can install verified packages automatically where Android permits. Admin apps check on Wi-Fi and may require installation approval. Android scheduling and active checkout can delay installation. Connect the phone to the internet; Support / Your phone includes the manual update check. Runtime does not depend on ChatGPT/Codex credits. The separate preview APK is an older disconnected preview.
-
-Developer-options/ADB protection and offline finance deadlines remain. Five-minute codes verify online once, then expire on the local monotonic timer. An unverifiable clock after restart requires a time check. Banking, Wi-Fi/settings, support and emergency access remain available. Recovery/firmware resets are not blocked by ordinary device-owner policy.
+No signing keys or merchant/admin secrets are included. Private owner recovery backups are delivered separately and must never be committed.

@@ -1,0 +1,4 @@
+Fresh portable production handoff verification — 13 November 2026
+app: 142 tests, zero failures/errors; release assemble and lint completed successfully.
+admin: 24 tests, zero failures/errors; release assemble and lint completed successfully.
+Sandbox tests used -Dloop.test.home=/tmp/loop-build/robolectric-home because /home/agent is read-only. Default user home works in ordinary build environments. No runtime code was changed for this override. Native package/certificate checks are separate.

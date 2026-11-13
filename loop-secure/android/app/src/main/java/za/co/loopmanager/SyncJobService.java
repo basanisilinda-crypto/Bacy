@@ -18,6 +18,7 @@ public class SyncJobService extends JobService {
         scheduler.schedule(new JobInfo.Builder(401,new ComponentName(c,SyncJobService.class)).setMinimumLatency(0).setOverrideDeadline(30000).build());
     }
     @Override public boolean onStartJob(JobParameters params){
+        RestrictionStartup.resume(this,true);
         LiveConnectionService.start(this);
         WORKER.execute(()->{
             try{

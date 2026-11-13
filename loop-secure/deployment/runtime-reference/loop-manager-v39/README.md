@@ -1,0 +1,1 @@
+Read-only runtime reference: loop-manager v39 exported 13 November 2026. Known local credential-value scan passed. This is not wired to deployment scripts. Reconcile with live configuration and database schema before deployment; no finance migration is authorised by this reference. The deployed admin website has separate drift and is not reconstructed by this function snapshot.

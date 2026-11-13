@@ -1,0 +1,64 @@
+name: Verify and publish native updates
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['loop-secure/android/**', 'loop-secure/tools/ci_publish.py', '.github/workflows/loop-secure-native-release.yml']
+permissions:
+  contents: read
+concurrency:
+  group: native-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: production
+    env:
+      LOOP_SIGNING_STORE_FILE: ${{ runner.temp }}/loop-release.jks
+      LOOP_SIGNING_STORE_PASSWORD: ${{ secrets.LOOP_STORE_PASSWORD }}
+      LOOP_SIGNING_KEY_PASSWORD: ${{ secrets.LOOP_KEY_PASSWORD }}
+      LOOP_SIGNING_KEY_ALIAS: ${{ secrets.LOOP_KEY_ALIAS }}
+      LOOP_KEYSTORE_B64: ${{ secrets.LOOP_KEYSTORE_B64 }}
+      LOOP_DEPLOY_TOKEN: ${{ secrets.LOOP_DEPLOY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare private signer
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os,base64
+          from pathlib import Path
+          for name in ['LOOP_KEYSTORE_B64','LOOP_SIGNING_STORE_PASSWORD','LOOP_SIGNING_KEY_PASSWORD','LOOP_SIGNING_KEY_ALIAS','LOOP_DEPLOY_TOKEN']:
+              if not os.environ.get(name): raise SystemExit('Required GitHub environment secret missing: '+name)
+          p=Path(os.environ['LOOP_SIGNING_STORE_FILE']);p.write_bytes(base64.b64decode(os.environ['LOOP_KEYSTORE_B64'],validate=True));p.chmod(0o600)
+          PY
+      - name: Android toolchain
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Build, lint and test customer and admin apps
+        working-directory: loop-secure/android
+        run: bash gradlew --no-daemon :app:assembleRelease :app:lintRelease :app:testDebugUnitTest :admin:assembleRelease :admin:lintRelease :admin:testDebugUnitTest
+      - name: Verify package and signer, publish newer versions
+        run: |
+          python -m pip install httpx==0.28.1
+          python loop-secure/tools/ci_publish.py
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: verified-native-releases
+          path: |
+            loop-secure/android/app/build/outputs/apk/release/*.apk
+            loop-secure/android/admin/build/outputs/apk/release/*.apk
+            loop-secure/android/*/build/reports/lint-results-release.html
+      - name: Remove private files
+        if: always()
+        shell: bash
+        run: rm -f "$LOOP_SIGNING_STORE_FILE"

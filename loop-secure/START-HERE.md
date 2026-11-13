@@ -1,13 +1,22 @@
-# Start with Loop Secure
+# Original Loop Secure: owner and customer setup
 
-Open https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev and sign in using the configured owner email and Cloudflare email code.
+Use the protected business dashboard: https://loop-secure-admin.loopsecure-bacanyclinda.workers.dev/ . Sign in with the configured owner account. This is the real production system, not the independent Rain evaluation.
 
-Download the signed customer/admin APKs or Windows update ZIP at https://github.com/basanisilinda-crypto/Bacy/releases/tag/loop-secure-v0.26.1 . The update ZIP preserves the customer link where USB debugging is still available; active financed phones use signed in-app updates because ADB is restricted. New enrollments require a private customer-specific ZIP generated in the dashboard; no public download contains an enrollment code.
+## New customer phone
 
-For a new enrollment: customer name and phone number → Setup QR / Windows USB → download fresh ZIP → extract into its own folder → run START-HERE.cmd → approve USB debugging → keep internet connected while the helper verifies ownership and starts the customer connection.
+1. Create or select the intended customer in the dashboard and check the plan details.
+2. Choose that customer's Setup QR or Windows USB setup. Download a fresh customer-specific bundle when needed; no public source/download ZIP contains a customer enrollment code.
+3. For QR, use Android's welcome-screen setup scanner on an eligible phone. A normal camera scan is not Device Owner provisioning.
+4. For Windows, extract the fresh ZIP into its own folder, connect one authorised phone, enable/approve USB debugging and run START-HERE.cmd. Do not mix it with old ADB/enrollment files.
+5. Keep internet connected and wait for the actual phone/account report. Installation and Device Owner assignment alone do not confirm customer linking.
+6. If Android reports accounts or another owner, resolve that exact condition. Back up before any reset. Do not clear an existing customer app's data or reset to solve an unexplained error.
 
-If Android refuses because accounts exist, check phone eligibility after backing up/syncing and confirming credentials. If the helper cannot verify ownership, read Ownership-check.txt. A new download alone cannot repair unreadable storage or a permission failure. Do not force ownership or reset the phone to solve an unexplained error.
+## Already enrolled phone
 
-For an already released test phone, preserve the old account's history, confirm release on the handset and uninstall the old local app before using a new enrollment record.
+Use the signed in-app update path. Updates must retain the original package and release signer. Customer0.27.0/code40 is published; admin1.14.1/code21 is unchanged. Android controls background execution and may require approval for an unmanaged admin install. A rebuild with the same version code does not trigger an update. Do not uninstall a linked customer app to solve an update conflict.
 
-Customer 0.23.0 restricts Developer options/ADB after activation. Use signed in-app updates for enrolled phones; USB can disconnect once the protection applies. See docs/DEBUG_AND_STARTUP_PROTECTION.md.
+If the phone is Device Owner but unlinked, customer0.27 offers Connect enrollment code. Use a fresh code for the correct customer. Preserve any saved account; see Ownership-check.txt for USB errors.
+
+## Engineering continuation
+
+Read PRODUCTION-CONTINUATION.md and AGENTS.md. The owner authorised Codex to sync this production repository in the current session. Future ChatGPT sessions must use a separate working copy and leave original Bacy files untouched unless the owner explicitly authorises a change. Keep the Rain test package and its self-release/no-payment policy out of production.

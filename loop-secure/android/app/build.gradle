@@ -5,7 +5,7 @@ android {
     compileSdk 36
     buildFeatures { buildConfig true }
     testOptions { unitTests.includeAndroidResources = true }
-    defaultConfig { applicationId 'za.co.loopmanager'; minSdk 30; targetSdk 36; versionCode 39; versionName '0.26.0' }
+    defaultConfig { applicationId 'za.co.loopmanager'; minSdk 30; targetSdk 36; versionCode 40; versionName '0.27.0' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     signingConfigs {
         if (System.getenv('LOOP_SIGNING_STORE_FILE')) {
@@ -32,7 +32,10 @@ dependencies {
 
 dependencies { testImplementation 'junit:junit:4.13.2'; testImplementation 'org.robolectric:robolectric:4.14.1' }
 tasks.withType(Test).configureEach {
- systemProperty 'user.home', '/tmp/loop-build/robolectric-home'
+ systemProperty 'user.home', System.getProperty('loop.test.home', System.getProperty('user.home'))
+ def outputDir = layout.buildDirectory.dir("review-artifacts").get().asFile
+ doFirst { outputDir.mkdirs() }
+ systemProperty 'loop.test.artifacts', outputDir.absolutePath
  systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
  ['https.proxyHost','https.proxyPort','http.proxyHost','http.proxyPort'].each { key -> if (System.getProperty(key)) systemProperty key,System.getProperty(key) }
 }

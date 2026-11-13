@@ -23,7 +23,10 @@ dependencies { implementation 'com.google.android.material:material:1.13.0'; imp
 
 dependencies { testImplementation 'junit:junit:4.13.2'; testImplementation 'org.robolectric:robolectric:4.14.1' }
 tasks.withType(Test).configureEach {
- systemProperty 'user.home', '/tmp/loop-build/robolectric-home'
+ systemProperty 'user.home', System.getProperty('loop.test.home', System.getProperty('user.home'))
+ def outputDir = layout.buildDirectory.dir("review-artifacts").get().asFile
+ doFirst { outputDir.mkdirs() }
+ systemProperty 'loop.test.artifacts', outputDir.absolutePath
  systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
  ['https.proxyHost','https.proxyPort','http.proxyHost','http.proxyPort'].each { key -> if (System.getProperty(key)) systemProperty key,System.getProperty(key) }
 }
